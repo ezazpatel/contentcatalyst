@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import NewPost from "@/pages/new-post";
 import BlogsList from "@/pages/blogs-list";
 import KeywordsList from "@/pages/keywords-list";
+import Editor from "@/pages/editor";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -13,7 +14,7 @@ function Router() {
       <Route path="/" component={NewPost} />
       <Route path="/blogs" component={BlogsList} />
       <Route path="/keywords" component={KeywordsList} />
-      <Route path="/edit/:id" component={NewPost} />
+      <Route path="/edit/:id" component={Editor} />
       <Route component={NotFound} />
     </Switch>
   );

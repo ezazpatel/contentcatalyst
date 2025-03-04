@@ -75,7 +75,7 @@ export function RichEditor({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <Card className="p-4">
         <div className="space-y-4">
           <Input
@@ -183,7 +183,6 @@ export function RichEditor({
           >
             <List className="h-4 w-4" />
           </Button>
-          {/* Image upload button remains from original code */}
           <Button
             variant="ghost"
             size="icon"
