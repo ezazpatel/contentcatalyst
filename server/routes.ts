@@ -2,6 +2,10 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
+import { checkScheduledPosts } from "./scheduler";
+
+// Start the scheduler when the server starts
+checkScheduledPosts();
 
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
@@ -51,17 +55,17 @@ export async function registerRoutes(app: Express) {
   app.post("/api/generate", async (req, res) => {
     try {
       const { keywords, type } = req.body;
-      
+
       // Import OpenAI
       const OpenAI = require('openai');
-      
+
       // Initialize the OpenAI client
       const openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY
       });
-      
+
       let prompt = "";
-      
+
       // Define prompt based on generation type
       if (type === "content") {
         prompt = `
@@ -81,7 +85,7 @@ Write a meta description for a blog post about "${keywords.join(", ")}".
 The description should be engaging, include the main keyword, and be under 160 characters.
 `;
       }
-      
+
       const response = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [
@@ -97,12 +101,43 @@ The description should be engaging, include the main keyword, and be under 160 c
         temperature: 0.7,
         max_tokens: 1000,
       });
-      
+
       const content = response.choices[0].message.content || "Sorry, I couldn't generate content.";
       res.json({ content });
     } catch (error) {
       console.error("Error calling OpenAI API:", error);
       res.status(500).json({ message: "Failed to generate content. Please try again." });
+    }
+  });
+
+  app.post("/api/wordpress/publish", async (req, res) => {
+    try {
+      const response = await fetch(process.env.WORDPRESS_API_URL + '/wp/v2/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.WORDPRESS_AUTH_TOKEN}`
+        },
+        body: JSON.stringify({
+          title: req.body.title,
+          content: req.body.content,
+          status: 'publish',
+          excerpt: req.body.excerpt || '',
+          meta: {
+            _yoast_wpseo_metadesc: req.body.seoDescription || '',
+            _yoast_wpseo_title: req.body.seoTitle || '',
+          },
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`WordPress API error: ${response.statusText}`);
+      }
+
+      res.json(await response.json());
+    } catch (error) {
+      console.error('Error publishing to WordPress:', error);
+      res.status(500).json({ message: 'Failed to publish to WordPress' });
     }
   });
 
