@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
+import { Navbar } from "@/components/navbar";
 
 type KeywordEntry = {
   keyword: string;
@@ -31,7 +32,7 @@ export default function KeywordsList() {
 
   // Process posts to get keyword information
   const keywordMap = new Map<string, KeywordEntry>();
-  
+
   posts?.forEach(post => {
     post.keywords.forEach(keyword => {
       if (!keywordMap.has(keyword) || post.status === "published") {
@@ -49,52 +50,49 @@ export default function KeywordsList() {
   const keywords = Array.from(keywordMap.values());
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Keywords Overview</h1>
-        <Link href="/">
-          <Button>Create New Post</Button>
-        </Link>
-      </div>
-
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Keyword</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Publish Date</TableHead>
-            <TableHead>Blog Title</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {keywords.map((entry) => (
-            <TableRow key={entry.keyword}>
-              <TableCell>{entry.keyword}</TableCell>
-              <TableCell>{entry.status}</TableCell>
-              <TableCell>
-                {entry.publishDate ? format(entry.publishDate, "PPP") : "Not published"}
-              </TableCell>
-              <TableCell>{entry.blogTitle || "N/A"}</TableCell>
-              <TableCell>
-                {entry.blogId ? (
-                  <Link href={`/edit/${entry.blogId}`}>
-                    <Button variant="outline" size="sm">
-                      Edit
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link href="/">
-                    <Button variant="outline" size="sm">
-                      Create Post
-                    </Button>
-                  </Link>
-                )}
-              </TableCell>
+    <div>
+      <Navbar />
+      <div className="container mx-auto py-8">
+        <h1 className="text-3xl font-bold mb-8">Keywords Overview</h1>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Keyword</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Publish Date</TableHead>
+              <TableHead>Blog Title</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {keywords.map((entry) => (
+              <TableRow key={entry.keyword}>
+                <TableCell>{entry.keyword}</TableCell>
+                <TableCell>{entry.status}</TableCell>
+                <TableCell>
+                  {entry.publishDate ? format(entry.publishDate, "PPP") : "Not published"}
+                </TableCell>
+                <TableCell>{entry.blogTitle || "N/A"}</TableCell>
+                <TableCell>
+                  {entry.blogId ? (
+                    <Link href={`/edit/${entry.blogId}`}>
+                      <Button variant="outline" size="sm">
+                        Edit
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link href="/">
+                      <Button variant="outline" size="sm">
+                        Create Post
+                      </Button>
+                    </Link>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

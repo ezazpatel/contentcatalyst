@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRoute, useLocation, Link } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { BlogForm } from "@/components/blog-form";
 import { RichEditor } from "@/components/rich-editor";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { generateContent, generateSEOTitle, generateMetaDescription } from "@/lib/mock-ai";
 import type { BlogPost, InsertBlogPost } from "@shared/schema";
+import { Navbar } from "@/components/navbar";
 
 export default function NewPost() {
   const [, params] = useRoute<{ id: string }>("/edit/:id");
@@ -61,25 +62,17 @@ export default function NewPost() {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">{isNew ? "Create New Post" : "Edit Post"}</h1>
-        <div className="flex gap-4">
-          <Link href="/blogs">
-            <Button variant="outline">View All Posts</Button>
-          </Link>
-          <Link href="/keywords">
-            <Button variant="outline">Manage Keywords</Button>
-          </Link>
+    <div>
+      <Navbar />
+      <div className="container mx-auto py-8">
+        <h1 className="text-3xl font-bold mb-8">{isNew ? "Create New Post" : "Edit Post"}</h1>
+        <div className="grid gap-8">
+          <BlogForm
+            defaultValues={defaultValues}
+            onSubmit={(data) => updatePost.mutate(data)}
+            isLoading={updatePost.isPending}
+          />
         </div>
-      </div>
-
-      <div className="grid gap-8">
-        <BlogForm
-          defaultValues={defaultValues}
-          onSubmit={(data) => updatePost.mutate(data)}
-          isLoading={updatePost.isPending}
-        />
       </div>
     </div>
   );
