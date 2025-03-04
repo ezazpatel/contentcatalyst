@@ -39,15 +39,16 @@ export default function KeywordsList() {
         keywordMap.set(keyword, {
           keyword,
           status: post.status,
-          publishDate: post.status === "published" ? new Date(post.scheduledDate) : null,
-          blogTitle: post.status === "published" ? post.title : null,
-          blogId: post.status === "published" ? post.id : null,
+          publishDate: new Date(post.scheduledDate),
+          blogTitle: post.title,
+          blogId: post.id,
         });
       }
     });
   });
 
   const keywords = Array.from(keywordMap.values());
+  const now = new Date();
 
   return (
     <div>
@@ -59,37 +60,44 @@ export default function KeywordsList() {
             <TableRow>
               <TableHead>Keyword</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Publish Date</TableHead>
+              <TableHead>Date</TableHead>
               <TableHead>Blog Title</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {keywords.map((entry) => (
-              <TableRow key={entry.keyword}>
-                <TableCell>{entry.keyword}</TableCell>
-                <TableCell>{entry.status}</TableCell>
-                <TableCell>
-                  {entry.publishDate ? format(entry.publishDate, "PPP") : "Not published"}
-                </TableCell>
-                <TableCell>{entry.blogTitle || "N/A"}</TableCell>
-                <TableCell>
-                  {entry.blogId ? (
-                    <Link href={`/edit/${entry.blogId}`}>
-                      <Button variant="outline" size="sm">
-                        Edit
-                      </Button>
-                    </Link>
-                  ) : (
-                    <Link href="/">
-                      <Button variant="outline" size="sm">
-                        Create Post
-                      </Button>
-                    </Link>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
+            {keywords.map((entry) => {
+              const isPublished = entry.status === "published";
+              const isScheduled = !isPublished && entry.publishDate && entry.publishDate > now;
+
+              return (
+                <TableRow key={entry.keyword}>
+                  <TableCell>{entry.keyword}</TableCell>
+                  <TableCell>
+                    {isPublished ? "Published" : isScheduled ? "Scheduled" : "Draft"}
+                  </TableCell>
+                  <TableCell>
+                    {entry.publishDate ? format(entry.publishDate, "PPP 'at' p") : "Not set"}
+                  </TableCell>
+                  <TableCell>{entry.blogTitle || "Not created"}</TableCell>
+                  <TableCell>
+                    {entry.blogId ? (
+                      <Link href={`/edit/${entry.blogId}`}>
+                        <Button variant="outline" size="sm">
+                          View Post
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link href="/">
+                        <Button variant="outline" size="sm">
+                          Create Post
+                        </Button>
+                      </Link>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
