@@ -2,16 +2,18 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import Dashboard from "@/pages/dashboard";
-import EditPost from "@/pages/edit-post";
+import NewPost from "@/pages/new-post";
+import BlogsList from "@/pages/blogs-list";
+import KeywordsList from "@/pages/keywords-list";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/new" component={EditPost} />
-      <Route path="/edit/:id" component={EditPost} />
+      <Route path="/" component={NewPost} />
+      <Route path="/blogs" component={BlogsList} />
+      <Route path="/keywords" component={KeywordsList} />
+      <Route path="/edit/:id" component={NewPost} />
       <Route component={NotFound} />
     </Switch>
   );
