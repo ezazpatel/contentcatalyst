@@ -13,14 +13,6 @@ import {
 import { format } from "date-fns";
 import { Navbar } from "@/components/navbar";
 
-type KeywordEntry = {
-  keyword: string;
-  status: string;
-  publishDate: Date | null;
-  blogTitle: string | null;
-  blogId: number | null;
-};
-
 export default function KeywordsList() {
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
     queryKey: ["/api/posts"],
@@ -30,74 +22,58 @@ export default function KeywordsList() {
     return <div>Loading...</div>;
   }
 
-  // Process posts to get keyword information
-  const keywordMap = new Map<string, KeywordEntry>();
-
-  posts?.forEach(post => {
-    post.keywords.forEach(keyword => {
-      if (!keywordMap.has(keyword) || post.status === "published") {
-        keywordMap.set(keyword, {
-          keyword,
-          status: post.status,
-          publishDate: new Date(post.scheduledDate),
-          blogTitle: post.title,
-          blogId: post.id,
-        });
-      }
-    });
-  });
-
-  const keywords = Array.from(keywordMap.values());
-  const now = new Date();
-
   return (
     <div>
       <Navbar />
       <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-8">Keywords Overview</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Manage Keywords</h1>
+          <Link href="/new">
+            <Button>New Post</Button>
+          </Link>
+        </div>
+
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Keyword</TableHead>
+              <TableHead>Keywords</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Scheduled Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Blog Title</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {keywords.map((entry) => {
-              const isPublished = entry.status === "published";
-              const isScheduled = !isPublished && entry.publishDate && entry.publishDate > now;
-
-              return (
-                <TableRow key={entry.keyword}>
-                  <TableCell>{entry.keyword}</TableCell>
-                  <TableCell>
-                    {isPublished ? "Published" : isScheduled ? "Scheduled" : "Draft"}
-                  </TableCell>
-                  <TableCell>
-                    {entry.publishDate ? format(entry.publishDate, "PPP 'at' p") : "Not set"}
-                  </TableCell>
-                  <TableCell>{entry.blogTitle || "Not created"}</TableCell>
-                  <TableCell>
-                    {entry.blogId ? (
-                      <Link href={`/edit/${entry.blogId}`}>
-                        <Button variant="outline" size="sm">
-                          View Post
-                        </Button>
-                      </Link>
-                    ) : (
-                      <Link href="/">
-                        <Button variant="outline" size="sm">
-                          Create Post
-                        </Button>
-                      </Link>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {posts?.map((post) => (
+              <TableRow key={post.id}>
+                <TableCell>{post.keywords.join(", ")}</TableCell>
+                <TableCell>{post.title || "Untitled"}</TableCell>
+                <TableCell>
+                  {format(new Date(post.scheduledDate), "PPP")}
+                </TableCell>
+                <TableCell>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      post.status === "published"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-blue-100 text-blue-800"
+                    }`}
+                  >
+                    {post.status}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex space-x-2">
+                    <Link href={`/view/${post.id}`}>
+                      <Button variant="outline" size="sm">View Post</Button>
+                    </Link>
+                    <Link href={`/edit/${post.id}`}>
+                      <Button variant="secondary" size="sm">Edit Post</Button>
+                    </Link>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>

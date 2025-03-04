@@ -1,9 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { BlogPost } from "@shared/schema";
-import { Link } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { Navbar } from "@/components/navbar";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle,
+  CardFooter
+} from "@/components/ui/card";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
 
 export default function BlogsList() {
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
@@ -37,6 +44,9 @@ export default function BlogsList() {
                     {post.status === "published" ? "Published" : "Scheduled"}: {format(new Date(post.scheduledDate), "PPP")}
                   </div>
                 </CardContent>
+                <CardFooter>
+                  <Button>Edit Post</Button>
+                </CardFooter>
               </Card>
             </Link>
           ))}
