@@ -1,4 +1,6 @@
-import { BlogPost, InsertBlogPost } from "@shared/schema";
+import { BlogPost, InsertBlogPost, blogPosts } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
@@ -8,43 +10,38 @@ export interface IStorage {
   deleteBlogPost(id: number): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private posts: Map<number, BlogPost>;
-  private currentId: number;
-
-  constructor() {
-    this.posts = new Map();
-    this.currentId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
-    const id = this.currentId++;
-    const blogPost: BlogPost = { id, ...post };
-    this.posts.set(id, blogPost);
+    const [blogPost] = await db.insert(blogPosts).values(post).returning();
     return blogPost;
   }
 
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
-    return this.posts.get(id);
+    const [blogPost] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    return blogPost;
   }
 
   async getAllBlogPosts(): Promise<BlogPost[]> {
-    return Array.from(this.posts.values());
+    return await db.select().from(blogPosts);
   }
 
   async updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost> {
-    const existing = await this.getBlogPost(id);
-    if (!existing) {
+    const [updated] = await db
+      .update(blogPosts)
+      .set(post)
+      .where(eq(blogPosts.id, id))
+      .returning();
+
+    if (!updated) {
       throw new Error("Post not found");
     }
-    const updated = { ...existing, ...post };
-    this.posts.set(id, updated);
+
     return updated;
   }
 
   async deleteBlogPost(id: number): Promise<void> {
-    this.posts.delete(id);
+    await db.delete(blogPosts).where(eq(blogPosts.id, id));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
