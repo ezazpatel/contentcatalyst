@@ -49,12 +49,24 @@ export default function NewPost() {
     return <div>Loading...</div>;
   }
 
+  // Ensure scheduledDate is always a valid Date
+  let scheduledDate;
+  try {
+    scheduledDate = post?.scheduledDate ? new Date(post.scheduledDate) : new Date();
+    // Check if date is valid
+    if (isNaN(scheduledDate.getTime())) {
+      scheduledDate = new Date(); // Fallback to current date if invalid
+    }
+  } catch (err) {
+    scheduledDate = new Date(); // Fallback to current date on error
+  }
+  
   const defaultValues: InsertBlogPost = {
     title: post?.title || "",
     content: post?.content || "",
     keywords: post?.keywords || [""],
     affiliateLinks: post?.affiliateLinks || [{ name: "", url: "" }],
-    scheduledDate: post?.scheduledDate ? new Date(post.scheduledDate) : new Date(),
+    scheduledDate: scheduledDate,
     status: post?.status || "draft",
     seoTitle: post?.seoTitle || "",
     seoDescription: post?.seoDescription || "",
