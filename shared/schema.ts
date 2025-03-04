@@ -7,11 +7,14 @@ export const blogPosts = pgTable("blog_posts", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   keywords: text("keywords").array().notNull(),
-  affiliateLinks: jsonb("affiliate_links").$type<{name: string, url: string}[]>().notNull(),
+  affiliateLinks: jsonb("affiliate_links").$type<{name: string, url: string}[]>().notNull().default([]),
   scheduledDate: timestamp("scheduled_date").notNull(),
   status: text("status", { enum: ["draft", "published"] }).notNull().default("draft"),
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
+  excerpt: text("excerpt"),
+  slug: text("slug"),
+  metaTags: text("meta_tags").array(),
   headings: jsonb("headings").$type<{level: number, text: string}[]>().notNull(),
 });
 
@@ -20,10 +23,13 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts)
   .extend({
     keywords: z.array(z.string().min(1, "Keyword cannot be empty")),
     affiliateLinks: z.array(z.object({
-      name: z.string().min(1, "Name is required"),
-      url: z.string().url("Invalid URL")
-    })),
+      name: z.string(),
+      url: z.string().url("Invalid URL").or(z.string().length(0))
+    })).default([]),
     scheduledDate: z.coerce.date(),
+    metaTags: z.array(z.string()).optional(),
+    excerpt: z.string().optional(),
+    slug: z.string().optional(),
   });
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;

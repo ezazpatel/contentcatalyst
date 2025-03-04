@@ -20,15 +20,16 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
     resolver: zodResolver(insertBlogPostSchema),
     defaultValues: {
       keywords: [""],
-      affiliateLinks: [{ name: "", url: "" }],
+      affiliateLinks: [],
       scheduledDate: new Date(),
+      status: "draft",
       ...defaultValues,
     },
   });
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl mx-auto">
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Keywords</h3>
           {form.watch("keywords").map((_, index) => (
@@ -64,16 +65,16 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Affiliate Links</h3>
+          <h3 className="text-lg font-medium">Affiliate Links (Optional)</h3>
           {form.watch("affiliateLinks").map((_, index) => (
             <div key={index} className="flex gap-2">
               <Input
                 {...form.register(`affiliateLinks.${index}.name`)}
-                placeholder="Link name"
+                placeholder="Link name (optional)"
               />
               <Input
                 {...form.register(`affiliateLinks.${index}.url`)}
-                placeholder="URL"
+                placeholder="URL (optional)"
               />
               <Button
                 type="button"
@@ -103,26 +104,38 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
 
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Schedule</h3>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {format(form.watch("scheduledDate"), "PPP")}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={form.watch("scheduledDate")}
-                onSelect={(date) => form.setValue("scheduledDate", date!)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <div className="flex gap-4 items-center">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(form.watch("scheduledDate"), "PPP")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={form.watch("scheduledDate")}
+                  onSelect={(date) => form.setValue("scheduledDate", date!)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <Input
+              type="time"
+              value={format(form.watch("scheduledDate"), "HH:mm")}
+              onChange={(e) => {
+                const [hours, minutes] = e.target.value.split(":");
+                const date = form.watch("scheduledDate");
+                date.setHours(parseInt(hours), parseInt(minutes));
+                form.setValue("scheduledDate", date);
+              }}
+            />
+          </div>
         </div>
 
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : "Save Post"}
+          {isLoading ? "Adding..." : "Add Post"}
         </Button>
       </form>
     </Form>
