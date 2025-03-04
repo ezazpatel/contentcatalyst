@@ -1,32 +1,41 @@
+
+import { apiRequest } from "@/lib/queryClient";
+
 export async function generateContent(keywords: string[]): Promise<string> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  return `
-# ${keywords[0]} - Your Complete Guide
-
-## Introduction
-Welcome to our comprehensive guide about ${keywords[0]}. In this article, we'll explore everything you need to know about this fascinating topic.
-
-## Why ${keywords[0]} Matters
-Understanding ${keywords[0]} is crucial for anyone interested in travel and experiences. Let's dive into the details.
-
-## Top Tips for ${keywords[0]}
-1. Research thoroughly
-2. Plan ahead
-3. Consider your options
-
-## Final Thoughts
-${keywords[0]} offers incredible opportunities for adventure and growth. Start your journey today!
-`;
+  try {
+    const response = await apiRequest("/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ keywords, type: "content" }),
+    });
+    return response.content;
+  } catch (error) {
+    console.error("Error generating content:", error);
+    throw new Error("Failed to generate content. Please try again.");
+  }
 }
 
 export async function generateSEOTitle(keywords: string[]): Promise<string> {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return `${keywords[0]}: Ultimate Guide (${new Date().getFullYear()} Edition)`;
+  try {
+    const response = await apiRequest("/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ keywords, type: "title" }),
+    });
+    return response.content;
+  } catch (error) {
+    console.error("Error generating SEO title:", error);
+    throw new Error("Failed to generate SEO title. Please try again.");
+  }
 }
 
 export async function generateMetaDescription(keywords: string[]): Promise<string> {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return `Discover everything you need to know about ${keywords[0]} in our comprehensive guide. Expert tips, insider advice, and practical strategies for ${new Date().getFullYear()}.`;
+  try {
+    const response = await apiRequest("/api/generate", {
+      method: "POST",
+      body: JSON.stringify({ keywords, type: "description" }),
+    });
+    return response.content;
+  } catch (error) {
+    console.error("Error generating meta description:", error);
+    throw new Error("Failed to generate meta description. Please try again.");
+  }
 }
