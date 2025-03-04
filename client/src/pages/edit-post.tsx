@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { BlogForm } from "@/components/blog-form";
 import { RichEditor } from "@/components/rich-editor";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import type { BlogPost, InsertBlogPost } from "@shared/schema";
 
 export default function EditPost() {
   const [, params] = useRoute<{ id: string }>("/edit/:id");
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const isNew = !params?.id;
 
@@ -22,16 +23,23 @@ export default function EditPost() {
 
   const updatePost = useMutation({
     mutationFn: async (data: InsertBlogPost) => {
-      if (isNew) {
-        return await apiRequest("POST", "/api/posts", data);
-      } else {
-        return await apiRequest("PATCH", `/api/posts/${params?.id}`, data);
-      }
+      const response = await (isNew
+        ? apiRequest("POST", "/api/posts", data)
+        : apiRequest("PATCH", `/api/posts/${params?.id}`, data));
+      return response.json();
     },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Post saved successfully",
+      });
+      navigate("/"); // Redirect to dashboard after successful save
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save post",
+        variant: "destructive",
       });
     },
   });
@@ -45,11 +53,15 @@ export default function EditPost() {
       ]);
 
       updatePost.mutate({
-        ...post!,
+        title: title,
         content,
-        title,
+        keywords,
+        affiliateLinks: post?.affiliateLinks || [],
+        scheduledDate: post?.scheduledDate || new Date(),
+        status: post?.status || "draft",
         seoTitle: title,
         seoDescription: description,
+        headings: [],
       });
     } catch (error) {
       toast({
@@ -64,6 +76,20 @@ export default function EditPost() {
     return <div>Loading...</div>;
   }
 
+  const defaultValues: Partial<InsertBlogPost> = isNew
+    ? {
+        title: "",
+        content: "",
+        keywords: [""],
+        affiliateLinks: [{ name: "", url: "" }],
+        scheduledDate: new Date(),
+        status: "draft",
+        seoTitle: "",
+        seoDescription: "",
+        headings: [],
+      }
+    : post;
+
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-8">
@@ -72,14 +98,14 @@ export default function EditPost() {
 
       <div className="grid gap-8">
         <BlogForm
-          defaultValues={post}
+          defaultValues={defaultValues}
           onSubmit={(data) => updatePost.mutate(data)}
           isLoading={updatePost.isPending}
         />
 
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Content</h2>
-          
+
           <div className="flex gap-4 mb-4">
             <Button
               onClick={() => generateAIContent(post?.keywords || [])}
@@ -93,7 +119,7 @@ export default function EditPost() {
             placeholder="SEO Title"
             value={post?.seoTitle || ""}
             onChange={(e) =>
-              updatePost.mutate({ ...post!, seoTitle: e.target.value })
+              updatePost.mutate({ ...defaultValues, seoTitle: e.target.value })
             }
           />
 
@@ -101,13 +127,13 @@ export default function EditPost() {
             placeholder="SEO Description"
             value={post?.seoDescription || ""}
             onChange={(e) =>
-              updatePost.mutate({ ...post!, seoDescription: e.target.value })
+              updatePost.mutate({ ...defaultValues, seoDescription: e.target.value })
             }
           />
 
           <RichEditor
             value={post?.content || ""}
-            onChange={(content) => updatePost.mutate({ ...post!, content })}
+            onChange={(content) => updatePost.mutate({ ...defaultValues, content })}
           />
         </div>
       </div>
