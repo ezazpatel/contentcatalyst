@@ -52,61 +52,81 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/generate", async (req, res) => {
+  app.post("/api/wordpress/publish-all", async (_req, res) => {
     try {
-      const { keywords, type } = req.body;
-
-      // Import OpenAI
-      const OpenAI = require('openai');
-
-      // Initialize the OpenAI client
-      const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY
-      });
-
-      let prompt = "";
-
-      // Define prompt based on generation type
-      if (type === "content") {
-        prompt = `
-Write a blog post about "${keywords.join(", ")}".
-The content should be formatted in Markdown, with appropriate headings, paragraphs, and emphasis.
-The post should be informative, engaging, and around 400-500 words.
-Include an introduction, 2-3 main sections, and a conclusion.
-`;
-      } else if (type === "title") {
-        prompt = `
-Create an SEO-friendly title for a blog post about "${keywords.join(", ")}".
-The title should be catchy, include the main keyword, and be under 60 characters.
-`;
-      } else if (type === "description") {
-        prompt = `
-Write a meta description for a blog post about "${keywords.join(", ")}".
-The description should be engaging, include the main keyword, and be under 160 characters.
-`;
+      if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN) {
+        throw new Error('WordPress credentials are not configured');
       }
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful assistant that generates blog content."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
+      // Get all unpublished posts
+      const posts = await storage.getAllBlogPosts();
+      const unpublishedPosts = posts.filter(post => post.status !== "published");
+
+      if (unpublishedPosts.length === 0) {
+        return res.json({ message: "No unpublished posts found" });
+      }
+
+      // Start the publishing process
+      console.log(`Starting to publish ${unpublishedPosts.length} posts...`);
+
+      // We'll return immediately but continue processing
+      res.json({ 
+        message: `Started publishing ${unpublishedPosts.length} posts. Check logs for progress.`,
+        totalPosts: unpublishedPosts.length
       });
 
-      const content = response.choices[0].message.content || "Sorry, I couldn't generate content.";
-      res.json({ content });
+      // Process posts with delay
+      for (const post of unpublishedPosts) {
+        try {
+          // Create Basic Auth token from application password
+          const authToken = Buffer.from(`admin:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+
+          const apiUrl = process.env.WORDPRESS_API_URL;
+          const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
+
+          console.log(`Publishing post ${post.id}: ${post.title}`);
+
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Basic ${authToken}`
+            },
+            body: JSON.stringify({
+              title: { raw: post.title },
+              content: { raw: post.content },
+              status: 'publish',
+              excerpt: { raw: post.excerpt || '' },
+              meta: {
+                _yoast_wpseo_metadesc: post.seoDescription || '',
+                _yoast_wpseo_title: post.seoTitle || '',
+              },
+            })
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`WordPress API error: ${response.statusText} - ${errorText}`);
+          }
+
+          const result = await response.json();
+          console.log(`Successfully published post ${post.id} to WordPress: ${result.link}`);
+
+          // Update post status in our database
+          await storage.updateBlogPost(post.id, { status: "published" });
+
+          // Wait for 2 minutes before publishing the next post
+          await new Promise(resolve => setTimeout(resolve, 120000));
+        } catch (error) {
+          console.error(`Failed to publish post ${post.id}:`, error);
+          // Continue with next post even if this one failed
+        }
+      }
+
+      console.log('Finished publishing all posts');
     } catch (error) {
-      console.error("Error calling OpenAI API:", error);
-      res.status(500).json({ message: "Failed to generate content. Please try again." });
+      console.error('Error in publish-all process:', error);
+      // Note: We don't send this error to the client as we've already sent a response
     }
   });
 
