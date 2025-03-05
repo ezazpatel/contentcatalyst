@@ -107,28 +107,52 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
           <div className="flex gap-4 items-center">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline">
+                <Button 
+                  variant="outline"
+                  className={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
+                    ? "" 
+                    : "border-red-500"}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {format(form.watch("scheduledDate"), "PPP")}
+                  {form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime())
+                    ? format(form.watch("scheduledDate"), "PPP")
+                    : "Select a date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
-                  selected={form.watch("scheduledDate")}
-                  onSelect={(date) => form.setValue("scheduledDate", date!)}
+                  selected={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
+                    ? form.watch("scheduledDate") 
+                    : new Date()}
+                  onSelect={(date) => form.setValue("scheduledDate", date || new Date())}
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
             <Input
               type="time"
-              value={format(form.watch("scheduledDate"), "HH:mm")}
+              value={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
+                ? format(form.watch("scheduledDate"), "HH:mm") 
+                : "00:00"}
+              className={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
+                ? "" 
+                : "border-red-500"}
               onChange={(e) => {
-                const [hours, minutes] = e.target.value.split(":");
-                const date = form.watch("scheduledDate");
-                date.setHours(parseInt(hours), parseInt(minutes));
-                form.setValue("scheduledDate", date);
+                try {
+                  const [hours, minutes] = e.target.value.split(":");
+                  const date = new Date(form.watch("scheduledDate"));
+                  if (date instanceof Date && !isNaN(date.getTime())) {
+                    date.setHours(parseInt(hours), parseInt(minutes));
+                    form.setValue("scheduledDate", date);
+                  } else {
+                    // If current date is invalid, create a new valid date
+                    const newDate = new Date();
+                    newDate.setHours(parseInt(hours), parseInt(minutes));
+                    form.setValue("scheduledDate", newDate);
+                  }
+                } catch (err) {
+                  console.error("Invalid time format:", err);
+                }
               }}
             />
           </div>
