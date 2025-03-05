@@ -149,11 +149,15 @@ export async function registerRoutes(app: Express) {
         excerpt: req.body.excerpt ? req.body.excerpt.substring(0, 100) + '...' : 'No excerpt'
       });
 
+      // Log the authorization header (without the actual token)
+      console.log('Using Authorization header:', 'Basic ' + '*'.repeat(20));
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${authToken}`
+          'Authorization': `Basic ${authToken}`,
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           title: { raw: req.body.title },
