@@ -7,7 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Plus, Trash } from "lucide-react";
 import { insertBlogPostSchema, type InsertBlogPost } from "@shared/schema";
-import { format } from "date-fns";
+import { format, isBefore, startOfMinute } from "date-fns";
 
 interface BlogFormProps {
   defaultValues?: Partial<InsertBlogPost>;
@@ -26,6 +26,13 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
       ...defaultValues,
     },
   });
+
+  const isDateValid = (date: Date) => {
+    const now = startOfMinute(new Date());
+    return !isBefore(date, now);
+  };
+
+  const isFormDateValid = isDateValid(form.watch("scheduledDate"));
 
   return (
     <Form {...form}>
@@ -118,9 +125,7 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
               <PopoverTrigger asChild>
                 <Button 
                   variant="outline"
-                  className={`w-full sm:w-auto ${form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
-                    ? "" 
-                    : "border-red-500"}`}>
+                  className={`w-full sm:w-auto ${!isFormDateValid ? "border-red-500" : ""}`}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime())
                     ? format(form.watch("scheduledDate"), "PPP")
@@ -130,11 +135,15 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
-                    ? form.watch("scheduledDate") 
-                    : new Date()}
-                  onSelect={(date) => form.setValue("scheduledDate", date || new Date())}
+                  selected={form.watch("scheduledDate")}
+                  onSelect={(date) => {
+                    const currentDate = form.watch("scheduledDate");
+                    const newDate = date || new Date();
+                    newDate.setHours(currentDate.getHours(), currentDate.getMinutes());
+                    form.setValue("scheduledDate", newDate);
+                  }}
                   initialFocus
+                  disabled={(date) => isBefore(date, startOfMinute(new Date()))}
                 />
               </PopoverContent>
             </Popover>
@@ -143,30 +152,31 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
               value={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
                 ? format(form.watch("scheduledDate"), "HH:mm") 
                 : "00:00"}
-              className={`w-full sm:w-auto ${form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
-                ? "" 
-                : "border-red-500"}`}
+              className={`w-full sm:w-auto ${!isFormDateValid ? "border-red-500" : ""}`}
               onChange={(e) => {
                 try {
                   const [hours, minutes] = e.target.value.split(":");
-                  const date = new Date(form.watch("scheduledDate"));
-                  if (date instanceof Date && !isNaN(date.getTime())) {
-                    date.setHours(parseInt(hours), parseInt(minutes));
-                    form.setValue("scheduledDate", date);
-                  } else {
-                    const newDate = new Date();
-                    newDate.setHours(parseInt(hours), parseInt(minutes));
-                    form.setValue("scheduledDate", newDate);
-                  }
+                  const newDate = new Date(form.watch("scheduledDate"));
+                  newDate.setHours(parseInt(hours), parseInt(minutes));
+                  form.setValue("scheduledDate", newDate);
                 } catch (err) {
                   console.error("Invalid time format:", err);
                 }
               }}
             />
           </div>
+          {!isFormDateValid && (
+            <p className="text-sm text-red-500">
+              Please select a future date and time
+            </p>
+          )}
         </div>
 
-        <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+        <Button 
+          type="submit" 
+          disabled={isLoading || !isFormDateValid}
+          className="w-full sm:w-auto"
+        >
           {isLoading ? "Adding..." : "Add Post"}
         </Button>
       </form>

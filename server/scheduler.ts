@@ -14,9 +14,9 @@ async function generateContent(keywords: string[]): Promise<{
   description: string;
   seoMetaDescription: string;
 }> {
-  // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+  // Use o1-mini model for all OpenAI API calls
   const response = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "o1-mini",
     messages: [
       {
         role: "system",
