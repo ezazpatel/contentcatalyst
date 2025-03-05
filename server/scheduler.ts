@@ -12,7 +12,6 @@ async function generateContent(keywords: string[]): Promise<{
   content: string;
   title: string;
   description: string;
-  seoMetaDescription: string;
 }> {
   // Use o1-mini model for all OpenAI API calls
   const response = await openai.chat.completions.create({
@@ -20,16 +19,21 @@ async function generateContent(keywords: string[]): Promise<{
     messages: [
       {
         role: "system",
-        content: "You are a professional blog content writer and SEO expert. Generate a blog post and SEO metadata based on the provided keywords."
+        content: "You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others."
       },
       {
         role: "user",
-        content: `Write a blog post about ${keywords.join(", ")}. Include:
-1. A catchy title
-2. Main content (in markdown format)
-3. A meta description for search results (max 155 characters)
-4. A longer SEO-optimized description (max 320 characters) for Yoast SEO
-Respond in JSON format with 'title', 'content', 'description' (short), and 'seoMetaDescription' (long) fields.`
+        content: `Generate a blog post and SEO metadata for the keyword phrase provided. Write in a friendly, conversational tone.
+
+For the keyword phrase: ${keywords.join(", ")}
+
+Requirements:
+- A catchy title that naturally includes the keyword. Something the viewer cannot help but click.
+- Main content in markdown format (2000-3000 words) with clear headings and subheadings.
+- Include affiliate links naturally within the content where relevant.
+- A meta description (max 155 characters) for search results.
+
+Respond strictly in JSON format with exactly these fields: 'title', 'content', 'description' (short). Do not include any extra text outside of this JSON.`
       }
     ],
     response_format: { type: "json_object" }
@@ -38,8 +42,7 @@ Respond in JSON format with 'title', 'content', 'description' (short), and 'seoM
   return response.choices[0].message.content ? JSON.parse(response.choices[0].message.content) : {
     title: "",
     content: "",
-    description: "",
-    seoMetaDescription: ""
+    description: ""
   };
 }
 
@@ -67,7 +70,7 @@ export async function checkScheduledPosts() {
         const updatedPost = await storage.updateBlogPost(post.id, {
           title: generated.title,
           content: generated.content,
-          seoDescription: generated.seoMetaDescription,
+          seoDescription: generated.description,
           status: 'published'
         });
 
