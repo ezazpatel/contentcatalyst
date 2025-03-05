@@ -200,5 +200,59 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.post("/api/wordpress/test", async (_req, res) => {
+    try {
+      if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN) {
+        throw new Error('WordPress credentials are not configured');
+      }
+
+      // Create Basic Auth token
+      const authToken = Buffer.from(`admin:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+
+      const apiUrl = process.env.WORDPRESS_API_URL;
+      const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
+
+      console.log('Testing WordPress API connection...');
+      console.log('Endpoint:', endpoint);
+      console.log('Auth Header:', `Basic ${authToken.substring(0, 5)}...`);
+
+      // First, try to get posts to verify authentication
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${authToken}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      const responseData = await response.text();
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('Response body:', responseData);
+
+      if (!response.ok) {
+        throw new Error(`WordPress API error: ${response.statusText} - ${responseData}`);
+      }
+
+      res.json({
+        status: 'success',
+        message: 'WordPress API connection successful',
+        data: JSON.parse(responseData)
+      });
+    } catch (error) {
+      console.error('Error testing WordPress connection:', error);
+      res.status(500).json({ 
+        message: 'Failed to connect to WordPress', 
+        error: error.message,
+        details: `Please verify:
+1. WORDPRESS_API_URL is correct and ends with /wp-json
+2. Application password is correctly formatted
+3. WordPress user has administrator privileges
+4. REST API is enabled in WordPress`
+      });
+    }
+  });
+
   return httpServer;
 }
