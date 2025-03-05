@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { BlogPost } from "@shared/schema";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -20,7 +19,7 @@ export default function KeywordsList() {
   });
 
   if (isLoading) {
-    return <div className="container mx-auto px-4 py-8">Loading...</div>;
+    return <div>Loading...</div>;
   }
 
   // Create a map of keywords to their associated posts
@@ -45,96 +44,65 @@ export default function KeywordsList() {
   return (
     <div>
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold">Manage Keywords</h1>
-          <div className="w-full sm:w-auto">
+      <div className="container mx-auto py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Manage Keywords</h1>
+          <div className="flex space-x-4">
             <Link href="/new">
-              <Button className="w-full sm:w-auto">New Post</Button>
+              <Button>New Post</Button>
             </Link>
           </div>
         </div>
 
-        <div className="rounded-md border overflow-x-auto">
-          <ScrollArea className="w-full overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[120px]">Keyword</TableHead>
-                  <TableHead className="min-w-[100px]">Status</TableHead>
-                  <TableHead className="min-w-[180px] hidden sm:table-cell">Date</TableHead>
-                  <TableHead className="min-w-[200px] hidden md:table-cell">Blog Title</TableHead>
-                  <TableHead className="min-w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {keywords.map((entry) => {
-                  const isPublished = entry.status === "published";
-                  const isScheduled = !isPublished && entry.publishDate && entry.publishDate > now;
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Keyword</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Blog Title</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {keywords.map((entry) => {
+              const isPublished = entry.status === "published";
+              const isScheduled = !isPublished && entry.publishDate && entry.publishDate > now;
 
-                  return (
-                    <TableRow key={entry.keyword}>
-                      <TableCell className="font-medium">
-                        <div className="flex flex-col">
-                          <span>{entry.keyword}</span>
-                          <div className="flex items-center gap-1 mt-1">
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs ${
-                                isPublished
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-blue-100 text-blue-800"
-                              }`}
-                            >
-                              {isPublished ? "Published" : isScheduled ? "Scheduled" : "Draft"}
-                            </span>
-                          </div>
-                          <span className="text-xs text-muted-foreground mt-1">
-                            {entry.publishDate ? format(entry.publishDate, "P") : "Not set"}
-                          </span>
-                          <span className="text-xs text-muted-foreground mt-1">
-                            {entry.blogTitle || "Not created"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            isPublished
-                              ? "bg-green-100 text-green-800"
-                              : "bg-blue-100 text-blue-800"
-                          }`}
-                        >
-                          {isPublished ? "Published" : isScheduled ? "Scheduled" : "Draft"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        {entry.publishDate ? format(entry.publishDate, "PPP 'at' p") : "Not set"}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {entry.blogTitle || "Not created"}
-                      </TableCell>
-                      <TableCell>
-                        {entry.blogId ? (
-                          <Link href={`/view/${entry.blogId}`}>
-                            <Button variant="outline" size="sm" className="w-full">
-                              View Post
-                            </Button>
-                          </Link>
-                        ) : (
-                          <Link href="/">
-                            <Button variant="outline" size="sm" className="w-full">
-                              Create Post
-                            </Button>
-                          </Link>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </ScrollArea>
-        </div>
+              return (
+                <TableRow key={entry.keyword}>
+                  <TableCell>{entry.keyword}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        isPublished
+                          ? "bg-green-100 text-green-800"
+                          : "bg-blue-100 text-blue-800"
+                      }`}
+                    >
+                      {isPublished ? "Published" : isScheduled ? "Scheduled" : "Draft"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {entry.publishDate ? format(entry.publishDate, "PPP 'at' p") : "Not set"}
+                  </TableCell>
+                  <TableCell>{entry.blogTitle || "Not created"}</TableCell>
+                  <TableCell>
+                    {entry.blogId ? (
+                      <Link href={`/view/${entry.blogId}`}>
+                        <Button variant="outline" size="sm">View Post</Button>
+                      </Link>
+                    ) : (
+                      <Link href="/">
+                        <Button variant="outline" size="sm">Create Post</Button>
+                      </Link>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

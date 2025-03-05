@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { Button } from "../components/ui/button";
-import { useToast } from "../hooks/use-toast";
-import { apiRequest } from "../lib/queryClient";
-import { RichEditor } from "../components/rich-editor";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { RichEditor } from "@/components/rich-editor";
 import type { BlogPost } from "@shared/schema";
 import { Navbar } from "@/components/navbar";
 
@@ -76,36 +76,34 @@ export default function Editor() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen"> {/* Added flexbox for layout */}
+    <div>
       <Navbar />
-      <div className="container mx-auto py-8 px-4 flex-grow"> {/* Added padding and flex-grow */}
-        <h1 className="text-3xl font-bold mb-8 text-center sm:text-left">Edit Post</h1> {/* Centered title for smaller screens */}
-        <div className="w-full max-w-3xl mx-auto"> {/* Contained width for better responsiveness */}
-          <RichEditor
-            title={post.title}
-            content={post.content}
-            seoTitle={post.seoTitle || ""}
-            seoDescription={post.seoDescription || ""}
-            metaTags={post.metaTags || []}
-            slug={post.slug || ""}
-            onTitleChange={(title) => updatePost.mutate({ title })}
-            onContentChange={(content) => updatePost.mutate({ content })}
-            onSEOTitleChange={(seoTitle) => updatePost.mutate({ seoTitle })}
-            onSEODescriptionChange={(seoDescription) => updatePost.mutate({ seoDescription })}
-            onMetaTagsChange={(metaTags) => updatePost.mutate({ metaTags })}
-            onSlugChange={(slug) => updatePost.mutate({ slug })}
-          />
+      <div className="container mx-auto py-8">
+        <h1 className="text-3xl font-bold mb-8">Edit Post</h1>
+        <RichEditor
+          title={post.title}
+          content={post.content}
+          seoTitle={post.seoTitle || ""}
+          seoDescription={post.seoDescription || ""}
+          metaTags={post.metaTags || []}
+          slug={post.slug || ""}
+          onTitleChange={(title) => updatePost.mutate({ title })}
+          onContentChange={(content) => updatePost.mutate({ content })}
+          onSEOTitleChange={(seoTitle) => updatePost.mutate({ seoTitle })}
+          onSEODescriptionChange={(seoDescription) => updatePost.mutate({ seoDescription })}
+          onMetaTagsChange={(metaTags) => updatePost.mutate({ metaTags })}
+          onSlugChange={(slug) => updatePost.mutate({ slug })}
+        />
 
-          <div className="mt-8 flex flex-wrap gap-4 justify-center sm:justify-start"> {/* Responsive button placement */}
-            <Button onClick={() => (window.location.href = "/blogs")}>Back to Posts</Button>
-            <Button
-              variant="destructive"
-              onClick={() => publishToWordPress.mutate()}
-              disabled={publishToWordPress.isPending}
-            >
-              {publishToWordPress.isPending ? "Publishing..." : "Publish to WordPress"}
-            </Button>
-          </div>
+        <div className="mt-8 flex gap-4">
+          <Button onClick={() => navigate("/blogs")}>Back to Posts</Button>
+          <Button 
+            variant="destructive" 
+            onClick={() => publishToWordPress.mutate()}
+            disabled={publishToWordPress.isPending}
+          >
+            {publishToWordPress.isPending ? "Publishing..." : "Publish to WordPress"}
+          </Button>
         </div>
       </div>
     </div>
