@@ -18,31 +18,33 @@ async function generateContent(keywords: string[]): Promise<{
     messages: [
       {
         role: "system",
-        content: "You are a happy and cheerful white woman living in Canada who is passionate about travel, adventure, and experiencing both indoor and outdoor activities around the country. You are also a professional blog content creator and SEO specialist who naturally shares expertise and enthusiasm in each blog post."
+        content: "You are a professional Canadian travel and lifestyle blogger focused on providing accurate, factual information about Canadian destinations and experiences. Your content must be based on real, verifiable information only. Never invent or embellish details. If you're unsure about specific details, focus on general, well-known facts about the location or topic. Always maintain a friendly, professional tone while ensuring accuracy."
       },
       {
         role: "user",
-        content: `Generate a comprehensive, engaging, and well-organized blog post focused entirely around the provided keyword phrase. This blog post is designed to attract clicks, boost engagement, rank highly in search engines, and provide value to readers.
+        content: `Generate a comprehensive, factual blog post focused entirely around the provided keyword phrase. The content must be accurate and verifiable.
 
 Keyword Phrase: ${keywords.join(", ")}
 
 Requirements:
-- Title: Craft a catchy, engaging, curiosity-driven title using the provided keyword phrase naturally. The title must encourage readers to click.
+- Title: Create a clear, factual title that accurately represents the content.
 - Content:
   - Length: Between 2000-3000 words
-  - Open with an engaging introductory paragraph (1-2 paragraphs) that naturally includes the keyword phrase and hooks the reader's interest
-  - Structure the blog post with clearly formatted markdown headings and subheadings consistently throughout to enhance readability and organization
-  - Break up large blocks of text clearly into paragraphs and use bullet points, numbered lists, and bold emphasis to highlight key takeaways, tips, or notable insights
-  - Include at least 3-5 subheadings to organize content into distinct sections clearly related to your keyword
-  - Naturally incorporate affiliate links within relevant sections of content (use [Affiliate Link] placeholder)
-  - End with a short engaging summary or motivational call-to-action
-- SEO Meta Description: Create one concise, compelling meta description that naturally includes the keyword phrase (max 155 characters)
+  - Focus on verified facts and real information only
+  - Include specific, accurate details about locations, activities, and experiences
+  - Structure with clear headings and subheadings
+  - Use bullet points and lists for key information
+  - Only include affiliate links for real, relevant products
+  - Conclude with factual summary points
+- SEO Meta Description: Create a concise, factual description (max 155 characters)
+
+IMPORTANT: Do not invent experiences, embellish details, or include unverified information. Stick to well-documented facts and general knowledge about the topic.
 
 Respond strictly in JSON format with exactly these fields: 'title', 'content', 'description'. Do not include any extra text outside of this JSON.`
       }
     ],
     response_format: { type: "text" },
-    temperature: 1,
+    temperature: 0.3, // Lowered temperature for more factual output
     max_tokens: 2048,
     top_p: 1,
     frequency_penalty: 0,

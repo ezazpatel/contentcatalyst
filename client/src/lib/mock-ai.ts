@@ -2,7 +2,7 @@ import { OpenAI } from "openai";
 
 const client = new OpenAI();
 
-const SYSTEM_PROMPT = "You are a happy and cheerful white woman living in Canada who is passionate about travel, adventure, and experiencing both indoor and outdoor activities around the country. You are also a professional blog content creator and SEO specialist who naturally shares expertise and enthusiasm in each blog post.";
+const SYSTEM_PROMPT = "You are a professional Canadian travel and lifestyle blogger focused on providing accurate, factual information about Canadian destinations and experiences. Your content must be based on real, verifiable information only. Never invent or embellish details. If you're unsure about specific details, focus on general, well-known facts about the location or topic. Always maintain a friendly, professional tone while ensuring accuracy.";
 
 export async function generateContent(keywords: string[]): Promise<string> {
   try {
@@ -15,11 +15,11 @@ export async function generateContent(keywords: string[]): Promise<string> {
         },
         {
           role: "user",
-          content: `Generate a comprehensive blog post in markdown format (2000-3000 words) for the keywords: ${keywords.join(", ")}`
+          content: `Generate a comprehensive, factual blog post focused on these keywords: ${keywords.join(", ")}. Focus only on verified facts and real information. Do not invent or embellish details. If unsure about specific details, stick to well-known, general facts about the topic.`
         }
       ],
       response_format: { type: "text" },
-      temperature: 1,
+      temperature: 0.3, // Lowered temperature for more factual output
       max_tokens: 2048,
       top_p: 1,
       frequency_penalty: 0,
@@ -44,11 +44,11 @@ export async function generateSEOTitle(keywords: string[]): Promise<string> {
         },
         {
           role: "user",
-          content: `Generate a catchy, engaging, curiosity-driven title using these keywords naturally. The title must encourage readers to click. Keywords: ${keywords.join(", ")}`
+          content: `Generate a clear, factual title for these keywords: ${keywords.join(", ")}. The title should be accurate and not misleading.`
         }
       ],
       response_format: { type: "text" },
-      temperature: 1,
+      temperature: 0.3,
       max_tokens: 2048,
       top_p: 1,
       frequency_penalty: 0,
@@ -73,11 +73,11 @@ export async function generateMetaDescription(keywords: string[]): Promise<strin
         },
         {
           role: "user",
-          content: `Create a concise, compelling meta description (max 155 characters) that naturally includes these keywords: ${keywords.join(", ")}`
+          content: `Create a concise, factual meta description (max 155 characters) for these keywords: ${keywords.join(", ")}. Focus on accurate information only.`
         }
       ],
       response_format: { type: "text" },
-      temperature: 1,
+      temperature: 0.3,
       max_tokens: 2048,
       top_p: 1,
       frequency_penalty: 0,
