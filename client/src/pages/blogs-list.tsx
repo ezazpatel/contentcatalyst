@@ -7,10 +7,8 @@ import {
   CardContent, 
   CardHeader, 
   CardTitle,
-  CardFooter
 } from "@/components/ui/card";
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
 
 export default function BlogsList() {
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
@@ -28,7 +26,7 @@ export default function BlogsList() {
         <h1 className="text-3xl font-bold mb-8">Blog Posts</h1>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {posts?.map((post) => (
-            <Link key={post.id} href={`/edit/${post.id}`}>
+            <Link key={post.id} href={`/view/${post.id}`}>
               <Card className="cursor-pointer hover:bg-accent h-full">
                 <CardHeader>
                   <div className="text-sm text-muted-foreground mb-2">
@@ -44,9 +42,6 @@ export default function BlogsList() {
                     {post.status === "published" ? "Published" : "Scheduled"}: {format(new Date(post.scheduledDate), "PPP")}
                   </div>
                 </CardContent>
-                <CardFooter>
-                  <Button>Edit Post</Button>
-                </CardFooter>
               </Card>
             </Link>
           ))}

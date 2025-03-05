@@ -22,6 +22,25 @@ export default function KeywordsList() {
     return <div>Loading...</div>;
   }
 
+  // Create a map of keywords to their associated posts
+  const keywordMap = new Map();
+  posts?.forEach((post) => {
+    post.keywords.forEach((keyword) => {
+      if (!keywordMap.has(keyword)) {
+        keywordMap.set(keyword, {
+          keyword,
+          status: post.status,
+          publishDate: new Date(post.scheduledDate),
+          blogTitle: post.title,
+          blogId: post.id,
+        });
+      }
+    });
+  });
+
+  const keywords = Array.from(keywordMap.values());
+  const now = new Date();
+
   return (
     <div>
       <Navbar />
@@ -32,55 +51,56 @@ export default function KeywordsList() {
             <Link href="/new">
               <Button>New Post</Button>
             </Link>
-            {posts && posts.length > 0 && (
-              <Link href={`/edit/${posts[0].id}`}>
-                <Button variant="outline">Edit Latest Post</Button>
-              </Link>
-            )}
           </div>
         </div>
 
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Keywords</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Scheduled Date</TableHead>
+              <TableHead>Keyword</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Blog Title</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {posts?.map((post) => (
-              <TableRow key={post.id}>
-                <TableCell>{post.keywords.join(", ")}</TableCell>
-                <TableCell>{post.title || "Untitled"}</TableCell>
-                <TableCell>
-                  {format(new Date(post.scheduledDate), "PPP")}
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      post.status === "published"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-blue-100 text-blue-800"
-                    }`}
-                  >
-                    {post.status}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Link href={`/view/${post.id}`}>
-                      <Button variant="outline" size="sm">View Post</Button>
-                    </Link>
-                    <Link href={`/edit/${post.id}`}>
-                      <Button variant="secondary" size="sm">Edit Post</Button>
-                    </Link>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {keywords.map((entry) => {
+              const isPublished = entry.status === "published";
+              const isScheduled = !isPublished && entry.publishDate && entry.publishDate > now;
+
+              return (
+                <TableRow key={entry.keyword}>
+                  <TableCell>{entry.keyword}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        isPublished
+                          ? "bg-green-100 text-green-800"
+                          : "bg-blue-100 text-blue-800"
+                      }`}
+                    >
+                      {isPublished ? "Published" : isScheduled ? "Scheduled" : "Draft"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {entry.publishDate ? format(entry.publishDate, "PPP 'at' p") : "Not set"}
+                  </TableCell>
+                  <TableCell>{entry.blogTitle || "Not created"}</TableCell>
+                  <TableCell>
+                    {entry.blogId ? (
+                      <Link href={`/view/${entry.blogId}`}>
+                        <Button variant="outline" size="sm">View Post</Button>
+                      </Link>
+                    ) : (
+                      <Link href="/">
+                        <Button variant="outline" size="sm">Create Post</Button>
+                      </Link>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

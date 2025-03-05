@@ -1,16 +1,78 @@
-
-import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
+import { BlogPost } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Navbar } from "@/components/navbar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from "date-fns";
 
 export default function ViewPost() {
   const [, params] = useRoute<{ id: string }>("/view/:id");
   const [, navigate] = useLocation();
+  const postId = params?.id ? parseInt(params.id) : null;
 
-  useEffect(() => {
-    if (params?.id) {
-      navigate(`/edit/${params.id}`);
-    }
-  }, [params?.id, navigate]);
+  if (!postId) {
+    navigate("/blogs");
+    return null;
+  }
 
-  return <div>Redirecting to editor...</div>;
+  const { data: post, isLoading } = useQuery<BlogPost>({
+    queryKey: [`/api/posts/${postId}`],
+  });
+
+  if (isLoading) {
+    return <div className="container mx-auto py-8">Loading...</div>;
+  }
+
+  if (!post) {
+    return <div className="container mx-auto py-8">Post not found. <Button onClick={() => navigate("/blogs")}>Back to Posts</Button></div>;
+  }
+
+  return (
+    <div>
+      <Navbar />
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-sm text-muted-foreground mb-2">
+                  Keywords: {post.keywords.join(", ")}
+                </div>
+                <CardTitle className="text-3xl">{post.title}</CardTitle>
+              </div>
+              <Button variant="outline" onClick={() => navigate("/blogs")}>
+                Back to Posts
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="prose prose-sm max-w-none">
+              <div dangerouslySetInnerHTML={{ __html: post.content }} />
+            </div>
+
+            {post.affiliateLinks.length > 0 && (
+              <div className="mt-8 border-t pt-4">
+                <h3 className="text-lg font-medium mb-2">Related Links</h3>
+                <ul className="list-disc pl-5">
+                  {post.affiliateLinks.map((link, index) => (
+                    <li key={index}>
+                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {link.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="mt-8 text-sm text-muted-foreground">
+              <p>Status: {post.status}</p>
+              <p>Scheduled: {format(new Date(post.scheduledDate), "PPP")}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 }
