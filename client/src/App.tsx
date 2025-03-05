@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { Router, Route, Link, Switch as Routes } from "wouter";
 import Dashboard from "@/pages/dashboard";
 import KeywordsList from "@/pages/keywords-list";
 import BlogsList from "@/pages/blogs-list";
