@@ -40,7 +40,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 sm:grid-cols-1"> {/*Added responsiveness*/}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {posts?.map((post) => (
           <Link key={post.id} href={`/edit/${post.id}`}>
             <Card className="cursor-pointer hover:bg-accent">
