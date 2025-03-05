@@ -1,7 +1,8 @@
 import { OpenAI } from "openai";
-import { apiRequest } from "@/lib/queryClient";
 
 const client = new OpenAI();
+
+const SYSTEM_PROMPT = "You are a happy and cheerful white woman living in Canada who is passionate about travel, adventure, and experiencing both indoor and outdoor activities around the country. You are also a professional blog content creator and SEO specialist who naturally shares expertise and enthusiasm in each blog post.";
 
 export async function generateContent(keywords: string[]): Promise<string> {
   try {
@@ -10,11 +11,11 @@ export async function generateContent(keywords: string[]): Promise<string> {
       messages: [
         {
           role: "system",
-          content: "You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others."
+          content: SYSTEM_PROMPT
         },
         {
           role: "user",
-          content: `Generate blog content for the keywords: ${keywords.join(", ")}`
+          content: `Generate a comprehensive blog post in markdown format (2000-3000 words) for the keywords: ${keywords.join(", ")}`
         }
       ],
       response_format: { type: "text" },
@@ -39,11 +40,11 @@ export async function generateSEOTitle(keywords: string[]): Promise<string> {
       messages: [
         {
           role: "system",
-          content: "You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others."
+          content: SYSTEM_PROMPT
         },
         {
           role: "user",
-          content: `Generate a catchy SEO title for the keywords: ${keywords.join(", ")}`
+          content: `Generate a catchy, engaging, curiosity-driven title using these keywords naturally. The title must encourage readers to click. Keywords: ${keywords.join(", ")}`
         }
       ],
       response_format: { type: "text" },
@@ -68,11 +69,11 @@ export async function generateMetaDescription(keywords: string[]): Promise<strin
       messages: [
         {
           role: "system",
-          content: "You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others."
+          content: SYSTEM_PROMPT
         },
         {
           role: "user",
-          content: `Generate a meta description (max 155 characters) for the keywords: ${keywords.join(", ")}`
+          content: `Create a concise, compelling meta description (max 155 characters) that naturally includes these keywords: ${keywords.join(", ")}`
         }
       ],
       response_format: { type: "text" },
