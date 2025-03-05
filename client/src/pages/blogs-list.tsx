@@ -24,7 +24,7 @@ export default function BlogsList() {
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-2xl sm:text-3xl font-bold mb-8">Blog Posts</h1>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3"> {/* Added md breakpoint for better tablet responsiveness */}
           {posts?.map((post) => (
             <Link key={post.id} href={`/view/${post.id}`}>
               <Card className="cursor-pointer hover:bg-accent h-full transition-colors">

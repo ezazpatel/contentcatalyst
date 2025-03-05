@@ -39,7 +39,7 @@ export default function ViewPost() {
                 <div className="text-sm text-muted-foreground">
                   Keywords: {post.keywords.join(", ")}
                 </div>
-                <CardTitle className="text-2xl sm:text-3xl">{post.title}</CardTitle>
+                <CardTitle className="text-xl sm:text-2xl md:text-3xl">{post.title}</CardTitle> {/* Added responsiveness */}
               </div>
               <Button variant="outline" onClick={() => navigate("/blogs")} className="shrink-0">
                 Back to Posts
@@ -47,7 +47,7 @@ export default function ViewPost() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm sm:prose-base lg:prose-lg max-w-none">
+            <div className="prose prose-sm sm:prose-base lg:prose-lg max-w-none"> {/* Added responsiveness */}
               <div dangerouslySetInnerHTML={{ __html: post.content }} />
             </div>
 
