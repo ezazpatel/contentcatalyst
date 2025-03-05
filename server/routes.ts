@@ -263,5 +263,75 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.post("/api/posts/:id/regenerate", async (req, res) => {
+    try {
+      // Get the post to regenerate
+      const post = await storage.getBlogPost(Number(req.params.id));
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      // Generate new content using OpenAI
+      const generated = await generateContent(post.keywords);
+
+      // Update the post with new content
+      const updatedPost = await storage.updateBlogPost(post.id, {
+        title: generated.title,
+        content: generated.content,
+        seoDescription: generated.description,
+        status: 'published'
+      });
+
+      // Publish to WordPress
+      if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN || !process.env.WORDPRESS_USERNAME) {
+        throw new Error('WordPress credentials are not configured');
+      }
+
+      const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+      const apiUrl = process.env.WORDPRESS_API_URL;
+      const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${authToken}`,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          title: { raw: updatedPost.title },
+          content: { raw: updatedPost.content },
+          status: 'publish',
+          excerpt: { raw: updatedPost.excerpt || '' },
+          meta: {
+            _yoast_wpseo_metadesc: updatedPost.seoDescription || '',
+            _yoast_wpseo_title: updatedPost.seoTitle || '',
+            _yoast_wpseo_focuskw: updatedPost.keywords?.join(', ') || '',
+          },
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`WordPress API error: ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json();
+
+      res.json({
+        message: "Post regenerated and published successfully",
+        post: updatedPost,
+        wordpressUrl: result.link
+      });
+
+    } catch (error) {
+      console.error('Error regenerating post:', error);
+      res.status(500).json({ 
+        message: 'Failed to regenerate post', 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   return httpServer;
 }
