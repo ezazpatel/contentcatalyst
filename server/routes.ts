@@ -132,12 +132,12 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/wordpress/publish", async (req, res) => {
     try {
-      if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN) {
-        throw new Error('WordPress credentials are not configured. Please set WORDPRESS_API_URL and WORDPRESS_AUTH_TOKEN environment variables.');
+      if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN || !process.env.WORDPRESS_USERNAME) {
+        throw new Error('WordPress credentials are not configured. Please set WORDPRESS_API_URL, WORDPRESS_USERNAME, and WORDPRESS_AUTH_TOKEN environment variables.');
       }
 
-      // Create Basic Auth token from application password
-      const authToken = Buffer.from(`admin:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+      // Create Basic Auth token from username and application password
+      const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
 
       const apiUrl = process.env.WORDPRESS_API_URL;
       const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
@@ -151,6 +151,7 @@ export async function registerRoutes(app: Express) {
 
       // Log the authorization header (without the actual token)
       console.log('Using Authorization header:', 'Basic ' + '*'.repeat(20));
+      console.log('Using WordPress username:', process.env.WORDPRESS_USERNAME);
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -202,12 +203,12 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/wordpress/test", async (_req, res) => {
     try {
-      if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN) {
+      if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN || !process.env.WORDPRESS_USERNAME) {
         throw new Error('WordPress credentials are not configured');
       }
 
       // Create Basic Auth token
-      const authToken = Buffer.from(`admin:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+      const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
 
       const apiUrl = process.env.WORDPRESS_API_URL;
       const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
@@ -215,6 +216,7 @@ export async function registerRoutes(app: Express) {
       console.log('Testing WordPress API connection...');
       console.log('Endpoint:', endpoint);
       console.log('Auth Header:', `Basic ${authToken.substring(0, 5)}...`);
+      console.log('Using WordPress username:', process.env.WORDPRESS_USERNAME);
 
       // First, try to get posts to verify authentication
       const response = await fetch(endpoint, {
