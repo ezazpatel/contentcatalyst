@@ -16,30 +16,54 @@ export default function BlogsList() {
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 sm:px-6 py-8">
+          <div className="animate-pulse space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-48 bg-muted rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-8">Blog Posts</h1>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="container mx-auto px-4 sm:px-6 py-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-8">Blog Posts</h1>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {posts?.map((post) => (
             <Link key={post.id} href={`/view/${post.id}`}>
-              <Card className="cursor-pointer hover:bg-accent h-full">
-                <CardHeader>
-                  <div className="text-sm text-muted-foreground mb-2">
-                    Keywords: {post.keywords.join(", ")}
+              <Card className="cursor-pointer hover:bg-accent h-full transition-colors">
+                <CardHeader className="space-y-2">
+                  <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                    {post.keywords.map((keyword, index) => (
+                      <span key={index} className="bg-secondary px-2 py-1 rounded-full text-xs">
+                        {keyword}
+                      </span>
+                    ))}
                   </div>
-                  <CardTitle className="line-clamp-2">{post.title || "Untitled Post"}</CardTitle>
+                  <CardTitle className="line-clamp-2">
+                    {post.title || "Untitled Post"}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-sm text-muted-foreground mb-4 line-clamp-3">
                     {post.excerpt || post.content.slice(0, 150) + "..."}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {post.status === "published" ? "Published" : "Scheduled"}: {format(new Date(post.scheduledDate), "PPP")}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className={`px-2 py-1 rounded-full ${
+                      post.status === "published" 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-blue-100 text-blue-800"
+                    }`}>
+                      {post.status === "published" ? "Published" : "Scheduled"}
+                    </span>
+                    <span>{format(new Date(post.scheduledDate), "PPP")}</span>
                   </div>
                 </CardContent>
               </Card>

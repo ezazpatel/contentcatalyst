@@ -29,15 +29,18 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl mx-auto">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 w-full max-w-2xl mx-auto px-4 sm:px-6">
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Keywords</h3>
           {form.watch("keywords").map((_, index) => (
-            <div key={index} className="flex gap-2">
-              <Input
-                {...form.register(`keywords.${index}`)}
-                placeholder="Enter keyword"
-              />
+            <div key={index} className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1">
+                <Input
+                  {...form.register(`keywords.${index}`)}
+                  placeholder="Enter keyword"
+                  className="w-full"
+                />
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -47,6 +50,7 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
                   keywords.splice(index, 1);
                   form.setValue("keywords", keywords);
                 }}
+                className="self-end sm:self-auto"
               >
                 <Trash className="h-4 w-4" />
               </Button>
@@ -59,6 +63,7 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
               const keywords = form.getValues("keywords");
               form.setValue("keywords", [...keywords, ""]);
             }}
+            className="w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" /> Add Keyword
           </Button>
@@ -67,14 +72,16 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Affiliate Links (Optional)</h3>
           {form.watch("affiliateLinks").map((_, index) => (
-            <div key={index} className="flex gap-2">
+            <div key={index} className="flex flex-col sm:flex-row gap-2">
               <Input
                 {...form.register(`affiliateLinks.${index}.name`)}
                 placeholder="Link name (optional)"
+                className="flex-1"
               />
               <Input
                 {...form.register(`affiliateLinks.${index}.url`)}
                 placeholder="URL (optional)"
+                className="flex-1"
               />
               <Button
                 type="button"
@@ -85,6 +92,7 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
                   links.splice(index, 1);
                   form.setValue("affiliateLinks", links);
                 }}
+                className="self-end sm:self-auto"
               >
                 <Trash className="h-4 w-4" />
               </Button>
@@ -97,6 +105,7 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
               const links = form.getValues("affiliateLinks");
               form.setValue("affiliateLinks", [...links, { name: "", url: "" }]);
             }}
+            className="w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" /> Add Affiliate Link
           </Button>
@@ -104,21 +113,21 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
 
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Schedule</h3>
-          <div className="flex gap-4 items-center">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <Popover>
               <PopoverTrigger asChild>
                 <Button 
                   variant="outline"
-                  className={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
+                  className={`w-full sm:w-auto ${form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
                     ? "" 
-                    : "border-red-500"}>
+                    : "border-red-500"}`}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime())
                     ? format(form.watch("scheduledDate"), "PPP")
                     : "Select a date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
@@ -134,9 +143,9 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
               value={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
                 ? format(form.watch("scheduledDate"), "HH:mm") 
                 : "00:00"}
-              className={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
+              className={`w-full sm:w-auto ${form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
                 ? "" 
-                : "border-red-500"}
+                : "border-red-500"}`}
               onChange={(e) => {
                 try {
                   const [hours, minutes] = e.target.value.split(":");
@@ -145,7 +154,6 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
                     date.setHours(parseInt(hours), parseInt(minutes));
                     form.setValue("scheduledDate", date);
                   } else {
-                    // If current date is invalid, create a new valid date
                     const newDate = new Date();
                     newDate.setHours(parseInt(hours), parseInt(minutes));
                     form.setValue("scheduledDate", newDate);
@@ -158,7 +166,7 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
           </div>
         </div>
 
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
           {isLoading ? "Adding..." : "Add Post"}
         </Button>
       </form>
