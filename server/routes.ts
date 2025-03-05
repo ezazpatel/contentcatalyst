@@ -133,7 +133,7 @@ export async function registerRoutes(app: Express) {
   app.post("/api/wordpress/publish", async (req, res) => {
     try {
       if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN) {
-        throw new Error('WordPress credentials are not configured');
+        throw new Error('WordPress credentials are not configured. Please set WORDPRESS_API_URL and WORDPRESS_AUTH_TOKEN environment variables.');
       }
 
       // Create Basic Auth token from application password
@@ -179,14 +179,19 @@ export async function registerRoutes(app: Express) {
       // Return the WordPress post URL along with the result
       res.json({
         ...result,
-        postUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
+        postUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`,
+        message: 'Post published successfully to WordPress'
       });
     } catch (error) {
       console.error('Error publishing to WordPress:', error);
       res.status(500).json({ 
         message: 'Failed to publish to WordPress', 
         error: error.message,
-        details: 'Please check your WordPress credentials and ensure your site is accessible.'
+        details: `Please ensure:
+1. You have created an application password in WordPress (Users → Profile → Application Passwords)
+2. The WORDPRESS_AUTH_TOKEN contains the application password
+3. The WordPress REST API is enabled
+4. The user has permissions to create posts`
       });
     }
   });

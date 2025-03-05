@@ -1,14 +1,17 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { BlogPost } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ViewPost() {
   const [, params] = useRoute<{ id: string }>("/view/:id");
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const postId = params?.id ? parseInt(params.id) : null;
 
   if (!postId) {
@@ -18,6 +21,30 @@ export default function ViewPost() {
 
   const { data: post, isLoading } = useQuery<BlogPost>({
     queryKey: [`/api/posts/${postId}`],
+  });
+
+  const republishToWordPress = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/wordpress/publish", post);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: "Post republished to WordPress successfully",
+      });
+      // If there's a WordPress URL in the response, you could open it in a new tab
+      if (data.postUrl) {
+        window.open(data.postUrl, '_blank');
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to republish to WordPress",
+        variant: "destructive",
+      });
+    },
   });
 
   if (isLoading) {
@@ -41,9 +68,18 @@ export default function ViewPost() {
                 </div>
                 <CardTitle className="text-3xl">{post.title}</CardTitle>
               </div>
-              <Button variant="outline" onClick={() => navigate("/blogs")}>
-                Back to Posts
-              </Button>
+              <div className="flex gap-4">
+                <Button variant="outline" onClick={() => navigate("/blogs")}>
+                  Back to Posts
+                </Button>
+                <Button 
+                  variant="secondary"
+                  onClick={() => republishToWordPress.mutate()}
+                  disabled={republishToWordPress.isPending}
+                >
+                  {republishToWordPress.isPending ? "Publishing..." : "Republish to WordPress"}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
