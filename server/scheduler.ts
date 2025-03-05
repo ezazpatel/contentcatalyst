@@ -2,9 +2,9 @@ import { storage } from './storage';
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
 import { lt, eq, and } from 'drizzle-orm';
-import OpenAI from 'openai';
+import { OpenAI } from 'openai';
 
-const openai = new OpenAI({
+const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
@@ -13,9 +13,8 @@ async function generateContent(keywords: string[]): Promise<{
   title: string;
   description: string;
 }> {
-  // Use o1-mini model for all OpenAI API calls
-  const response = await openai.chat.completions.create({
-    model: "o1-mini",
+  const response = await client.chat.completions.create({
+    model: "ft:gpt-4o-mini-2024-07-18:personal::B7hWDhzB",
     messages: [
       {
         role: "system",
@@ -36,7 +35,12 @@ Requirements:
 Respond strictly in JSON format with exactly these fields: 'title', 'content', 'description' (short). Do not include any extra text outside of this JSON.`
       }
     ],
-    response_format: { type: "json_object" }
+    response_format: { type: "text" },
+    temperature: 1,
+    max_tokens: 2048,
+    top_p: 1,
+    frequency_penalty: 0,
+    presence_penalty: 0
   });
 
   return response.choices[0].message.content ? JSON.parse(response.choices[0].message.content) : {
