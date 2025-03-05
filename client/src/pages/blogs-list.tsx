@@ -16,23 +16,25 @@ export default function BlogsList() {
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="container mx-auto px-4 py-8">Loading...</div>;
   }
 
   return (
     <div>
       <Navbar />
-      <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-8">Blog Posts</h1>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-8">Blog Posts</h1>
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3"> {/* Added md breakpoint for better tablet responsiveness */}
           {posts?.map((post) => (
             <Link key={post.id} href={`/view/${post.id}`}>
-              <Card className="cursor-pointer hover:bg-accent h-full">
+              <Card className="cursor-pointer hover:bg-accent h-full transition-colors">
                 <CardHeader>
-                  <div className="text-sm text-muted-foreground mb-2">
+                  <div className="text-sm text-muted-foreground mb-2 line-clamp-1">
                     Keywords: {post.keywords.join(", ")}
                   </div>
-                  <CardTitle className="line-clamp-2">{post.title || "Untitled Post"}</CardTitle>
+                  <CardTitle className="line-clamp-2 text-lg sm:text-xl">
+                    {post.title || "Untitled Post"}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-sm text-muted-foreground mb-4 line-clamp-3">
