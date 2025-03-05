@@ -72,9 +72,17 @@ function AppContent() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="ui-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <Router>
         <AppContent />
+        <Routes>
+          <Route path="/"><Dashboard /></Route>
+          <Route path="/keywords"><KeywordsList /></Route>
+          <Route path="/blogs"><BlogsList /></Route>
+          <Route path="/edit/:id"><EditPost /></Route>
+          <Route path="/view/:id"><ViewPost /></Route>
+          <Route path="/new"><NewPost /></Route>
+        </Routes>
       </Router>
       <Toaster />
     </ThemeProvider>

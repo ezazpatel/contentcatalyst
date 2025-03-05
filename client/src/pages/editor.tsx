@@ -97,7 +97,7 @@ export default function Editor() {
           />
 
           <div className="mt-8 flex flex-wrap gap-4 justify-center sm:justify-start"> {/* Responsive button placement */}
-            <Button onClick={() => navigate("/blogs")}>Back to Posts</Button>
+            <Button onClick={() => (window.location.href = "/blogs")}>Back to Posts</Button>
             <Button
               variant="destructive"
               onClick={() => publishToWordPress.mutate()}
