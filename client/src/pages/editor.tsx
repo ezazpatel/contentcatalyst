@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,7 @@ export default function Editor() {
   const [, params] = useRoute<{ id: string }>("/edit/:id");
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: post, isLoading } = useQuery<BlogPost>({
     queryKey: ["/api/posts", params?.id],
@@ -26,11 +27,35 @@ export default function Editor() {
         title: "Success",
         description: "Post updated successfully",
       });
+
+      // Invalidate and refetch queries
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to update post",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const publishToWordPress = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/wordpress/publish", post);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Post published to WordPress successfully",
+      });
+      updatePost.mutate({ status: "published" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to publish to WordPress",
         variant: "destructive",
       });
     },
@@ -59,17 +84,15 @@ export default function Editor() {
           onMetaTagsChange={(metaTags) => updatePost.mutate({ metaTags })}
           onSlugChange={(slug) => updatePost.mutate({ slug })}
         />
-        
+
         <div className="mt-8 flex gap-4">
           <Button onClick={() => navigate("/blogs")}>Back to Posts</Button>
           <Button 
             variant="destructive" 
-            onClick={() => {
-              updatePost.mutate({ status: "published" });
-              navigate("/blogs");
-            }}
+            onClick={() => publishToWordPress.mutate()}
+            disabled={publishToWordPress.isPending}
           >
-            Publish to WordPress
+            {publishToWordPress.isPending ? "Publishing..." : "Publish to WordPress"}
           </Button>
         </div>
       </div>
