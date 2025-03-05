@@ -119,7 +119,17 @@ The description should be engaging, include the main keyword, and be under 160 c
       // Create Basic Auth token from application password
       const authToken = Buffer.from(`admin:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
 
-      const response = await fetch(process.env.WORDPRESS_API_URL + '/wp/v2/posts', {
+      const apiUrl = process.env.WORDPRESS_API_URL;
+      const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
+
+      console.log('Publishing to WordPress endpoint:', endpoint);
+      console.log('Publishing content:', {
+        title: req.body.title,
+        content: req.body.content ? req.body.content.substring(0, 100) + '...' : 'No content',
+        excerpt: req.body.excerpt ? req.body.excerpt.substring(0, 100) + '...' : 'No excerpt'
+      });
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,10 +155,19 @@ The description should be engaging, include the main keyword, and be under 160 c
 
       const result = await response.json();
       console.log('Successfully published to WordPress:', result);
-      res.json(result);
+
+      // Return the WordPress post URL along with the result
+      res.json({
+        ...result,
+        postUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
+      });
     } catch (error) {
       console.error('Error publishing to WordPress:', error);
-      res.status(500).json({ message: 'Failed to publish to WordPress', error: error.message });
+      res.status(500).json({ 
+        message: 'Failed to publish to WordPress', 
+        error: error.message,
+        details: 'Please check your WordPress credentials and ensure your site is accessible.'
+      });
     }
   });
 
