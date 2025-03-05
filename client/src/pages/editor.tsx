@@ -12,14 +12,20 @@ export default function Editor() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const postId = params?.id ? parseInt(params.id) : null;
+
+  if (!postId) {
+    navigate("/blogs");
+    return null;
+  }
 
   const { data: post, isLoading } = useQuery<BlogPost>({
-    queryKey: ["/api/posts", params?.id],
+    queryKey: [`/api/posts/${postId}`],
   });
 
   const updatePost = useMutation({
     mutationFn: async (data: Partial<BlogPost>) => {
-      const response = await apiRequest("PATCH", `/api/posts/${params?.id}`, data);
+      const response = await apiRequest("PATCH", `/api/posts/${postId}`, data);
       return response.json();
     },
     onSuccess: () => {
@@ -64,7 +70,7 @@ export default function Editor() {
   if (isLoading) {
     return <div className="container mx-auto py-8">Loading...</div>;
   }
-  
+
   if (!post) {
     return <div className="container mx-auto py-8">Post not found. <Button onClick={() => navigate("/blogs")}>Back to Posts</Button></div>;
   }
