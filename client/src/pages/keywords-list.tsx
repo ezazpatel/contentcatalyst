@@ -61,7 +61,6 @@ export default function KeywordsList() {
               <TableHead>Status</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Blog Title</TableHead>
-              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -87,17 +86,6 @@ export default function KeywordsList() {
                     {entry.publishDate ? format(entry.publishDate, "PPP 'at' p") : "Not set"}
                   </TableCell>
                   <TableCell>{entry.blogTitle || "Not created"}</TableCell>
-                  <TableCell>
-                    {entry.blogId ? (
-                      <Link href={`/view/${entry.blogId}`}>
-                        <Button variant="outline" size="sm">View Post</Button>
-                      </Link>
-                    ) : (
-                      <Link href="/">
-                        <Button variant="outline" size="sm">Create Post</Button>
-                      </Link>
-                    )}
-                  </TableCell>
                 </TableRow>
               );
             })}
