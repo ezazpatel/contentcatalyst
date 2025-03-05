@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { RichEditor } from "@/components/rich-editor";
+import { Button } from "../components/ui/button";
+import { useToast } from "../hooks/use-toast";
+import { apiRequest } from "../lib/queryClient";
+import { RichEditor } from "../components/rich-editor";
 import type { BlogPost } from "@shared/schema";
 import { Navbar } from "@/components/navbar";
 
