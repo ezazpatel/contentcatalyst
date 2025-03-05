@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { generateContent, generateSEOTitle, generateMetaDescription } from "@/lib/mock-ai";
 import type { BlogPost, InsertBlogPost } from "@shared/schema";
 import { Navbar } from "@/components/navbar";
 
@@ -17,73 +16,67 @@ export default function EditPost() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isNew = !params?.id;
+  const postId = params?.id ? parseInt(params.id) : null;
 
+  // Fetch the post data
   const { data: post, isLoading } = useQuery<BlogPost>({
-    queryKey: ["/api/posts", params?.id],
-    enabled: !isNew,
+    queryKey: ["/api/posts", postId],
+    queryFn: () => apiRequest("GET", `/api/posts/${postId}`),
+    enabled: !!postId,
   });
 
+  // Update post mutation
   const updatePost = useMutation({
     mutationFn: async (data: Partial<InsertBlogPost>) => {
-      if (isNew) {
-        const response = await apiRequest("POST", "/api/posts", data);
-        return response.json();
+      if (postId) {
+        return await apiRequest("PATCH", `/api/posts/${postId}`, data);
       } else {
-        const response = await apiRequest("PATCH", `/api/posts/${params?.id}`, data);
-        return response.json();
+        return await apiRequest("POST", "/api/posts", data);
       }
     },
     onSuccess: () => {
       toast({
         title: "Success",
-        description: `Post ${isNew ? "created" : "updated"} successfully`,
+        description: postId ? "Post updated successfully" : "Post created successfully",
       });
-      
-      // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-      
-      if (isNew) {
-        navigate("/keywords");
-      }
+      navigate("/blogs");
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || `Failed to ${isNew ? "create" : "update"} post`,
+        description: `Failed to save post: ${error.message}`,
         variant: "destructive",
       });
     },
   });
 
+  // Generate AI content
   const generateAIContent = async (keywords: string[]) => {
     if (!keywords.length) {
       toast({
         title: "Error",
-        description: "Please add at least one keyword before generating content",
+        description: "Please add at least one keyword",
         variant: "destructive",
       });
       return;
     }
 
-    toast({
-      title: "Generating content",
-      description: "This may take a few seconds...",
-    });
-
     try {
-      // Generate content and update state
-      const content = await generateContent(keywords);
-      const seoTitle = await generateSEOTitle(keywords);
-      const seoDescription = await generateMetaDescription(keywords);
+      const response = await apiRequest("POST", "/api/generate", {
+        keywords,
+        type: "content"
+      });
       
       updatePost.mutate({
         ...post,
-        content,
-        seoTitle,
-        seoDescription,
+        content: response.content,
       });
       
+      toast({
+        title: "Success",
+        description: "Content generated successfully",
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -93,30 +86,40 @@ export default function EditPost() {
     }
   };
 
-  if (isLoading && !isNew) {
+  if (isLoading && postId) {
     return <div>Loading...</div>;
   }
 
-  const defaultValues: Partial<InsertBlogPost> = isNew
-    ? {
-        title: "",
-        content: "",
-        keywords: [""],
-        affiliateLinks: [{ name: "", url: "" }],
-        scheduledDate: new Date(),
-        status: "draft",
-        seoTitle: "",
-        seoDescription: "",
-        headings: [],
-      }
-    : post;
+  // Ensure scheduledDate is always a valid Date
+  let scheduledDate;
+  try {
+    scheduledDate = post?.scheduledDate ? new Date(post.scheduledDate) : new Date();
+    // Check if date is valid
+    if (isNaN(scheduledDate.getTime())) {
+      scheduledDate = new Date(); // Fallback to current date if invalid
+    }
+  } catch (err) {
+    scheduledDate = new Date(); // Fallback to current date on error
+  }
+
+  const defaultValues: Partial<InsertBlogPost> = {
+    title: post?.title || "",
+    content: post?.content || "",
+    keywords: post?.keywords || [""],
+    affiliateLinks: post?.affiliateLinks || [{ name: "", url: "" }],
+    scheduledDate: scheduledDate,
+    status: post?.status || "draft",
+    seoTitle: post?.seoTitle || "",
+    seoDescription: post?.seoDescription || "",
+    headings: post?.headings || [],
+  };
 
   return (
     <div>
       <Navbar />
       <div className="container mx-auto py-8">
         <h1 className="text-3xl font-bold mb-8">
-          {isNew ? "Create New Post" : "Edit Post"}
+          {postId ? "Edit Post" : "Create New Post"}
         </h1>
 
         <div className="grid gap-8">
@@ -131,7 +134,7 @@ export default function EditPost() {
 
             <div className="flex gap-4 mb-4">
               <Button
-                onClick={() => generateAIContent(post?.keywords || [])}
+                onClick={() => generateAIContent(defaultValues.keywords || [])}
                 disabled={updatePost.isPending}
               >
                 Generate AI Content

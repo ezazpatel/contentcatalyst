@@ -59,7 +59,9 @@ export async function checkScheduledPosts() {
         });
 
         // Publish to WordPress
-        await fetch('/api/wordpress/publish', {
+        // Use absolute URL to fix URL parsing error
+        const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+        await fetch(`${baseUrl}/api/wordpress/publish`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updatedPost)
