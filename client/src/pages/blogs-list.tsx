@@ -100,9 +100,9 @@ export default function BlogsList() {
                 <Button
                   variant="secondary"
                   onClick={() => regeneratePost.mutate(post.id)}
-                  disabled={regeneratePost.isPending}
+                  disabled={regeneratePost.isPending && regeneratePost.variables === post.id}
                 >
-                  {regeneratePost.isPending ? (
+                  {regeneratePost.isPending && regeneratePost.variables === post.id ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <RefreshCw className="h-4 w-4 mr-2" />
