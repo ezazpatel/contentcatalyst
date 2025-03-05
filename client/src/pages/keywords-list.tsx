@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BlogPost } from "@shared/schema";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -12,7 +13,6 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { Navbar } from "@/components/navbar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function KeywordsList() {
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
@@ -61,9 +61,9 @@ export default function KeywordsList() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="min-w-[120px]">Keyword</TableHead>
-                  <TableHead className="min-w-[100px] hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="min-w-[180px] hidden md:table-cell">Date</TableHead>
-                  <TableHead className="min-w-[200px] hidden lg:table-cell">Blog Title</TableHead>
+                  <TableHead className="min-w-[100px]">Status</TableHead>
+                  <TableHead className="min-w-[180px] hidden sm:table-cell">Date</TableHead>
+                  <TableHead className="min-w-[200px] hidden md:table-cell">Blog Title</TableHead>
                   <TableHead className="min-w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -77,7 +77,7 @@ export default function KeywordsList() {
                       <TableCell className="font-medium">
                         <div className="flex flex-col">
                           <span>{entry.keyword}</span>
-                          <div className="sm:hidden flex items-center gap-1 mt-1">
+                          <div className="flex items-center gap-1 mt-1">
                             <span
                               className={`px-2 py-1 rounded-full text-xs ${
                                 isPublished
@@ -88,15 +88,15 @@ export default function KeywordsList() {
                               {isPublished ? "Published" : isScheduled ? "Scheduled" : "Draft"}
                             </span>
                           </div>
-                          <span className="text-xs text-muted-foreground md:hidden mt-1">
+                          <span className="text-xs text-muted-foreground mt-1">
                             {entry.publishDate ? format(entry.publishDate, "P") : "Not set"}
                           </span>
-                          <span className="text-xs text-muted-foreground lg:hidden mt-1">
+                          <span className="text-xs text-muted-foreground mt-1">
                             {entry.blogTitle || "Not created"}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell">
+                      <TableCell>
                         <span
                           className={`px-2 py-1 rounded-full text-xs ${
                             isPublished
@@ -107,22 +107,22 @@ export default function KeywordsList() {
                           {isPublished ? "Published" : isScheduled ? "Scheduled" : "Draft"}
                         </span>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
+                      <TableCell className="hidden sm:table-cell">
                         {entry.publishDate ? format(entry.publishDate, "PPP 'at' p") : "Not set"}
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell">
+                      <TableCell className="hidden md:table-cell">
                         {entry.blogTitle || "Not created"}
                       </TableCell>
                       <TableCell>
                         {entry.blogId ? (
                           <Link href={`/view/${entry.blogId}`}>
-                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                            <Button variant="outline" size="sm" className="w-full">
                               View Post
                             </Button>
                           </Link>
                         ) : (
                           <Link href="/">
-                            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                            <Button variant="outline" size="sm" className="w-full">
                               Create Post
                             </Button>
                           </Link>
