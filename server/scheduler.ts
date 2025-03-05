@@ -8,7 +8,7 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-async function generateContent(keywords: string[]): Promise<{
+export async function generateContent(keywords: string[]): Promise<{
   content: string;
   title: string;
   description: string;

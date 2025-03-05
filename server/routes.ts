@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
-import { checkScheduledPosts } from "./scheduler";
+import { checkScheduledPosts, generateContent } from "./scheduler";
 import { ZodError } from "zod";
 
 // Start the scheduler when the server starts
