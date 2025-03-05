@@ -28,9 +28,16 @@ export default function KeywordsList() {
       <div className="container mx-auto py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Manage Keywords</h1>
-          <Link href="/new">
-            <Button>New Post</Button>
-          </Link>
+          <div className="flex space-x-4">
+            <Link href="/new">
+              <Button>New Post</Button>
+            </Link>
+            {posts && posts.length > 0 && (
+              <Link href={`/edit/${posts[0].id}`}>
+                <Button variant="outline">Edit Latest Post</Button>
+              </Link>
+            )}
+          </div>
         </div>
 
         <Table>

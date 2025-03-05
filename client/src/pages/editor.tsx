@@ -61,8 +61,12 @@ export default function Editor() {
     },
   });
 
-  if (isLoading || !post) {
-    return <div>Loading...</div>;
+  if (isLoading) {
+    return <div className="container mx-auto py-8">Loading...</div>;
+  }
+  
+  if (!post) {
+    return <div className="container mx-auto py-8">Post not found. <Button onClick={() => navigate("/blogs")}>Back to Posts</Button></div>;
   }
 
   return (
