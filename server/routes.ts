@@ -112,17 +112,24 @@ The description should be engaging, include the main keyword, and be under 160 c
 
   app.post("/api/wordpress/publish", async (req, res) => {
     try {
+      if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN) {
+        throw new Error('WordPress credentials are not configured');
+      }
+
+      // Create Basic Auth token from application password
+      const authToken = Buffer.from(`admin:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+
       const response = await fetch(process.env.WORDPRESS_API_URL + '/wp/v2/posts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.WORDPRESS_AUTH_TOKEN}`
+          'Authorization': `Basic ${authToken}`
         },
         body: JSON.stringify({
-          title: req.body.title,
-          content: req.body.content,
+          title: { raw: req.body.title },
+          content: { raw: req.body.content },
           status: 'publish',
-          excerpt: req.body.excerpt || '',
+          excerpt: { raw: req.body.excerpt || '' },
           meta: {
             _yoast_wpseo_metadesc: req.body.seoDescription || '',
             _yoast_wpseo_title: req.body.seoTitle || '',
@@ -131,13 +138,17 @@ The description should be engaging, include the main keyword, and be under 160 c
       });
 
       if (!response.ok) {
-        throw new Error(`WordPress API error: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('WordPress API response:', errorText);
+        throw new Error(`WordPress API error: ${response.statusText} - ${errorText}`);
       }
 
-      res.json(await response.json());
+      const result = await response.json();
+      console.log('Successfully published to WordPress:', result);
+      res.json(result);
     } catch (error) {
       console.error('Error publishing to WordPress:', error);
-      res.status(500).json({ message: 'Failed to publish to WordPress' });
+      res.status(500).json({ message: 'Failed to publish to WordPress', error: error.message });
     }
   });
 
