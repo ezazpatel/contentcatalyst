@@ -1,7 +1,7 @@
 import { storage } from './storage';
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
-import { lt, eq } from 'drizzle-orm';
+import { lt, eq, and } from 'drizzle-orm';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -35,7 +35,12 @@ Respond in JSON format with 'title', 'content', 'description' (short), and 'seoM
     response_format: { type: "json_object" }
   });
 
-  return JSON.parse(response.choices[0].message.content);
+  return response.choices[0].message.content ? JSON.parse(response.choices[0].message.content) : {
+    title: "",
+    content: "",
+    description: "",
+    seoMetaDescription: ""
+  };
 }
 
 export async function checkScheduledPosts() {
@@ -47,8 +52,10 @@ export async function checkScheduledPosts() {
       .select()
       .from(blogPosts)
       .where(
-        lt(blogPosts.scheduledDate, now),
-        eq(blogPosts.status, 'draft')
+        and(
+          lt(blogPosts.scheduledDate, now),
+          eq(blogPosts.status, 'draft')
+        )
       );
 
     for (const post of scheduledPosts) {
@@ -74,11 +81,11 @@ export async function checkScheduledPosts() {
 
         console.log(`Published post ${post.id} successfully`);
       } catch (error) {
-        console.error(`Failed to process post ${post.id}:`, error);
+        console.error(`Failed to process post ${post.id}:`, error instanceof Error ? error.message : String(error));
       }
     }
   } catch (error) {
-    console.error('Error checking scheduled posts:', error);
+    console.error('Error checking scheduled posts:', error instanceof Error ? error.message : String(error));
   }
 }
 

@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
 import { checkScheduledPosts } from "./scheduler";
+import { ZodError } from "zod";
 
 // Start the scheduler when the server starts
 checkScheduledPosts();
@@ -30,7 +31,11 @@ export async function registerRoutes(app: Express) {
       const post = await storage.createBlogPost(data);
       res.json(post);
     } catch (error) {
-      res.status(400).json({ message: error.message });
+      if (error instanceof ZodError) {
+        res.status(400).json({ message: "Validation error", errors: error.errors });
+      } else {
+        res.status(400).json({ message: error instanceof Error ? error.message : "Unknown error occurred" });
+      }
     }
   });
 
@@ -39,7 +44,7 @@ export async function registerRoutes(app: Express) {
       const post = await storage.updateBlogPost(Number(req.params.id), req.body);
       res.json(post);
     } catch (error) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: error instanceof Error ? error.message : "Unknown error occurred" });
     }
   });
 
@@ -48,7 +53,7 @@ export async function registerRoutes(app: Express) {
       await storage.deleteBlogPost(Number(req.params.id));
       res.status(204).send();
     } catch (error) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: error instanceof Error ? error.message : "Unknown error occurred" });
     }
   });
 
@@ -193,7 +198,7 @@ export async function registerRoutes(app: Express) {
       console.error('Error publishing to WordPress:', error);
       res.status(500).json({ 
         message: 'Failed to publish to WordPress', 
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         details: `Please ensure:
 1. You have created an application password in WordPress (Users → Profile → Application Passwords)
 2. The WORDPRESS_AUTH_TOKEN contains the application password
@@ -248,7 +253,7 @@ export async function registerRoutes(app: Express) {
       console.error('Error testing WordPress connection:', error);
       res.status(500).json({ 
         message: 'Failed to connect to WordPress', 
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         details: `Please verify:
 1. WORDPRESS_API_URL is correct and ends with /wp-json
 2. Application password is correctly formatted
