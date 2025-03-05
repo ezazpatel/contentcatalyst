@@ -7,15 +7,24 @@ export default function EditPost() {
   const [, navigate] = useLocation();
   const postId = params?.id ? parseInt(params.id) : null;
 
+  // Render null only after hooks are called
   if (!postId) {
-    navigate("/blogs");
-    return null;
+    return (
+      <div>
+        <Navbar />
+        <div className="container mx-auto py-8">
+          <div className="text-center">
+            <p>Invalid post ID. Redirecting...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div>
       <Navbar />
-      <Editor />
+      <Editor postId={postId} />
     </div>
   );
 }
