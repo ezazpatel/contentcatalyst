@@ -10,7 +10,9 @@ import {
   Heading2,
   List,
   Image as ImageIcon,
+  Save,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface RichEditorProps {
   title: string;
@@ -41,37 +43,34 @@ export function RichEditor({
   onMetaTagsChange,
   onSlugChange,
 }: RichEditorProps) {
-  const [selectedTab, setSelectedTab] = useState("write");
+  const [localTitle, setLocalTitle] = useState(title);
+  const [localContent, setLocalContent] = useState(content);
+  const [localSeoTitle, setLocalSeoTitle] = useState(seoTitle);
+  const [localSeoDescription, setLocalSeoDescription] = useState(seoDescription);
+  const [localMetaTags, setLocalMetaTags] = useState(metaTags);
+  const [localSlug, setLocalSlug] = useState(slug);
+  const { toast } = useToast();
 
-  const handleFormat = (tag: string) => {
-    const textarea = document.querySelector("textarea");
-    if (!textarea) return;
+  const handleSave = () => {
+    onTitleChange(localTitle);
+    onContentChange(localContent);
+    onSEOTitleChange(localSeoTitle);
+    onSEODescriptionChange(localSeoDescription);
+    onMetaTagsChange(localMetaTags);
+    onSlugChange(localSlug);
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
+    toast({
+      title: "Changes saved",
+      description: "Your changes have been saved successfully.",
+    });
+  };
 
-    const before = text.substring(0, start);
-    const selected = text.substring(start, end);
-    const after = text.substring(end);
+  const handleFormat = (command: string) => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (!editor) return;
 
-    switch (tag) {
-      case "b":
-        onContentChange(`${before}**${selected}**${after}`);
-        break;
-      case "i":
-        onContentChange(`${before}_${selected}_${after}`);
-        break;
-      case "h1":
-        onContentChange(`${before}\n# ${selected}\n${after}`);
-        break;
-      case "h2":
-        onContentChange(`${before}\n## ${selected}\n${after}`);
-        break;
-      case "li":
-        onContentChange(`${before}\n- ${selected}\n${after}`);
-        break;
-    }
+    document.execCommand(command, false);
+    setLocalContent(editor.innerHTML);
   };
 
   return (
@@ -80,27 +79,27 @@ export function RichEditor({
         <div className="space-y-4">
           <Input
             placeholder="Post Title"
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
+            value={localTitle}
+            onChange={(e) => setLocalTitle(e.target.value)}
             className="text-2xl font-bold"
           />
 
           <Input
             placeholder="URL Slug"
-            value={slug}
-            onChange={(e) => onSlugChange(e.target.value)}
+            value={localSlug}
+            onChange={(e) => setLocalSlug(e.target.value)}
             className="font-mono text-sm"
           />
 
           <div className="flex flex-wrap gap-2">
-            {metaTags.map((tag, index) => (
+            {localMetaTags.map((tag, index) => (
               <div key={index} className="flex items-center gap-2">
                 <Input
                   value={tag}
                   onChange={(e) => {
-                    const newTags = [...metaTags];
+                    const newTags = [...localMetaTags];
                     newTags[index] = e.target.value;
-                    onMetaTagsChange(newTags);
+                    setLocalMetaTags(newTags);
                   }}
                   placeholder="Meta Tag"
                   className="w-32"
@@ -109,8 +108,8 @@ export function RichEditor({
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    const newTags = metaTags.filter((_, i) => i !== index);
-                    onMetaTagsChange(newTags);
+                    const newTags = localMetaTags.filter((_, i) => i !== index);
+                    setLocalMetaTags(newTags);
                   }}
                 >
                   ×
@@ -120,7 +119,7 @@ export function RichEditor({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onMetaTagsChange([...metaTags, ""])}
+              onClick={() => setLocalMetaTags([...localMetaTags, ""])}
             >
               Add Meta Tag
             </Button>
@@ -128,99 +127,84 @@ export function RichEditor({
 
           <Input
             placeholder="SEO Title"
-            value={seoTitle}
-            onChange={(e) => onSEOTitleChange(e.target.value)}
+            value={localSeoTitle}
+            onChange={(e) => setLocalSeoTitle(e.target.value)}
           />
 
           <Textarea
             placeholder="SEO Description"
-            value={seoDescription}
-            onChange={(e) => onSEODescriptionChange(e.target.value)}
+            value={localSeoDescription}
+            onChange={(e) => setLocalSeoDescription(e.target.value)}
             className="h-20"
           />
         </div>
       </Card>
 
       <Card className="p-4">
-        <div className="flex gap-2 mb-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleFormat("b")}
-            title="Bold"
-          >
-            <Bold className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleFormat("i")}
-            title="Italic"
-          >
-            <Italic className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleFormat("h1")}
-            title="Heading 1"
-          >
-            <Heading1 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleFormat("h2")}
-            title="Heading 2"
-          >
-            <Heading2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleFormat("li")}
-            title="List"
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {/* TODO: Image upload */}}
-            title="Insert Image"
-          >
-            <ImageIcon className="h-4 w-4" />
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleFormat('bold')}
+              title="Bold"
+            >
+              <Bold className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleFormat('italic')}
+              title="Italic"
+            >
+              <Italic className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleFormat('formatBlock')}
+              title="Heading 1"
+            >
+              <Heading1 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleFormat('formatBlock')}
+              title="Heading 2"
+            >
+              <Heading2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleFormat('insertUnorderedList')}
+              title="List"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {/* TODO: Image upload */}}
+              title="Insert Image"
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Button onClick={handleSave} className="gap-2">
+            <Save className="h-4 w-4" />
+            Save Changes
           </Button>
         </div>
 
-        <div className="flex gap-2 mb-4">
-          <Button
-            variant={selectedTab === "write" ? "secondary" : "ghost"}
-            onClick={() => setSelectedTab("write")}
-          >
-            Write
-          </Button>
-          <Button
-            variant={selectedTab === "preview" ? "secondary" : "ghost"}
-            onClick={() => setSelectedTab("preview")}
-          >
-            Preview
-          </Button>
-        </div>
-
-        {selectedTab === "write" ? (
-          <textarea
-            className="w-full h-[400px] p-4 border rounded-md font-mono"
-            value={content}
-            onChange={(e) => onContentChange(e.target.value)}
-            placeholder="Write your content here using Markdown..."
-          />
-        ) : (
-          <div
-            className="w-full h-[400px] p-4 border rounded-md prose prose-sm overflow-y-auto"
-            dangerouslySetInnerHTML={{ __html: content }}
-          />
-        )}
+        <div
+          contentEditable
+          className="min-h-[400px] p-4 border rounded-md prose prose-sm max-w-none focus:outline-none"
+          dangerouslySetInnerHTML={{ __html: localContent }}
+          onInput={(e) => setLocalContent(e.currentTarget.innerHTML)}
+        />
       </Card>
     </div>
   );
