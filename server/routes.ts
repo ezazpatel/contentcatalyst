@@ -168,6 +168,11 @@ export async function registerRoutes(app: Express) {
           meta: {
             _yoast_wpseo_metadesc: req.body.seoDescription || '',
             _yoast_wpseo_title: req.body.seoTitle || '',
+            _yoast_wpseo_focuskw: req.body.keywords?.join(', ') || '',
+            _yoast_wpseo_linkdex: '50',
+            '_yoast_wpseo_meta-robots-noindex': '0',
+            '_yoast_wpseo_meta-robots-nofollow': '0',
+            '_yoast_wpseo_meta-robots-adv': 'none'
           },
         })
       });

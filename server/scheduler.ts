@@ -12,6 +12,7 @@ async function generateContent(keywords: string[]): Promise<{
   content: string;
   title: string;
   description: string;
+  seoMetaDescription: string;
 }> {
   // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
   const response = await openai.chat.completions.create({
@@ -19,11 +20,16 @@ async function generateContent(keywords: string[]): Promise<{
     messages: [
       {
         role: "system",
-        content: "You are a professional blog content writer. Generate a blog post based on the provided keywords."
+        content: "You are a professional blog content writer and SEO expert. Generate a blog post and SEO metadata based on the provided keywords."
       },
       {
         role: "user",
-        content: `Write a blog post about ${keywords.join(", ")}. Include a title, main content (in markdown format), and meta description. Respond in JSON format with 'title', 'content', and 'description' fields.`
+        content: `Write a blog post about ${keywords.join(", ")}. Include:
+1. A catchy title
+2. Main content (in markdown format)
+3. A meta description for search results (max 155 characters)
+4. A longer SEO-optimized description (max 320 characters) for Yoast SEO
+Respond in JSON format with 'title', 'content', 'description' (short), and 'seoMetaDescription' (long) fields.`
       }
     ],
     response_format: { type: "json_object" }
@@ -35,7 +41,7 @@ async function generateContent(keywords: string[]): Promise<{
 export async function checkScheduledPosts() {
   try {
     const now = new Date();
-    
+
     // Find all draft posts that are scheduled for now or earlier
     const scheduledPosts = await db
       .select()
@@ -54,12 +60,11 @@ export async function checkScheduledPosts() {
         const updatedPost = await storage.updateBlogPost(post.id, {
           title: generated.title,
           content: generated.content,
-          seoDescription: generated.description,
+          seoDescription: generated.seoMetaDescription,
           status: 'published'
         });
 
         // Publish to WordPress
-        // Use absolute URL to fix URL parsing error
         const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
         await fetch(`${baseUrl}/api/wordpress/publish`, {
           method: 'POST',
