@@ -31,12 +31,13 @@ Important Instructions:
 2. Use credible sources and current data where applicable.
 3. Natural tone while maintaining professionalism.
 4. Include the keyword phrases naturally without forcing them.
+5. The blog post structure should naturally incorporate these affiliate products/services as section headings where appropriate: ${affiliateLinks.map(link => link.name).join(", ")}
 
 Create a title and outline for a comprehensive blog post with these specifications:
-1. Introduction (${wordCounts.intro} words)
-2. At least 6-8 main sections with descriptive headings (${wordCounts.section} words each)
-3. Multiple sub-sections (3-4) for each main section
-4. Conclusion (${wordCounts.conclusion} words)
+1. Introduction (exactly ${wordCounts.intro} words)
+2. 6-8 main sections including affiliate products as section headings where relevant (exactly ${wordCounts.section} words each)
+3. 2-3 sub-sections for each main section
+4. Conclusion (exactly ${wordCounts.conclusion} words)
 
 Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).`
     }],
@@ -63,7 +64,7 @@ Respond in JSON format with these fields: 'title' and 'outline' (an array of sec
     model: "o3-mini",
     messages: [{
       role: "user",
-      content: `Write a factual, well-researched introduction (${wordCounts.intro} words) for a blog post with the title: "${title}". 
+      content: `Write a factual, well-researched introduction (exactly ${wordCounts.intro} words) for a blog post with the title: "${title}". 
 
 Context: ${context}
 Keywords: ${keywords.join(", ")}
@@ -73,6 +74,7 @@ Important Instructions:
 2. No speculative or made-up content
 3. Natural tone while maintaining professionalism
 4. Include key statistics or data points where relevant
+5. The introduction must be EXACTLY ${wordCounts.intro} words - no more, no less.
 
 Also provide a compelling meta description under 155 characters.
 
@@ -95,12 +97,12 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
     console.error('Error parsing intro JSON:', error);
   }
 
-  // Step 3: Generate content for each section
+  // Step 3: Generate table of contents and full content
   let fullContent = `# ${title}\n\n${introduction}\n\n`;
 
   // Table of contents
   fullContent += "## Table of Contents\n";
-  outline.forEach((section, index) => {
+  outline.forEach(section => {
     fullContent += `- [${section.heading}](#${section.heading.toLowerCase().replace(/[^\w]+/g, '-')})\n`;
     if (section.subheadings && section.subheadings.length > 0) {
       section.subheadings.forEach(subheading => {
@@ -110,9 +112,26 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
   });
   fullContent += "\n";
 
+  // Track used affiliate links to prevent duplicates
+  const usedAffiliateLinks = new Set();
+
   // Generate content for each section and its subsections
   for (const section of outline) {
-    const sectionPrompt = `Write a factual, well-researched section (${wordCounts.section} words) for the heading "${section.heading}" that's part of an article titled "${title}".
+    // Check if this section heading matches an unused affiliate link
+    const matchingLink = affiliateLinks.find(link => 
+      !usedAffiliateLinks.has(link.name) && 
+      section.heading.toLowerCase().includes(link.name.toLowerCase())
+    );
+
+    if (matchingLink) {
+      usedAffiliateLinks.add(matchingLink.name);
+      // Use the affiliate link as a heading with proper markdown link
+      fullContent += `## [${matchingLink.name}](${matchingLink.url})\n\n`;
+    } else {
+      fullContent += `## ${section.heading}\n\n`;
+    }
+
+    const sectionPrompt = `Write a factual, well-researched section (exactly ${wordCounts.section} words) for the heading "${section.heading}" that's part of an article titled "${title}".
 
 Context: ${context}
 Keywords: ${keywords.join(", ")}
@@ -125,8 +144,12 @@ Important Instructions:
 2. No speculative or made-up content
 3. Natural tone while maintaining professionalism
 4. Include relevant statistics and data points
-${affiliateLinks.length > 0 ? `5. Naturally incorporate these affiliate links where relevant:
-${affiliateLinks.map(link => `   - ${link.name}: ${link.url}`).join('\n')}` : ''}
+5. The section must be EXACTLY ${wordCounts.section} words - no more, no less
+${!matchingLink && affiliateLinks.length > 0 ? `6. If relevant, naturally incorporate ONE of these unused affiliate links:
+${affiliateLinks
+  .filter(link => !usedAffiliateLinks.has(link.name))
+  .map(link => `   - [${link.name}](${link.url})`)
+  .join('\n')}` : ''}
 
 Format in markdown and make it informative and engaging.
 
@@ -140,10 +163,17 @@ Respond with just the markdown content, no explanations or extra text.`;
 
     const sectionContent = sectionResponse.choices[0].message.content || '';
     fullContent += `${sectionContent}\n\n`;
+
+    // Update used affiliate links based on the content
+    affiliateLinks.forEach(link => {
+      if (sectionContent.includes(link.url)) {
+        usedAffiliateLinks.add(link.name);
+      }
+    });
   }
 
   // Step 4: Generate conclusion
-  const conclusionPrompt = `Write a factual, evidence-based conclusion (${wordCounts.conclusion} words) for a blog post with the title: "${title}".
+  const conclusionPrompt = `Write a factual, evidence-based conclusion (exactly ${wordCounts.conclusion} words) for a blog post with the title: "${title}".
 
 Context: ${context}
 Keywords: ${keywords.join(", ")}
@@ -153,6 +183,7 @@ Important Instructions:
 2. Include relevant statistics or data points discussed
 3. No speculative or made-up content
 4. End with actionable insights based on the presented facts
+5. The conclusion must be EXACTLY ${wordCounts.conclusion} words - no more, no less
 
 Format in markdown and end with a clear call to action.
 
