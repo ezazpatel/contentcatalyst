@@ -2,12 +2,8 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
-import { checkScheduledPosts } from "./scheduler";
 import { ZodError } from "zod";
 import { marked } from 'marked';
-
-// Start the scheduler when the server starts
-checkScheduledPosts();
 
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
@@ -89,8 +85,8 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/wordpress/publish-all", async (_req, res) => {
     try {
-      if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN) {
-        throw new Error('WordPress credentials are not configured');
+      if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN || !process.env.WORDPRESS_USERNAME) {
+        throw new Error('WordPress credentials are not configured. Please set WORDPRESS_API_URL, WORDPRESS_USERNAME, and WORDPRESS_AUTH_TOKEN environment variables.');
       }
 
       // Get all unpublished posts

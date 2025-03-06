@@ -66,4 +66,31 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
   });
+
+  // Handle graceful shutdown
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    server.close(() => {
+      console.log('HTTP server closed');
+    });
+
+    // Any other cleanup required
+
+
+    // Exit process
+    process.exit(0);
+  });
+
+  process.on('SIGINT', async () => {
+    console.log('SIGINT received, shutting down gracefully');
+    server.close(() => {
+      console.log('HTTP server closed');
+    });
+
+    // Any other cleanup required
+
+
+    // Exit process
+    process.exit(0);
+  });
 })();

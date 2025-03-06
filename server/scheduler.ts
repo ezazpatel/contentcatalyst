@@ -30,7 +30,6 @@ Create a catchy title that naturally includes the keyword phrase and an outline 
 
 Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).`
       }],
-      response_format: { type: "json_object" },
       max_tokens: 1000
     });
 
@@ -61,7 +60,6 @@ Write an engaging introduction for a blog post with the title: "${title}" about 
 
 Respond in JSON format with these fields: 'introduction' and 'description'.`
       }],
-      response_format: { type: "json_object" },
       max_tokens: 1000
     });
 
@@ -149,11 +147,22 @@ Respond with just the markdown content, no explanations or extra text.`;
   }
 }
 
+// Simple lock mechanism to prevent multiple instances processing the same posts
+let isProcessingPosts = false;
+
 export async function checkScheduledPosts() {
+  // Skip if already processing posts
+  if (isProcessingPosts) {
+    console.log('Already processing scheduled posts, skipping this run');
+    return;
+  }
+  
+  isProcessingPosts = true;
+  
   try {
     const now = new Date();
 
-    // Find all draft posts that are scheduled for now or earlier using storage interface
+    // Find all draft posts that are scheduled for now or earlier
     const scheduledPosts = await storage.getScheduledPosts(now);
 
     for (const post of scheduledPosts) {
@@ -185,11 +194,25 @@ export async function checkScheduledPosts() {
         }
       } catch (error) {
         console.error(`Failed to process post ${post.id}:`, error instanceof Error ? error.message : String(error));
-        continue; // Continue with next post even if this one failed
+        
+        // Update post status to indicate failure so it doesn't get retried endlessly
+        try {
+          await storage.updateBlogPost(post.id, {
+            status: 'failed'
+          });
+          console.log(`Updated post ${post.id} status to 'failed' due to processing error`);
+        } catch (updateError) {
+          console.error(`Failed to update status for post ${post.id}:`, updateError instanceof Error ? updateError.message : String(updateError));
+        }
+        
+        continue; // Continue with next post
       }
     }
   } catch (error) {
     console.error('Error checking scheduled posts:', error instanceof Error ? error.message : String(error));
+  } finally {
+    // Release the lock
+    isProcessingPosts = false;
   }
 }
 
@@ -202,7 +225,7 @@ export function startScheduler() {
   // Then schedule future runs
   schedulerInterval = setInterval(() => {
     checkScheduledPosts().catch(console.error);
-  }, 60000); // Run every hour
+  }, 3600000); // Run every hour (3600000 ms = 1 hour)
 
   console.log('Automatic post scheduling is enabled. Posts will be automatically published every hour.');
 }
