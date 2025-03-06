@@ -1,6 +1,6 @@
-
 import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { z } from "zod";
 
 export enum BlogPostStatus {
   DRAFT = "DRAFT",
@@ -27,3 +27,17 @@ export const blogPosts = sqliteTable("blog_posts", {
 
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
+
+// Add zod schema for form validation
+export const insertBlogPostSchema = z.object({
+  title: z.string().nullable(),
+  content: z.string().nullable(),
+  description: z.string().nullable(),
+  contextDescription: z.string().nullable(),
+  status: z.nativeEnum(BlogPostStatus).nullable(),
+  keywords: z.array(z.string()).nullable(),
+  scheduledDate: z.string(),
+  introLength: z.number().optional(),
+  sectionLength: z.number().optional(),
+  conclusionLength: z.number().optional(),
+});
