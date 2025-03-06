@@ -13,6 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { apiRequest } from "@/utils/api";
+import { QueryClient } from "@tanstack/react-query";
+// Added imports for DropdownMenu components and toast
 
 
 export default function BlogsList() {
@@ -24,6 +30,9 @@ export default function BlogsList() {
     mutationKey: ['regeneratePost'],
     mutationFn: (postId: string) => fetch(`/api/posts/${postId}/regenerate`, { method: 'POST' }),
   });
+
+  const { toast } = useToast();
+  const queryClient = new QueryClient(); // Initialize QueryClient
 
   if (isLoading) {
     return (
@@ -103,6 +112,53 @@ export default function BlogsList() {
                       </>
                     )}
                   </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem 
+                        onClick={() => navigate(`/edit/${post.id}`)}
+                      >
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => navigate(`/view/${post.id}`)}
+                      >
+                        View
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={async () => {
+                          try {
+                            const response = await apiRequest("POST", `/api/posts/${post.id}/process`);
+                            const result = await response.json();
+                            toast({
+                              title: "Success",
+                              description: "Post processed successfully",
+                            });
+                            queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: error instanceof Error ? error.message : "Failed to process post",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
+                        Generate Content
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => deletePost.mutate(post.id)}
+                        className="text-red-600"
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </CardFooter>
               </Card>
           ))}

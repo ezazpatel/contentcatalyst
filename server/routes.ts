@@ -281,6 +281,35 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Endpoint to manually process a specific post
+  app.post("/api/posts/:id/process", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid post ID" });
+      }
+      
+      // Import the processPost function from scheduler
+      const { processPost } = await import("./scheduler");
+      
+      // Process the post
+      const updatedPost = await processPost(id);
+      
+      res.json({ 
+        success: true, 
+        message: "Post processed successfully", 
+        post: updatedPost 
+      });
+    } catch (error) {
+      console.error('Error processing post:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to process post', 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   app.post("/api/wordpress/test", async (_req, res) => {
     try {
       if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN || !process.env.WORDPRESS_USERNAME) {
