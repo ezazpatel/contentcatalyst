@@ -191,6 +191,7 @@ Respond with just the markdown content, no explanations or extra text.`;
   }
 }
 
+// Make this function exportable for manual triggers
 export async function checkScheduledPosts() {
   try {
     const now = new Date();

@@ -259,6 +259,28 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.post("/api/check-scheduled", async (_req, res) => {
+    try {
+      // Import the checkScheduledPosts function from scheduler
+      const { checkScheduledPosts } = await import("./scheduler");
+      
+      // Run the scheduled post check
+      await checkScheduledPosts();
+      
+      res.json({ 
+        success: true, 
+        message: "Successfully checked for scheduled posts" 
+      });
+    } catch (error) {
+      console.error('Error checking scheduled posts:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Failed to check scheduled posts', 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   app.post("/api/wordpress/test", async (_req, res) => {
     try {
       if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN || !process.env.WORDPRESS_USERNAME) {
