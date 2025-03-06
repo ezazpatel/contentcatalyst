@@ -6,9 +6,6 @@ import { apiRequest } from "@/lib/queryClient";
 import type { InsertBlogPost } from "@shared/schema";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 import { CalendarClock } from "lucide-react";
 
 export default function NewPost() {
