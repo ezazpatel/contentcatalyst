@@ -8,7 +8,11 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-export async function generateContent(keywords: string[]): Promise<{
+export async function generateContent(keywords: string[], context: string, wordCounts: {
+  intro: number;
+  section: number;
+  conclusion: number;
+}, affiliateLinks: { name: string; url: string; }[]): Promise<{
   content: string;
   title: string;
   description: string;
@@ -18,17 +22,21 @@ export async function generateContent(keywords: string[]): Promise<{
     model: "o3-mini",
     messages: [{
       role: "user",
-      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
+      content: `You are a professional content writer creating factual, well-researched blog content. Your task is to write about: ${context}
 
-Use grade 7-8 English. Keep most sentences short and simple. Mix in a few longer sentences now and then to make a strong point. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+Keywords to focus on: ${keywords.join(", ")}
 
-For the keyword phrase: ${keywords.join(", ")}
+Important Instructions:
+1. Only include factual, verifiable information. No made-up stories or speculative content.
+2. Use credible sources and current data where applicable.
+3. Natural tone while maintaining professionalism.
+4. Include the keyword phrases naturally without forcing them.
 
-Create a catchy title that naturally includes the keyword phrase and an outline for a comprehensive blog post between 1500 and 4000 words. The outline should include:
-1. Introduction
-2. At least 6-8 main sections with descriptive headings
+Create a title and outline for a comprehensive blog post with these specifications:
+1. Introduction (${wordCounts.intro} words)
+2. At least 6-8 main sections with descriptive headings (${wordCounts.section} words each)
 3. Multiple sub-sections (3-4) for each main section
-4. A conclusion section
+4. Conclusion (${wordCounts.conclusion} words)
 
 Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).`
     }],
@@ -55,11 +63,17 @@ Respond in JSON format with these fields: 'title' and 'outline' (an array of sec
     model: "o3-mini",
     messages: [{
       role: "user",
-      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast.
+      content: `Write a factual, well-researched introduction (${wordCounts.intro} words) for a blog post with the title: "${title}". 
 
-Use grade 7-8 English. Keep most sentences short and simple. Mix in a few longer sentences now and then to make a strong point. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+Context: ${context}
+Keywords: ${keywords.join(", ")}
 
-Write an engaging introduction (400-500 words) for a blog post with the title: "${title}" about the keywords: ${keywords.join(", ")}. 
+Important Instructions:
+1. Only include verifiable facts and data
+2. No speculative or made-up content
+3. Natural tone while maintaining professionalism
+4. Include key statistics or data points where relevant
+
 Also provide a compelling meta description under 155 characters.
 
 Respond in JSON format with these fields: 'introduction' and 'description'.`
@@ -98,14 +112,23 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
 
   // Generate content for each section and its subsections
   for (const section of outline) {
-    const sectionPrompt = `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer with expertise about: ${keywords.join(", ")}.
+    const sectionPrompt = `Write a factual, well-researched section (${wordCounts.section} words) for the heading "${section.heading}" that's part of an article titled "${title}".
 
-Use grade 7-8 English. Keep most sentences short and simple. Mix in a few longer sentences now and then to make a strong point. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+Context: ${context}
+Keywords: ${keywords.join(", ")}
 
-Write a detailed section (600-800 words) for the heading "${section.heading}" that's part of an article titled "${title}".
-Include rich details, examples, personal anecdotes, and naturally place affiliate links where relevant.
-Format in markdown and make it engaging and informative.
-Include all these subheadings: ${section.subheadings.join(", ")}.
+Required subheadings:
+${section.subheadings.join("\n")}
+
+Important Instructions:
+1. Only include verifiable facts and data
+2. No speculative or made-up content
+3. Natural tone while maintaining professionalism
+4. Include relevant statistics and data points
+${affiliateLinks.length > 0 ? `5. Naturally incorporate these affiliate links where relevant:
+${affiliateLinks.map(link => `   - ${link.name}: ${link.url}`).join('\n')}` : ''}
+
+Format in markdown and make it informative and engaging.
 
 Respond with just the markdown content, no explanations or extra text.`;
 
@@ -120,13 +143,18 @@ Respond with just the markdown content, no explanations or extra text.`;
   }
 
   // Step 4: Generate conclusion
-  const conclusionPrompt = `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer.
+  const conclusionPrompt = `Write a factual, evidence-based conclusion (${wordCounts.conclusion} words) for a blog post with the title: "${title}".
 
-Use grade 7-8 English. Keep most sentences short and simple. Mix in a few longer sentences now and then to make a strong point. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+Context: ${context}
+Keywords: ${keywords.join(", ")}
 
-Write a compelling conclusion (300-400 words) for a blog post with the title: "${title}" about the keywords: ${keywords.join(", ")}.
-Summarize key points, include a call to action, and remind readers about the value of the topic.
-Format in markdown and end with an encouraging note.
+Important Instructions:
+1. Summarize key points with supporting evidence
+2. Include relevant statistics or data points discussed
+3. No speculative or made-up content
+4. End with actionable insights based on the presented facts
+
+Format in markdown and end with a clear call to action.
 
 Respond with just the markdown content, no explanations or extra text.`;
 
@@ -164,7 +192,16 @@ export async function checkScheduledPosts() {
     for (const post of scheduledPosts) {
       try {
         // Generate content using OpenAI
-        const generated = await generateContent(post.keywords);
+        const generated = await generateContent(
+          post.keywords,
+          post.contextDescription || '',
+          {
+            intro: post.introLength || 400,
+            section: post.sectionLength || 600,
+            conclusion: post.conclusionLength || 300
+          },
+          post.affiliateLinks || []
+        );
 
         // Update the post with generated content
         const updatedPost = await storage.updateBlogPost(post.id, {
