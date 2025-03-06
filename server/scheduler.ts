@@ -73,7 +73,7 @@ export async function checkScheduledPosts() {
         const updatedPost = await storage.updateBlogPost(post.id, {
           title: generated.title,
           content: generated.content,
-          seoDescription: generated.seoMetaDescription,
+          seoDescription: generated.description,
           status: 'published'
         });
 
