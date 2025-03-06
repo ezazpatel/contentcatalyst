@@ -31,7 +31,6 @@ Create a catchy title that naturally includes the keyword phrase and an outline 
 Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).`
     }],
     response_format: { type: "json_object" },
-    temperature: 0.8,
     top_p: 1
   });
 
@@ -62,7 +61,6 @@ Also provide a compelling meta description under 155 characters.
 Respond in JSON format with these fields: 'introduction' and 'description'.`
     }],
     response_format: { type: "json_object" },
-    temperature: 0.9,
     top_p: 1
   });
 
