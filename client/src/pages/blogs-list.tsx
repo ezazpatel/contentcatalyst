@@ -8,8 +8,8 @@ import {
   CardHeader, 
   CardTitle,
   CardFooter,
-  Button
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
