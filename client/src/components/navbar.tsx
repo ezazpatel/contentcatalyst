@@ -1,26 +1,47 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [location] = useLocation();
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location]);
 
   const NavLinks = () => (
     <div className="flex flex-col sm:flex-row gap-4">
       <Link href="/">
-        <Button variant="outline" className="w-full sm:w-auto justify-start sm:justify-center">
+        <Button 
+          variant="outline" 
+          className={`w-full sm:w-auto justify-start sm:justify-center ${
+            location === "/" ? "bg-accent text-accent-foreground" : ""
+          }`}
+        >
           Create New Post
         </Button>
       </Link>
       <Link href="/blogs">
-        <Button variant="outline" className="w-full sm:w-auto justify-start sm:justify-center">
+        <Button 
+          variant="outline" 
+          className={`w-full sm:w-auto justify-start sm:justify-center ${
+            location === "/blogs" ? "bg-accent text-accent-foreground" : ""
+          }`}
+        >
           View All Posts
         </Button>
       </Link>
       <Link href="/keywords">
-        <Button variant="outline" className="w-full sm:w-auto justify-start sm:justify-center">
+        <Button 
+          variant="outline" 
+          className={`w-full sm:w-auto justify-start sm:justify-center ${
+            location === "/keywords" ? "bg-accent text-accent-foreground" : ""
+          }`}
+        >
           Manage Keywords
         </Button>
       </Link>

@@ -1,66 +1,90 @@
+import { storage } from './storage';
+import { BlogPost } from '@shared/schema';
+import { generateBlogContent } from './openai-config';
 
-import { BlogPost, BlogPostStatus } from "../shared/schema";
-import { storage } from "./storage";
+export async function checkScheduledPosts() {
+  const now = new Date();
 
-interface GenerationResult {
-  content: string;
-}
-
-export async function generateBlogPost(post: BlogPost): Promise<GenerationResult | null> {
   try {
-    // First update the post status to generating
-    await storage.updateBlogPost(post.id, {
-      status: BlogPostStatus.GENERATING
-    });
-    
-    // Example blog post content generation
-    const sections = post.keywords && post.keywords.length > 0 
-      ? post.keywords.map(keyword => `## ${keyword}\n\nContent about ${keyword}...`)
-      : ['## Section 1\n\nDefault section content...'];
-    
-    const introduction = `# ${post.title}\n\n${post.description || 'Introduction to the blog post...'}\n\n`;
-    const conclusion = '\n\n## Conclusion\n\nThank you for reading this blog post!';
-    
-    const content = introduction + sections.join('\n\n') + conclusion;
-    
-    // Return the generated content
-    return {
-      content
-    };
-  } catch (error) {
-    console.error("Error generating blog post:", error);
-    return null;
-  }
-}
+    // Get all draft posts scheduled for now or earlier using storage interface
+    const scheduledPosts = await storage.getScheduledPosts(now);
 
-// Function to schedule blog post generation and publishing
-export async function scheduleBlogPosts() {
-  try {
-    // Get all scheduled posts that are due for publication
-    const now = new Date();
-    const blogPosts = await storage.getAllBlogPosts();
-    
-    const scheduledPosts = blogPosts.filter(post => {
-      if (post.status !== BlogPostStatus.SCHEDULED) return false;
-      
-      const scheduledDate = new Date(post.scheduledDate);
-      return scheduledDate <= now;
-    });
-    
-    // Generate each scheduled post
     for (const post of scheduledPosts) {
-      console.log(`Generating scheduled post: ${post.title}`);
-      const result = await generateBlogPost(post);
-      
-      if (result) {
-        await storage.updateBlogPost(post.id, {
-          content: result.content,
-          status: BlogPostStatus.PUBLISHED
+      try {
+        if (!post.id || !Array.isArray(post.keywords)) {
+          console.error(`Invalid post data, skipping post ${post.id}`, post);
+          continue;
+        }
+
+        console.log(`Processing scheduled post ${post.id}`);
+
+        // Generate content using OpenAI
+        const generated = await generateBlogContent(post.keywords);
+
+        // Update the post with generated content
+        const updatedPost = await storage.updateBlogPost(post.id, {
+          title: generated.title,
+          content: generated.content,
+          seoDescription: generated.seoMetaDescription,
+          status: 'published'
         });
-        console.log(`Published scheduled post: ${post.title}`);
+
+        // Publish to WordPress if configured
+        if (process.env.WORDPRESS_API_URL) {
+          const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+          try {
+            const response = await fetch(`${baseUrl}/api/wordpress/publish`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(updatedPost),
+            });
+
+            if (!response.ok) {
+              throw new Error(`WordPress API responded with status ${response.status}`);
+            }
+          } catch (error) {
+            console.error(`WordPress publishing failed for post ${post.id}:`, 
+              error instanceof Error ? error.message : String(error));
+          }
+        }
+
+        console.log(`Successfully processed post ${post.id}`);
+      } catch (error) {
+        console.error(`Failed to process post ${post.id}:`, 
+          error instanceof Error ? error.message : String(error));
+        continue; // Continue processing other posts
       }
     }
   } catch (error) {
-    console.error("Error in scheduled post generation:", error);
+    console.error('Error checking scheduled posts:', 
+      error instanceof Error ? error.message : String(error));
   }
 }
+
+// Use a more robust scheduling mechanism
+let schedulerInterval: NodeJS.Timeout;
+
+export function startScheduler() {
+  if (schedulerInterval) {
+    clearInterval(schedulerInterval);
+  }
+
+  // Run immediately on start
+  checkScheduledPosts().catch(console.error);
+
+  // Then schedule future runs
+  schedulerInterval = setInterval(() => {
+    checkScheduledPosts().catch(console.error);
+  }, 60 * 1000); // Run every minute
+}
+
+export function stopScheduler() {
+  if (schedulerInterval) {
+    clearInterval(schedulerInterval);
+  }
+}
+
+// Start the scheduler
+startScheduler();
