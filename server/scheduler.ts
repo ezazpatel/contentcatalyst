@@ -125,11 +125,11 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
     const parsedIntro = JSON.parse(introContent);
     introduction = parsedIntro.introduction || '';
     const introWordCount = countWords(introduction);
-    if (introWordCount < wordCounts.intro - 100 || introWordCount > wordCounts.intro + 100) {
+    if (introWordCount < wordCounts.intro - 200 || introWordCount > wordCounts.intro + 200) {
       introduction = await getValidatedResponse(
         `Write a factual introduction for "${title}". Context: ${context}`,
         wordCounts.intro,
-        100
+        200
       );
     }
     description = parsedIntro.description || '';
@@ -193,7 +193,7 @@ ${affiliateLinks
 
 Format in markdown and make it informative and engaging.`,
       wordCounts.section,
-      200
+      400
     );
 
     // If we found any unused affiliate links in the content, mark them as used
@@ -225,7 +225,7 @@ Important Instructions:
 
 Format in markdown and end with a clear call to action.`,
     wordCounts.conclusion,
-    100
+    200
   );
 
   fullContent += `## Conclusion\n\n${conclusion}`;
