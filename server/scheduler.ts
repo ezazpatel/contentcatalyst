@@ -14,13 +14,16 @@ function countWords(text: string): number {
 }
 
 // Helper function to validate word count with retries
-async function getValidatedResponse(prompt: string, targetWordCount: number, model: string = "o3-mini", maxRetries: number = 3): Promise<string> {
+async function getValidatedResponse(prompt: string, targetWordCount: number, tolerance: number, model: string = "o3-mini", maxRetries: number = 3): Promise<string> {
+  const minWords = targetWordCount - tolerance;
+  const maxWords = targetWordCount + tolerance;
+
   for (let i = 0; i < maxRetries; i++) {
     const response = await openai.chat.completions.create({
       model,
       messages: [{
         role: "user",
-        content: `${prompt}\n\nIMPORTANT: Your response MUST be EXACTLY ${targetWordCount} words. Not one more, not one less.`
+        content: `${prompt}\n\nIMPORTANT: Your response should be between ${minWords} and ${maxWords} words.`
       }],
       top_p: 1
     });
@@ -28,14 +31,14 @@ async function getValidatedResponse(prompt: string, targetWordCount: number, mod
     const content = response.choices[0].message.content || '';
     const wordCount = countWords(content);
 
-    if (wordCount === targetWordCount) {
+    if (wordCount >= minWords && wordCount <= maxWords) {
       return content;
     }
 
-    console.log(`Attempt ${i + 1}: Generated ${wordCount} words, target was ${targetWordCount}. Retrying...`);
+    console.log(`Attempt ${i + 1}: Generated ${wordCount} words, target was ${targetWordCount} (±${tolerance}). Retrying...`);
   }
 
-  throw new Error(`Failed to generate content with exact word count after ${maxRetries} attempts`);
+  throw new Error(`Failed to generate content within word count range after ${maxRetries} attempts`);
 }
 
 export async function generateContent(keywords: string[], context: string, wordCounts: {
@@ -64,10 +67,10 @@ Important Instructions:
 5. Where possible, use these affiliate products/services as MAIN SECTION HEADINGS (not subsections): ${affiliateLinks.map(link => link.name).join(", ")}
 
 Create a title and outline for a comprehensive blog post with these specifications:
-1. Introduction (exactly ${wordCounts.intro} words)
-2. 6-8 main sections, prioritizing affiliate products as section headings where relevant (exactly ${wordCounts.section} words each)
+1. Introduction (approximately ${wordCounts.intro} words)
+2. 6-8 main sections, prioritizing affiliate products as section headings where relevant (approximately ${wordCounts.section} words each)
 3. 2-3 sub-sections for each main section
-4. Conclusion (exactly ${wordCounts.conclusion} words)
+4. Conclusion (approximately ${wordCounts.conclusion} words)
 
 Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).`
     }],
@@ -94,7 +97,7 @@ Respond in JSON format with these fields: 'title' and 'outline' (an array of sec
     model: "o3-mini",
     messages: [{
       role: "user",
-      content: `Write a factual, well-researched introduction (exactly ${wordCounts.intro} words) for a blog post with the title: "${title}". 
+      content: `Write a factual, well-researched introduction (approximately ${wordCounts.intro} words) for a blog post with the title: "${title}". 
 
 Context: ${context}
 Keywords: ${keywords.join(", ")}
@@ -104,7 +107,6 @@ Important Instructions:
 2. No speculative or made-up content
 3. Natural tone while maintaining professionalism
 4. Include key statistics or data points where relevant
-5. The introduction must be EXACTLY ${wordCounts.intro} words - no more, no less.
 
 Also provide a compelling meta description under 155 characters.
 
@@ -123,10 +125,11 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
     const parsedIntro = JSON.parse(introContent);
     introduction = parsedIntro.introduction || '';
     const introWordCount = countWords(introduction);
-    if (introWordCount !== wordCounts.intro) {
+    if (introWordCount < wordCounts.intro - 100 || introWordCount > wordCounts.intro + 100) {
       introduction = await getValidatedResponse(
         `Write a factual introduction for "${title}". Context: ${context}`,
-        wordCounts.intro
+        wordCounts.intro,
+        100
       );
     }
     description = parsedIntro.description || '';
@@ -189,7 +192,8 @@ ${affiliateLinks
   .join('\n')}` : ''}
 
 Format in markdown and make it informative and engaging.`,
-      wordCounts.section
+      wordCounts.section,
+      200
     );
 
     // If we found any unused affiliate links in the content, mark them as used
@@ -220,7 +224,8 @@ Important Instructions:
 4. End with actionable insights based on the presented facts
 
 Format in markdown and end with a clear call to action.`,
-    wordCounts.conclusion
+    wordCounts.conclusion,
+    100
   );
 
   fullContent += `## Conclusion\n\n${conclusion}`;
@@ -269,14 +274,6 @@ export async function checkScheduledPosts() {
           status: 'published'
         });
 
-        // Publish to WordPress
-        const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-        await fetch(`${baseUrl}/api/wordpress/publish`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedPost)
-        });
-
         console.log(`Published post ${post.id} successfully`);
       } catch (error) {
         console.error(`Failed to process post ${post.id}:`, error instanceof Error ? error.message : String(error));
@@ -288,6 +285,5 @@ export async function checkScheduledPosts() {
 }
 
 // Automatic scheduler enabled
-// To disable, comment out the line below
 setInterval(checkScheduledPosts, 60000);
 console.log('Automatic post scheduling is enabled. Posts will be automatically published every minute.');
