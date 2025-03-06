@@ -18,11 +18,11 @@ export async function generateContent(keywords: string[]): Promise<{
     model: "o3-mini",
     messages: [{
       role: "user",
-      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. 
+      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
 
 For the keyword phrase: ${keywords.join(", ")}
 
-Create a catchy title that naturally includes the keyword phrase and an outline for a comprehensive 4000+ word blog post. The outline should include:
+Create a catchy title that naturally includes the keyword phrase and an outline for a comprehensive blog post between 1500 and 4000 words. The outline should include:
 1. Introduction
 2. At least 6-8 main sections with descriptive headings
 3. Multiple sub-sections (3-4) for each main section
@@ -38,7 +38,7 @@ Respond in JSON format with these fields: 'title' and 'outline' (an array of sec
   const outlineContent = outlineResponse.choices[0].message.content || '{}';
   let outline;
   let title = '';
-  
+
   try {
     const parsedOutline = JSON.parse(outlineContent);
     title = parsedOutline.title || '';
@@ -68,7 +68,7 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
   const introContent = introResponse.choices[0].message.content || '{}';
   let introduction = '';
   let description = '';
-  
+
   try {
     const parsedIntro = JSON.parse(introContent);
     introduction = parsedIntro.introduction || '';
@@ -79,7 +79,7 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
 
   // Step 3: Generate content for each section
   let fullContent = `# ${title}\n\n${introduction}\n\n`;
-  
+
   // Table of contents
   fullContent += "## Table of Contents\n";
   outline.forEach((section, index) => {
