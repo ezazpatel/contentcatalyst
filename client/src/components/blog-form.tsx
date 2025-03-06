@@ -14,10 +14,12 @@ import { formatInTimeZone } from 'date-fns-tz';
 interface BlogFormProps {
   defaultValues?: Partial<InsertBlogPost>;
   onSubmit: (data: InsertBlogPost) => void;
+  onPublishNow?: (data: InsertBlogPost) => void;
   isLoading?: boolean;
+  isPublishing?: boolean;
 }
 
-export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) {
+export function BlogForm({ defaultValues, onSubmit, onPublishNow, isLoading, isPublishing }: BlogFormProps) {
   const form = useForm<InsertBlogPost>({
     resolver: zodResolver(insertBlogPostSchema),
     defaultValues: {
@@ -44,7 +46,6 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 w-full max-w-2xl mx-auto px-4 sm:px-6">
-        {/* Keywords section */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Keywords</h3>
           {form.watch("keywords").map((_, index) => (
@@ -84,7 +85,6 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
           </Button>
         </div>
 
-        {/* Context Description */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Blog Context</h3>
           <Textarea
@@ -99,7 +99,6 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
           )}
         </div>
 
-        {/* Word Count Settings */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Word Count Settings</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -133,7 +132,6 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
           </div>
         </div>
 
-        {/* Affiliate Links */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Affiliate Links</h3>
           <p className="text-sm text-muted-foreground">Add links that should be naturally incorporated into the content</p>
@@ -178,13 +176,12 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
           </Button>
         </div>
 
-        {/* Schedule */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Schedule</h3>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <Popover>
               <PopoverTrigger asChild>
-                <Button 
+                <Button
                   variant="outline"
                   className={`w-full sm:w-auto ${!isFormDateValid ? "border-destructive text-destructive" : ""}`}
                 >
@@ -212,8 +209,8 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
 
             <Input
               type="time"
-              value={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
-                ? format(form.watch("scheduledDate"), "HH:mm") 
+              value={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime())
+                ? format(form.watch("scheduledDate"), "HH:mm")
                 : "00:00"}
               className={`w-full sm:w-auto ${!isFormDateValid ? "border-destructive text-destructive" : ""}`}
               onChange={(e) => {
@@ -235,13 +232,33 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
           )}
         </div>
 
-        <Button 
-          type="submit" 
-          disabled={isLoading || !isFormDateValid}
-          className="w-full sm:w-auto"
-        >
-          {isLoading ? "Adding..." : "Add Post"}
-        </Button>
+        <div className="flex gap-4">
+          <Button
+            type="submit"
+            disabled={isLoading || !isFormDateValid}
+            className="w-full sm:w-auto"
+          >
+            {isLoading ? "Scheduling..." : "Schedule Post"}
+          </Button>
+
+          {onPublishNow && (
+            <Button
+              type="button"
+              onClick={() => {
+                const isValid = form.trigger();
+                if (isValid) {
+                  const data = form.getValues();
+                  onPublishNow(data);
+                }
+              }}
+              disabled={isPublishing || !isFormDateValid}
+              variant="secondary"
+              className="w-full sm:w-auto"
+            >
+              {isPublishing ? "Publishing..." : "Publish Now"}
+            </Button>
+          )}
+        </div>
       </form>
     </Form>
   );

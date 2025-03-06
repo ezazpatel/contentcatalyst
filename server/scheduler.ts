@@ -299,5 +299,5 @@ export async function checkScheduledPosts() {
 }
 
 // Automatic scheduler enabled
-setInterval(checkScheduledPosts, 60000);
-console.log('Automatic post scheduling is enabled. Posts will be automatically published every minute.');
+setInterval(checkScheduledPosts, 3600000); // Check every hour instead of every minute
+console.log('Automatic post scheduling is enabled. Posts will be automatically published every hour.');
