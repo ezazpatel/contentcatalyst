@@ -1,4 +1,4 @@
-import { BlogPost, InsertBlogPost, blogPosts } from "@shared/schema";
+import { BlogPost, InsertBlogPost, blogPosts } from "../shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 

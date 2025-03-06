@@ -2,7 +2,7 @@
 import express from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
-import { BlogPostStatus } from "@shared/schema";
+import { BlogPostStatus } from "../shared/schema";
 import { generateBlogPost } from "./scheduler";
 
 export async function registerRoutes(app: express.Express) {
