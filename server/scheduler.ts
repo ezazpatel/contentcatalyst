@@ -14,7 +14,7 @@ export async function generateContent(keywords: string[]): Promise<{
   try {
     // Step 1: Generate title and outline
     const outlineResponse = await openai.chat.completions.create({
-      model: "o3-mini",
+      model: "gpt-4",
       messages: [{
         role: "user",
         content: `You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
@@ -30,7 +30,8 @@ Create a catchy title that naturally includes the keyword phrase and an outline 
 
 Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).`
       }],
-      response_format: "json_object"
+      response_format: { type: "json_object" },
+      max_tokens: 1000
     });
 
     // Parse outline response
@@ -49,7 +50,7 @@ Respond in JSON format with these fields: 'title' and 'outline' (an array of sec
 
     // Step 2: Generate introduction
     const introResponse = await openai.chat.completions.create({
-      model: "o3-mini",
+      model: "gpt-4",
       messages: [{
         role: "user",
         content: `You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
@@ -60,7 +61,8 @@ Write an engaging introduction for a blog post with the title: "${title}" about 
 
 Respond in JSON format with these fields: 'introduction' and 'description'.`
       }],
-      response_format: "json_object"
+      response_format: { type: "json_object" },
+      max_tokens: 1000
     });
 
     // Parse introduction response
@@ -108,8 +110,9 @@ Include all these subheadings: ${section.subheadings.join(", ")}.
 Respond with just the markdown content, no explanations or extra text.`;
 
       const sectionResponse = await openai.chat.completions.create({
-        model: "o3-mini",
-        messages: [{ role: "user", content: sectionPrompt }]
+        model: "gpt-4",
+        messages: [{ role: "user", content: sectionPrompt }],
+        max_tokens: 1500
       });
 
       const sectionContent = sectionResponse.choices[0].message.content || '';
@@ -127,8 +130,9 @@ Format in markdown and end with an encouraging note.
 Respond with just the markdown content, no explanations or extra text.`;
 
     const conclusionResponse = await openai.chat.completions.create({
-      model: "o3-mini",
-      messages: [{ role: "user", content: conclusionPrompt }]
+      model: "gpt-4",
+      messages: [{ role: "user", content: conclusionPrompt }],
+      max_tokens: 1000
     });
 
     const conclusionContent = conclusionResponse.choices[0].message.content || '';
@@ -145,22 +149,11 @@ Respond with just the markdown content, no explanations or extra text.`;
   }
 }
 
-// Simple lock mechanism to prevent multiple instances processing the same posts
-let isProcessingPosts = false;
-
 export async function checkScheduledPosts() {
-  // Skip if already processing posts
-  if (isProcessingPosts) {
-    console.log('Already processing scheduled posts, skipping this run');
-    return;
-  }
-
-  isProcessingPosts = true;
-
   try {
     const now = new Date();
 
-    // Find all draft posts that are scheduled for now or earlier
+    // Find all draft posts that are scheduled for now or earlier using storage interface
     const scheduledPosts = await storage.getScheduledPosts(now);
 
     for (const post of scheduledPosts) {
@@ -192,25 +185,11 @@ export async function checkScheduledPosts() {
         }
       } catch (error) {
         console.error(`Failed to process post ${post.id}:`, error instanceof Error ? error.message : String(error));
-        
-        // Update post status to indicate failure so it doesn't get retried endlessly
-        try {
-          await storage.updateBlogPost(post.id, {
-            status: 'failed'
-          });
-          console.log(`Updated post ${post.id} status to 'failed' due to processing error`);
-        } catch (updateError) {
-          console.error(`Failed to update status for post ${post.id}:`, updateError instanceof Error ? updateError.message : String(updateError));
-        }
-        
-        continue; // Continue with next post
+        continue; // Continue with next post even if this one failed
       }
     }
   } catch (error) {
     console.error('Error checking scheduled posts:', error instanceof Error ? error.message : String(error));
-  } finally {
-    // Release the lock
-    isProcessingPosts = false;
   }
 }
 
@@ -223,9 +202,9 @@ export function startScheduler() {
   // Then schedule future runs
   schedulerInterval = setInterval(() => {
     checkScheduledPosts().catch(console.error);
-  }, 3600000); // Run every hour
+  }, 60000); // Run every minute
 
-  console.log('Automatic post scheduling is enabled. Posts will be automatically published every hour.');
+  console.log('Automatic post scheduling is enabled. Posts will be automatically published every minute.');
 }
 
 export function stopScheduler() {
