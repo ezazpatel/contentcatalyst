@@ -294,3 +294,22 @@ export async function registerRoutes(app: Express) {
 
   return httpServer;
 }
+import { marked } from 'marked';
+
+// Add this to your WordPress publish endpoint
+app.post('/api/wordpress/publish', async (req, res) => {
+  try {
+    const post = req.body;
+    
+    // Convert markdown content to HTML for WordPress
+    const htmlContent = marked.parse(post.content);
+    
+    // Now send htmlContent to WordPress instead of the raw markdown
+    // Your existing WordPress API code here, but using htmlContent instead of post.content
+    
+    res.json({ success: true, message: 'Post published to WordPress' });
+  } catch (error) {
+    console.error('Error publishing to WordPress:', error);
+    res.status(500).json({ success: false, error: 'Failed to publish to WordPress' });
+  }
+});
