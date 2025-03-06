@@ -14,7 +14,7 @@ export async function generateContent(keywords: string[]): Promise<{
   description: string;
 }> {
   const response = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "o3-mini",
     messages: [{
       role: "user",
       content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
