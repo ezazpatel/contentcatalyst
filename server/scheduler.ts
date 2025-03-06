@@ -1,7 +1,7 @@
 import { storage } from './storage';
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
-import { lt, eq, and, isNull, or, isEmpty } from 'drizzle-orm';
+import { lt, eq, and, isNull, or } from 'drizzle-orm';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -25,7 +25,6 @@ async function getValidatedResponse(prompt: string, targetWordCount: number, tol
         role: "user",
         content: `${prompt}\n\nIMPORTANT: Your response MUST be between ${minWords} and ${maxWords} words. This is a strict requirement - responses outside this range will be rejected.`
       }],
-      temperature: 0.7,
       top_p: 1
     });
 
