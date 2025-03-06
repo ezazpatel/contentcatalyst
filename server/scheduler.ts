@@ -31,6 +31,7 @@ Requirements:
 
 Respond strictly in JSON format with exactly these fields: 'title', 'content', 'description' (short). Do not include any extra text outside of this JSON.`
     }],
+    response_format: { type: "json_object" },
     temperature: 1,
     top_p: 1,
     frequency_penalty: 0,
