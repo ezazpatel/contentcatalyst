@@ -153,7 +153,7 @@ export async function checkScheduledPosts() {
   try {
     const now = new Date();
 
-    // Find all draft posts that are scheduled for now or earlier
+    // Find all draft posts that are scheduled for now or earlier using storage interface
     const scheduledPosts = await storage.getScheduledPosts(now);
 
     for (const post of scheduledPosts) {
