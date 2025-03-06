@@ -1,7 +1,5 @@
 import { storage } from './storage';
-import { db } from './db';
-import { blogPosts } from '@shared/schema';
-import { lt, eq, and } from 'drizzle-orm';
+import { BlogPost } from '@shared/schema';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -13,137 +11,142 @@ export async function generateContent(keywords: string[]): Promise<{
   title: string;
   description: string;
 }> {
-  // Step 1: Generate title and outline
-  const outlineResponse = await openai.chat.completions.create({
-    model: "o3-mini",
-    messages: [{
-      role: "user",
-      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
+  try {
+    // Step 1: Generate title and outline
+    const outlineResponse = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{
+        role: "user",
+        content: `You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
 
-Use grade 7-8 English. Keep most sentences short and simple. Mix in a few longer sentences now and then to make a strong point. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+Use grade 7-8 English. Vary sentence lengths to mimic human writing. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
 
 For the keyword phrase: ${keywords.join(", ")}
 
-Create a catchy title that naturally includes the keyword phrase and an outline for a comprehensive blog post between 1500 and 4000 words. The outline should include:
+Create a catchy title that naturally includes the keyword phrase and an outline for a comprehensive blog post. The outline should include:
 1. Introduction
-2. At least 6-8 main sections with descriptive headings
-3. Multiple sub-sections (3-4) for each main section
-4. A conclusion section
+2. A body that includes a few sections
+4. A conclusion section - don't title this section
 
 Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).`
-    }],
-    response_format: { type: "json_object" },
-    top_p: 1
-  });
+      }],
+      response_format: { type: "json_object" },
+      max_tokens: 1000
+    });
 
-  // Parse outline response
-  const outlineContent = outlineResponse.choices[0].message.content || '{}';
-  let outline;
-  let title = '';
+    // Parse outline response
+    const outlineContent = outlineResponse.choices[0].message.content || '{}';
+    let outline;
+    let title = '';
 
-  try {
-    const parsedOutline = JSON.parse(outlineContent);
-    title = parsedOutline.title || '';
-    outline = parsedOutline.outline || [];
-  } catch (error) {
-    console.error('Error parsing outline JSON:', error);
-    outline = [];
-  }
+    try {
+      const parsedOutline = JSON.parse(outlineContent);
+      title = parsedOutline.title || '';
+      outline = parsedOutline.outline || [];
+    } catch (error) {
+      console.error('Error parsing outline JSON:', error);
+      throw new Error('Failed to generate outline');
+    }
 
-  // Step 2: Generate introduction and meta description
-  const introResponse = await openai.chat.completions.create({
-    model: "o3-mini",
-    messages: [{
-      role: "user",
-      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast.
+    // Step 2: Generate introduction
+    const introResponse = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{
+        role: "user",
+        content: `You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
 
-Use grade 7-8 English. Keep most sentences short and simple. Mix in a few longer sentences now and then to make a strong point. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+Use grade 7-8 English. Vary sentence lengths to mimic human writing. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
 
-Write an engaging introduction (400-500 words) for a blog post with the title: "${title}" about the keywords: ${keywords.join(", ")}. 
-Also provide a compelling meta description under 155 characters.
+Write an engaging introduction for a blog post with the title: "${title}" about the keywords: ${keywords.join(", ")}. 
 
 Respond in JSON format with these fields: 'introduction' and 'description'.`
-    }],
-    response_format: { type: "json_object" },
-    top_p: 1
-  });
+      }],
+      response_format: { type: "json_object" },
+      max_tokens: 1000
+    });
 
-  // Parse introduction response
-  const introContent = introResponse.choices[0].message.content || '{}';
-  let introduction = '';
-  let description = '';
+    // Parse introduction response
+    const introContent = introResponse.choices[0].message.content || '{}';
+    let introduction = '';
+    let description = '';
 
-  try {
-    const parsedIntro = JSON.parse(introContent);
-    introduction = parsedIntro.introduction || '';
-    description = parsedIntro.description || '';
-  } catch (error) {
-    console.error('Error parsing intro JSON:', error);
-  }
-
-  // Step 3: Generate content for each section
-  let fullContent = `# ${title}\n\n${introduction}\n\n`;
-
-  // Table of contents
-  fullContent += "## Table of Contents\n";
-  outline.forEach((section, index) => {
-    fullContent += `- [${section.heading}](#${section.heading.toLowerCase().replace(/[^\w]+/g, '-')})\n`;
-    if (section.subheadings && section.subheadings.length > 0) {
-      section.subheadings.forEach(subheading => {
-        fullContent += `  - [${subheading}](#${subheading.toLowerCase().replace(/[^\w]+/g, '-')})\n`;
-      });
+    try {
+      const parsedIntro = JSON.parse(introContent);
+      introduction = parsedIntro.introduction || '';
+      description = parsedIntro.description || '';
+    } catch (error) {
+      console.error('Error parsing intro JSON:', error);
+      throw new Error('Failed to generate introduction');
     }
-  });
-  fullContent += "\n";
 
-  // Generate content for each section and its subsections
-  for (const section of outline) {
-    const sectionPrompt = `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer with expertise about: ${keywords.join(", ")}.
+    // Step 3: Generate content for each section
+    let fullContent = `# ${title}\n\n${introduction}\n\n`;
 
-Use grade 7-8 English. Keep most sentences short and simple. Mix in a few longer sentences now and then to make a strong point. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+    // Table of contents
+    fullContent += "## Table of Contents\n";
+    outline.forEach((section: any) => {
+      fullContent += `- [${section.heading}](#${section.heading.toLowerCase().replace(/[^\w]+/g, '-')})\n`;
+      if (section.subheadings && section.subheadings.length > 0) {
+        section.subheadings.forEach((subheading: string) => {
+          fullContent += `  - [${subheading}](#${subheading.toLowerCase().replace(/[^\w]+/g, '-')})\n`;
+        });
+      }
+    });
+    fullContent += "\n";
 
-Write a detailed section (600-800 words) for the heading "${section.heading}" that's part of an article titled "${title}".
+    // Generate content for each section and its subsections
+    for (const section of outline) {
+      const sectionPrompt = `You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
+
+You have expertise about: ${keywords.join(", ")}.
+
+Use grade 7-8 English. Vary sentence lengths to mimic human writing. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+
+Write a section for the heading "${section.heading}" that's part of an article titled "${title}".
 Include rich details, examples, personal anecdotes, and naturally place affiliate links where relevant.
 Format in markdown and make it engaging and informative.
 Include all these subheadings: ${section.subheadings.join(", ")}.
 
 Respond with just the markdown content, no explanations or extra text.`;
 
-    const sectionResponse = await openai.chat.completions.create({
-      model: "o3-mini",
-      messages: [{ role: "user", content: sectionPrompt }],
-      top_p: 1
-    });
+      const sectionResponse = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [{ role: "user", content: sectionPrompt }],
+        max_tokens: 1500
+      });
 
-    const sectionContent = sectionResponse.choices[0].message.content || '';
-    fullContent += `${sectionContent}\n\n`;
-  }
+      const sectionContent = sectionResponse.choices[0].message.content || '';
+      fullContent += `${sectionContent}\n\n`;
+    }
 
-  // Step 4: Generate conclusion
-  const conclusionPrompt = `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer.
+    // Step 4: Generate conclusion
+    const conclusionPrompt = `You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
 
-Use grade 7-8 English. Keep most sentences short and simple. Mix in a few longer sentences now and then to make a strong point. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+Use grade 7-8 English. Vary sentence lengths to mimic human writing. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
 
-Write a compelling conclusion (300-400 words) for a blog post with the title: "${title}" about the keywords: ${keywords.join(", ")}.
-Summarize key points, include a call to action, and remind readers about the value of the topic.
+Write a compelling conclusion for a blog post with the title: "${title}" about the keywords: ${keywords.join(", ")}.
 Format in markdown and end with an encouraging note.
 
 Respond with just the markdown content, no explanations or extra text.`;
 
-  const conclusionResponse = await openai.chat.completions.create({
-    model: "o3-mini",
-    messages: [{ role: "user", content: conclusionPrompt }],
-    top_p: 1
-  });
+    const conclusionResponse = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{ role: "user", content: conclusionPrompt }],
+      max_tokens: 1000
+    });
 
-  const conclusionContent = conclusionResponse.choices[0].message.content || '';
-  fullContent += `${conclusionContent}`;
+    const conclusionContent = conclusionResponse.choices[0].message.content || '';
+    fullContent += `${conclusionContent}`;
 
-  return {
-    title,
-    content: fullContent,
-    description
-  };
+    return {
+      title,
+      content: fullContent,
+      description
+    };
+  } catch (error) {
+    console.error('Error generating content:', error);
+    throw new Error('Failed to generate content: ' + (error instanceof Error ? error.message : String(error)));
+  }
 }
 
 export async function checkScheduledPosts() {
@@ -151,18 +154,12 @@ export async function checkScheduledPosts() {
     const now = new Date();
 
     // Find all draft posts that are scheduled for now or earlier
-    const scheduledPosts = await db
-      .select()
-      .from(blogPosts)
-      .where(
-        and(
-          lt(blogPosts.scheduledDate, now),
-          eq(blogPosts.status, 'draft')
-        )
-      );
+    const scheduledPosts = await storage.getScheduledPosts(now);
 
     for (const post of scheduledPosts) {
       try {
+        console.log(`Processing scheduled post ${post.id}`);
+
         // Generate content using OpenAI
         const generated = await generateContent(post.keywords);
 
@@ -174,17 +171,21 @@ export async function checkScheduledPosts() {
           status: 'published'
         });
 
-        // Publish to WordPress
-        const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-        await fetch(`${baseUrl}/api/wordpress/publish`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedPost)
-        });
-
-        console.log(`Published post ${post.id} successfully`);
+        // Publish to WordPress if configured
+        if (process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN) {
+          const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+          await fetch(`${baseUrl}/api/wordpress/publish`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedPost)
+          });
+          console.log(`Published post ${post.id} to WordPress successfully`);
+        } else {
+          console.log(`Post ${post.id} generated and marked as published (WordPress publishing skipped - not configured)`);
+        }
       } catch (error) {
         console.error(`Failed to process post ${post.id}:`, error instanceof Error ? error.message : String(error));
+        continue; // Continue with next post even if this one failed
       }
     }
   } catch (error) {
@@ -192,7 +193,26 @@ export async function checkScheduledPosts() {
   }
 }
 
-// Automatic scheduler enabled
-// To disable, comment out the line below
-setInterval(checkScheduledPosts, 60000);
-console.log('Automatic post scheduling is enabled. Posts will be automatically published every minute.');
+let schedulerInterval: NodeJS.Timeout;
+
+export function startScheduler() {
+  // Check immediately on startup
+  checkScheduledPosts().catch(console.error);
+
+  // Then schedule future runs
+  schedulerInterval = setInterval(() => {
+    checkScheduledPosts().catch(console.error);
+  }, 60000); // Run every minute
+
+  console.log('Automatic post scheduling is enabled. Posts will be automatically published every minute.');
+}
+
+export function stopScheduler() {
+  if (schedulerInterval) {
+    clearInterval(schedulerInterval);
+    console.log('Automatic post scheduling has been stopped.');
+  }
+}
+
+// Start the scheduler when this module is imported
+startScheduler();
