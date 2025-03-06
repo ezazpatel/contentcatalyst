@@ -17,12 +17,10 @@ async function generateContent(keywords: string[]): Promise<{
   const response = await openai.chat.completions.create({
     model: "o1-mini",
     messages: [{
-      role: "system",
-      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.`
-    },
-    {
       role: "user",
-      content: `Generate a blog post and SEO metadata for the keyword phrase provided. Write in a friendly, conversational tone.
+      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
+
+Generate a blog post and SEO metadata for the keyword phrase provided. Write in a friendly, conversational tone.
 
 For the keyword phrase: ${keywords.join(", ")}
 
