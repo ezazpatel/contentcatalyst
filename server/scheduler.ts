@@ -13,62 +13,134 @@ export async function generateContent(keywords: string[]): Promise<{
   title: string;
   description: string;
 }> {
-  const response = await openai.chat.completions.create({
+  // Step 1: Generate title and outline
+  const outlineResponse = await openai.chat.completions.create({
     model: "o3-mini",
     messages: [{
       role: "user",
-      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
-
-Generate a blog post and SEO metadata for the keyword phrase provided. Write in a friendly, conversational tone.
+      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. 
 
 For the keyword phrase: ${keywords.join(", ")}
 
-Requirements:
-- A catchy title that naturally includes the keyword. Something the viewer cannot help but click.
-- Main content in markdown format (REQUIRED: EXACTLY 2000-3000 words) with multiple clear headings and subheadings. The content must be comprehensive and thorough.
-- Include affiliate links naturally within the content where relevant.
-- A meta description (max 155 characters) for search results.
+Create a catchy title that naturally includes the keyword phrase and an outline for a comprehensive 4000+ word blog post. The outline should include:
+1. Introduction
+2. At least 6-8 main sections with descriptive headings
+3. Multiple sub-sections (3-4) for each main section
+4. A conclusion section
 
-Respond strictly in JSON format with exactly these fields: 'title', 'content', 'description' (short). Do not include any extra text outside of this JSON.`
+Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).`
     }],
     response_format: { type: "json_object" },
-    temperature: 1,
-    top_p: 1,
-    frequency_penalty: 0,
-    presence_penalty: 0
+    temperature: 0.8,
+    top_p: 1
   });
 
+  // Parse outline response
+  const outlineContent = outlineResponse.choices[0].message.content || '{}';
+  let outline;
+  let title = '';
+  
   try {
-    const rawContent = response.choices[0].message.content || '';
-
-    // Remove markdown code blocks if present
-    let jsonContent = rawContent;
-    if (rawContent.includes('```json')) {
-      // Extract content between ```json and ``` marks
-      const match = rawContent.match(/```json\s*([\s\S]*?)\s*```/);
-      if (match && match[1]) {
-        jsonContent = match[1];
-      }
-    }
-
-    // Clean any other potential markdown or whitespace issues
-    jsonContent = jsonContent.trim();
-
-    return jsonContent ? JSON.parse(jsonContent) : {
-      title: "",
-      content: "",
-      description: ""
-    };
+    const parsedOutline = JSON.parse(outlineContent);
+    title = parsedOutline.title || '';
+    outline = parsedOutline.outline || [];
   } catch (error) {
-    console.error('Error parsing JSON response:', error);
-    // If JSON parsing fails, try to extract content in a best-effort way
-    const content = response.choices[0].message.content || '';
-    return {
-      title: content.split('\n')[0] || 'Generated Post',
-      content: content,
-      description: content.substring(0, 155)
-    };
+    console.error('Error parsing outline JSON:', error);
+    outline = [];
   }
+
+  // Step 2: Generate introduction and meta description
+  const introResponse = await openai.chat.completions.create({
+    model: "o3-mini",
+    messages: [{
+      role: "user",
+      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast.
+
+Write an engaging introduction (400-500 words) for a blog post with the title: "${title}" about the keywords: ${keywords.join(", ")}. 
+Also provide a compelling meta description under 155 characters.
+
+Respond in JSON format with these fields: 'introduction' and 'description'.`
+    }],
+    response_format: { type: "json_object" },
+    temperature: 0.9,
+    top_p: 1
+  });
+
+  // Parse introduction response
+  const introContent = introResponse.choices[0].message.content || '{}';
+  let introduction = '';
+  let description = '';
+  
+  try {
+    const parsedIntro = JSON.parse(introContent);
+    introduction = parsedIntro.introduction || '';
+    description = parsedIntro.description || '';
+  } catch (error) {
+    console.error('Error parsing intro JSON:', error);
+  }
+
+  // Step 3: Generate content for each section
+  let fullContent = `# ${title}\n\n${introduction}\n\n`;
+  
+  // Table of contents
+  fullContent += "## Table of Contents\n";
+  outline.forEach((section, index) => {
+    fullContent += `- [${section.heading}](#${section.heading.toLowerCase().replace(/[^\w]+/g, '-')})\n`;
+    if (section.subheadings && section.subheadings.length > 0) {
+      section.subheadings.forEach(subheading => {
+        fullContent += `  - [${subheading}](#${subheading.toLowerCase().replace(/[^\w]+/g, '-')})\n`;
+      });
+    }
+  });
+  fullContent += "\n";
+
+  // Generate content for each section and its subsections
+  for (const section of outline) {
+    const sectionPrompt = `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer with expertise about: ${keywords.join(", ")}.
+
+Write a detailed section (600-800 words) for the heading "${section.heading}" that's part of an article titled "${title}".
+Include rich details, examples, personal anecdotes, and naturally place affiliate links where relevant.
+Format in markdown and make it engaging and informative.
+Include all these subheadings: ${section.subheadings.join(", ")}.
+
+Respond with just the markdown content, no explanations or extra text.`;
+
+    const sectionResponse = await openai.chat.completions.create({
+      model: "o3-mini",
+      messages: [{ role: "user", content: sectionPrompt }],
+      temperature: 1,
+      top_p: 1,
+      frequency_penalty: 0.2
+    });
+
+    const sectionContent = sectionResponse.choices[0].message.content || '';
+    fullContent += `${sectionContent}\n\n`;
+  }
+
+  // Step 4: Generate conclusion
+  const conclusionPrompt = `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer.
+
+Write a compelling conclusion (300-400 words) for a blog post with the title: "${title}" about the keywords: ${keywords.join(", ")}.
+Summarize key points, include a call to action, and remind readers about the value of the topic.
+Format in markdown and end with an encouraging note.
+
+Respond with just the markdown content, no explanations or extra text.`;
+
+  const conclusionResponse = await openai.chat.completions.create({
+    model: "o3-mini",
+    messages: [{ role: "user", content: conclusionPrompt }],
+    temperature: 0.9,
+    top_p: 1
+  });
+
+  const conclusionContent = conclusionResponse.choices[0].message.content || '';
+  fullContent += `${conclusionContent}`;
+
+  return {
+    title,
+    content: fullContent,
+    description
+  };
 }
 
 export async function checkScheduledPosts() {
