@@ -68,10 +68,10 @@ export async function registerRoutes(app: Express) {
 
       // Import the generateContent function from scheduler
       const { generateContent } = await import("./scheduler");
-      
+
       // Generate new content using the same keywords
       const generated = await generateContent(post.keywords);
-      
+
       // Update the post with newly generated content
       const updatedPost = await storage.updateBlogPost(post.id, {
         title: generated.title,
@@ -79,7 +79,7 @@ export async function registerRoutes(app: Express) {
         seoDescription: generated.description,
         status: 'draft' // Reset to draft status
       });
-      
+
       res.json(updatedPost);
     } catch (error) {
       console.error('Error regenerating post:', error);
@@ -179,7 +179,7 @@ export async function registerRoutes(app: Express) {
 
       // Convert markdown content to HTML for WordPress
       const htmlContent = marked.parse(req.body.content);
-      
+
       console.log('Publishing to WordPress endpoint:', endpoint);
       console.log('Publishing content:', {
         title: req.body.title,
