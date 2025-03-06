@@ -2,12 +2,10 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
-import { checkScheduledPosts } from "./scheduler";
 import { ZodError } from "zod";
 import { marked } from 'marked';
 
-// Start the scheduler when the server starts
-checkScheduledPosts();
+// Scheduler is already started when the scheduler.ts module is imported
 
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
@@ -18,7 +16,12 @@ export async function registerRoutes(app: Express) {
   });
 
   app.get("/api/posts/:id", async (req, res) => {
-    const post = await storage.getBlogPost(Number(req.params.id));
+    const id = Number(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ message: "Invalid post ID" });
+    }
+    
+    const post = await storage.getBlogPost(id);
     if (!post) {
       res.status(404).json({ message: "Post not found" });
       return;
@@ -42,7 +45,12 @@ export async function registerRoutes(app: Express) {
 
   app.patch("/api/posts/:id", async (req, res) => {
     try {
-      const post = await storage.updateBlogPost(Number(req.params.id), req.body);
+      const id = Number(req.params.id);
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid post ID" });
+      }
+      
+      const post = await storage.updateBlogPost(id, req.body);
       res.json(post);
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Unknown error occurred" });
@@ -51,7 +59,12 @@ export async function registerRoutes(app: Express) {
 
   app.delete("/api/posts/:id", async (req, res) => {
     try {
-      await storage.deleteBlogPost(Number(req.params.id));
+      const id = Number(req.params.id);
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid post ID" });
+      }
+      
+      await storage.deleteBlogPost(id);
       res.status(204).send();
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : "Unknown error occurred" });
@@ -60,7 +73,12 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/posts/:id/regenerate", async (req, res) => {
     try {
-      const post = await storage.getBlogPost(Number(req.params.id));
+      const id = Number(req.params.id);
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid post ID" });
+      }
+      
+      const post = await storage.getBlogPost(id);
       if (!post) {
         res.status(404).json({ message: "Post not found" });
         return;
@@ -114,7 +132,7 @@ export async function registerRoutes(app: Express) {
       for (const post of unpublishedPosts) {
         try {
           // Create Basic Auth token from application password
-          const authToken = Buffer.from(`admin:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+          const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
 
           const apiUrl = process.env.WORDPRESS_API_URL;
           const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;

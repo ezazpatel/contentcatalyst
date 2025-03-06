@@ -30,7 +30,6 @@ Create a catchy title that naturally includes the keyword phrase and an outline 
 
 Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).`
       }],
-      response_format: { type: "json_object" },
       max_tokens: 1000
     });
 
@@ -40,11 +39,35 @@ Respond in JSON format with these fields: 'title' and 'outline' (an array of sec
     let title = '';
 
     try {
-      const parsedOutline = JSON.parse(outlineContent);
+      let parsedOutline;
+      try {
+        parsedOutline = JSON.parse(outlineContent);
+      } catch (jsonError) {
+        // If JSON parsing fails, try to extract JSON-like structure from text response
+        console.warn('JSON parsing failed, attempting to extract structured data from response');
+        const titleMatch = outlineContent.match(/["']title["']\s*:\s*["'](.+?)["']/);
+        const outlineMatches = outlineContent.match(/["']outline["']\s*:\s*(\[.+?\])/s);
+        
+        if (titleMatch && outlineMatches) {
+          try {
+            parsedOutline = {
+              title: titleMatch[1],
+              outline: JSON.parse(outlineMatches[1].replace(/[']/g, '"'))
+            };
+          } catch (e) {
+            console.error('Failed to extract structured data:', e);
+            throw new Error('Failed to parse AI response');
+          }
+        } else {
+          console.error('Could not extract structured data from response');
+          throw new Error('Failed to parse AI response');
+        }
+      }
+      
       title = parsedOutline.title || '';
       outline = parsedOutline.outline || [];
     } catch (error) {
-      console.error('Error parsing outline JSON:', error);
+      console.error('Error processing outline response:', error);
       throw new Error('Failed to generate outline');
     }
 
@@ -61,7 +84,6 @@ Write an engaging introduction for a blog post with the title: "${title}" about 
 
 Respond in JSON format with these fields: 'introduction' and 'description'.`
       }],
-      response_format: { type: "json_object" },
       max_tokens: 1000
     });
 
@@ -71,11 +93,31 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
     let description = '';
 
     try {
-      const parsedIntro = JSON.parse(introContent);
+      let parsedIntro;
+      try {
+        parsedIntro = JSON.parse(introContent);
+      } catch (jsonError) {
+        // If JSON parsing fails, try to extract introduction and description from text response
+        console.warn('JSON parsing failed, attempting to extract data from text response');
+        const introMatch = introContent.match(/["']introduction["']\s*:\s*["'](.+?)["']/s);
+        const descMatch = introContent.match(/["']description["']\s*:\s*["'](.+?)["']/s);
+        
+        parsedIntro = {
+          introduction: introMatch ? introMatch[1] : '',
+          description: descMatch ? descMatch[1] : ''
+        };
+      }
+      
       introduction = parsedIntro.introduction || '';
       description = parsedIntro.description || '';
+      
+      // If we still don't have an introduction, use the entire response as the introduction
+      if (!introduction && introContent) {
+        introduction = introContent;
+        console.log('Using raw response as introduction');
+      }
     } catch (error) {
-      console.error('Error parsing intro JSON:', error);
+      console.error('Error processing intro response:', error);
       throw new Error('Failed to generate introduction');
     }
 
