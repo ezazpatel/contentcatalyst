@@ -14,7 +14,7 @@ export async function generateContent(keywords: string[]): Promise<{
   description: string;
 }> {
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-4o",
     messages: [{
       role: "user",
       content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
@@ -25,7 +25,7 @@ For the keyword phrase: ${keywords.join(", ")}
 
 Requirements:
 - A catchy title that naturally includes the keyword. Something the viewer cannot help but click.
-- Main content in markdown format (2000-3000 words) with clear headings and subheadings.
+- Main content in markdown format (REQUIRED: EXACTLY 2000-3000 words) with multiple clear headings and subheadings. The content must be comprehensive and thorough.
 - Include affiliate links naturally within the content where relevant.
 - A meta description (max 155 characters) for search results.
 
