@@ -38,11 +38,37 @@ Respond strictly in JSON format with exactly these fields: 'title', 'content', '
     presence_penalty: 0
   });
 
-  return response.choices[0].message.content ? JSON.parse(response.choices[0].message.content) : {
-    title: "",
-    content: "",
-    description: ""
-  };
+  try {
+    const rawContent = response.choices[0].message.content || '';
+
+    // Remove markdown code blocks if present
+    let jsonContent = rawContent;
+    if (rawContent.includes('```json')) {
+      // Extract content between ```json and ``` marks
+      const match = rawContent.match(/```json\s*([\s\S]*?)\s*```/);
+      if (match && match[1]) {
+        jsonContent = match[1];
+      }
+    }
+
+    // Clean any other potential markdown or whitespace issues
+    jsonContent = jsonContent.trim();
+
+    return jsonContent ? JSON.parse(jsonContent) : {
+      title: "",
+      content: "",
+      description: ""
+    };
+  } catch (error) {
+    console.error('Error parsing JSON response:', error);
+    // If JSON parsing fails, try to extract content in a best-effort way
+    const content = response.choices[0].message.content || '';
+    return {
+      title: content.split('\n')[0] || 'Generated Post',
+      content: content,
+      description: content.substring(0, 155)
+    };
+  }
 }
 
 export async function checkScheduledPosts() {
