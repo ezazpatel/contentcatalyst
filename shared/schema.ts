@@ -15,7 +15,7 @@ export const blogPosts = pgTable("blog_posts", {
   excerpt: text("excerpt"),
   slug: text("slug"),
   metaTags: text("meta_tags").array(),
-  headings: jsonb("headings").$type<{level: number, text: string}[]>().notNull(),
+  headings: jsonb("headings").$type<{level: number, text: string}[]>().notNull().default([]),
 });
 
 export const insertBlogPostSchema = createInsertSchema(blogPosts)
@@ -34,10 +34,3 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts)
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type BlogPost = typeof blogPosts.$inferSelect;
-
-export const csvUploadSchema = z.object({
-  keywords: z.string(),
-  affiliateName: z.string(),
-  affiliateUrl: z.string().url(),
-  scheduledDate: z.string(),
-});
