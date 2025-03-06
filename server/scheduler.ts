@@ -2,83 +2,48 @@ import { storage } from './storage';
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
 import { lt, eq, and } from 'drizzle-orm';
-import { OpenAI } from 'openai';
+import OpenAI from 'openai';
 
-const client = new OpenAI({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-export async function generateContent(keywords: string[]): Promise<{
+async function generateContent(keywords: string[]): Promise<{
   content: string;
   title: string;
   description: string;
 }> {
-  try {
-    console.log('Generating content for keywords:', keywords);
+  // Use o1-mini model for all OpenAI API calls
+  const response = await openai.chat.completions.create({
+    model: "o1-mini",
+    messages: [
+      {
+        role: "system",
+        content: "You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others."
+      },
+      {
+        role: "user",
+        content: `Generate a blog post and SEO metadata for the keyword phrase provided. Write in a friendly, conversational tone.
 
-    const response = await client.chat.completions.create({
-      model: "ft:gpt-4o-mini-2024-07-18:personal::B7hWDhzB",
-      messages: [
-        {
-          role: "system",
-          content: "You are a professional Canadian travel and lifestyle blogger focused on providing accurate, factual information about Canadian destinations and experiences. Your content must be based on real, verifiable information only. Never invent or embellish details. If you're unsure about specific details, focus on general, well-known facts about the location or topic. Always maintain a friendly, professional tone while ensuring accuracy."
-        },
-        {
-          role: "user",
-          content: `Generate a comprehensive, factual blog post focused entirely around the provided keyword phrase. The content must be accurate and verifiable.
-
-Keyword Phrase: ${keywords.join(", ")}
+For the keyword phrase: ${keywords.join(", ")}
 
 Requirements:
-- Title: Create a clear, factual title that accurately represents the content.
-- Content:
-  - Length: Between 2000-3000 words
-  - Focus on verified facts and real information only
-  - Include specific, accurate details about locations, activities, and experiences
-  - Structure with clear headings and subheadings
-  - Use bullet points and lists for key information
-  - Only include affiliate links for real, relevant products
-  - Conclude with factual summary points
-- SEO Meta Description: Create a concise, factual description (max 155 characters)
+- A catchy title that naturally includes the keyword. Something the viewer cannot help but click.
+- Main content in markdown format (2000-3000 words) with clear headings and subheadings.
+- Include affiliate links naturally within the content where relevant.
+- A meta description (max 155 characters) for search results.
 
-IMPORTANT: Do not invent experiences, embellish details, or include unverified information. Stick to well-documented facts and general knowledge about the topic.
-
-Respond strictly in JSON format with exactly these fields: 'title', 'content', 'description'. Do not include any extra text outside of this JSON.`
-        }
-      ],
-      response_format: { type: "json_object" }, // Enforce JSON response format
-      temperature: 0.3, // Lowered temperature for more factual output
-      max_tokens: 2048,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0
-    });
-
-    console.log('Received response from OpenAI');
-
-    const content = response.choices[0].message.content;
-    if (!content) {
-      throw new Error('Empty response from OpenAI');
-    }
-
-    try {
-      const parsedContent = JSON.parse(content);
-      console.log('Successfully parsed OpenAI response as JSON');
-
-      // Validate the response structure
-      if (!parsedContent.title || !parsedContent.content || !parsedContent.description) {
-        throw new Error('Invalid response structure from OpenAI');
+Respond strictly in JSON format with exactly these fields: 'title', 'content', 'description' (short). Do not include any extra text outside of this JSON.`
       }
+    ],
+    response_format: { type: "json_object" }
+  });
 
-      return parsedContent;
-    } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', content);
-      throw new Error(`Failed to parse OpenAI response: ${parseError.message}`);
-    }
-  } catch (error) {
-    console.error('Error in generateContent:', error);
-    throw error;
-  }
+  return response.choices[0].message.content ? JSON.parse(response.choices[0].message.content) : {
+    title: "",
+    content: "",
+    description: ""
+  };
 }
 
 export async function checkScheduledPosts() {
