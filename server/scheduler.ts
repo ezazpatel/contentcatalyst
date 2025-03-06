@@ -108,9 +108,7 @@ Respond with just the markdown content, no explanations or extra text.`;
     const sectionResponse = await openai.chat.completions.create({
       model: "o3-mini",
       messages: [{ role: "user", content: sectionPrompt }],
-      temperature: 1,
-      top_p: 1,
-      frequency_penalty: 0.2
+      top_p: 1
     });
 
     const sectionContent = sectionResponse.choices[0].message.content || '';
@@ -129,7 +127,6 @@ Respond with just the markdown content, no explanations or extra text.`;
   const conclusionResponse = await openai.chat.completions.create({
     model: "o3-mini",
     messages: [{ role: "user", content: conclusionPrompt }],
-    temperature: 0.9,
     top_p: 1
   });
 
