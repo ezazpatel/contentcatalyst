@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
 import { checkScheduledPosts } from "./scheduler";
 import { ZodError } from "zod";
+import { marked } from 'marked';
 
 // Start the scheduler when the server starts
 checkScheduledPosts();
@@ -294,9 +295,6 @@ export async function registerRoutes(app: Express) {
       });
     }
   });
-
-  // Import marked at the top of the file
-  import { marked } from 'marked';
 
   return httpServer;
 }
