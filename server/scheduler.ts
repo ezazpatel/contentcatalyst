@@ -14,25 +14,23 @@ async function generateContent(keywords: string[]): Promise<{
   description: string;
   seoMetaDescription: string;
 }> {
-  // Use o1-mini model for all OpenAI API calls
   const response = await openai.chat.completions.create({
     model: "o1-mini",
-    messages: [
-      {
-        role: "system",
-        content: "You are a professional blog content writer and SEO expert. Generate a blog post and SEO metadata based on the provided keywords."
-      },
-      {
-        role: "user",
-        content: `Write a blog post about ${keywords.join(", ")}. Include:
+    messages: [{
+      role: "user",
+      content: `Write a blog post about ${keywords.join(", ")}. Include:
 1. A catchy title
 2. Main content (in markdown format)
 3. A meta description for search results (max 155 characters)
 4. A longer SEO-optimized description (max 320 characters) for Yoast SEO
 Respond in JSON format with 'title', 'content', 'description' (short), and 'seoMetaDescription' (long) fields.`
-      }
-    ],
-    response_format: { type: "json_object" }
+    }],
+    response_format: { type: "json_object" },
+    temperature: 1,
+    max_tokens: 2048,
+    top_p: 1,
+    frequency_penalty: 0,
+    presence_penalty: 0
   });
 
   return response.choices[0].message.content ? JSON.parse(response.choices[0].message.content) : {
