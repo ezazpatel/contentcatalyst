@@ -7,6 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { marked } from "marked";
+
+// Configure marked to handle GitHub flavored markdown
+marked.setOptions({
+  breaks: true,
+  gfm: true
+});
+
+// Make marked available globally for components
+window.marked = marked;
 
 export default function ViewPost() {
   const [, params] = useRoute<{ id: string }>("/view/:id");
@@ -84,7 +94,7 @@ export default function ViewPost() {
           </CardHeader>
           <CardContent>
             <div className="prose prose-sm max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: post.content }} />
+              <div dangerouslySetInnerHTML={{ __html: marked.parse(post.content) }} />
             </div>
 
             {post.affiliateLinks.length > 0 && (
