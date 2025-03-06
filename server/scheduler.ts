@@ -30,7 +30,7 @@ Create a catchy title that naturally includes the keyword phrase and an outline 
 
 Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).`
       }],
-      max_tokens: 1000
+      response_format: "json_object"
     });
 
     // Parse outline response
@@ -60,7 +60,7 @@ Write an engaging introduction for a blog post with the title: "${title}" about 
 
 Respond in JSON format with these fields: 'introduction' and 'description'.`
       }],
-      max_tokens: 1000
+      response_format: "json_object"
     });
 
     // Parse introduction response
@@ -109,8 +109,7 @@ Respond with just the markdown content, no explanations or extra text.`;
 
       const sectionResponse = await openai.chat.completions.create({
         model: "o3-mini",
-        messages: [{ role: "user", content: sectionPrompt }],
-        max_tokens: 1500
+        messages: [{ role: "user", content: sectionPrompt }]
       });
 
       const sectionContent = sectionResponse.choices[0].message.content || '';
@@ -129,8 +128,7 @@ Respond with just the markdown content, no explanations or extra text.`;
 
     const conclusionResponse = await openai.chat.completions.create({
       model: "o3-mini",
-      messages: [{ role: "user", content: conclusionPrompt }],
-      max_tokens: 1000
+      messages: [{ role: "user", content: conclusionPrompt }]
     });
 
     const conclusionContent = conclusionResponse.choices[0].message.content || '';
@@ -156,9 +154,9 @@ export async function checkScheduledPosts() {
     console.log('Already processing scheduled posts, skipping this run');
     return;
   }
-  
+
   isProcessingPosts = true;
-  
+
   try {
     const now = new Date();
 
@@ -225,7 +223,7 @@ export function startScheduler() {
   // Then schedule future runs
   schedulerInterval = setInterval(() => {
     checkScheduledPosts().catch(console.error);
-  }, 3600000); // Run every hour (3600000 ms = 1 hour)
+  }, 3600000); // Run every hour
 
   console.log('Automatic post scheduling is enabled. Posts will be automatically published every hour.');
 }
