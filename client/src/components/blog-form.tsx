@@ -2,24 +2,20 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Plus, Trash } from "lucide-react";
 import { insertBlogPostSchema, type InsertBlogPost } from "@shared/schema";
 import { format, isBefore, startOfMinute } from "date-fns";
-import { formatInTimeZone } from 'date-fns-tz';
 
 interface BlogFormProps {
   defaultValues?: Partial<InsertBlogPost>;
   onSubmit: (data: InsertBlogPost) => void;
-  onPublishNow?: (data: InsertBlogPost) => void;
   isLoading?: boolean;
-  isPublishing?: boolean;
 }
 
-export function BlogForm({ defaultValues, onSubmit, onPublishNow, isLoading, isPublishing }: BlogFormProps) {
+export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) {
   const form = useForm<InsertBlogPost>({
     resolver: zodResolver(insertBlogPostSchema),
     defaultValues: {
@@ -27,18 +23,13 @@ export function BlogForm({ defaultValues, onSubmit, onPublishNow, isLoading, isP
       affiliateLinks: [],
       scheduledDate: new Date(),
       status: "draft",
-      introLength: 400,
-      sectionLength: 600,
-      conclusionLength: 300,
       ...defaultValues,
     },
   });
 
   const isDateValid = (date: Date) => {
     const now = startOfMinute(new Date());
-    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const localDate = new Date(formatInTimeZone(date, userTimezone, "yyyy-MM-dd HH:mm:ss"));
-    return !isBefore(localDate, now);
+    return !isBefore(date, now);
   };
 
   const isFormDateValid = isDateValid(form.watch("scheduledDate"));
@@ -86,66 +77,17 @@ export function BlogForm({ defaultValues, onSubmit, onPublishNow, isLoading, isP
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Blog Context</h3>
-          <Textarea
-            {...form.register("contextDescription")}
-            placeholder="Describe what you want this blog post to be about and any specific instructions for GPT..."
-            className="min-h-[100px]"
-          />
-          {form.formState.errors.contextDescription && (
-            <p className="text-sm text-destructive">
-              {form.formState.errors.contextDescription.message}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Word Count Settings</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm">Introduction Length</label>
-              <Input
-                type="number"
-                {...form.register("introLength", { valueAsNumber: true })}
-                min={100}
-                max={1000}
-              />
-            </div>
-            <div>
-              <label className="text-sm">Section Length</label>
-              <Input
-                type="number"
-                {...form.register("sectionLength", { valueAsNumber: true })}
-                min={200}
-                max={2000}
-              />
-            </div>
-            <div>
-              <label className="text-sm">Conclusion Length</label>
-              <Input
-                type="number"
-                {...form.register("conclusionLength", { valueAsNumber: true })}
-                min={100}
-                max={1000}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Affiliate Links</h3>
-          <p className="text-sm text-muted-foreground">Add links that should be naturally incorporated into the content</p>
+          <h3 className="text-lg font-medium">Affiliate Links (Optional)</h3>
           {form.watch("affiliateLinks").map((_, index) => (
             <div key={index} className="flex flex-col sm:flex-row gap-2">
               <Input
                 {...form.register(`affiliateLinks.${index}.name`)}
-                placeholder="Link text to show"
+                placeholder="Link name (optional)"
                 className="flex-1"
               />
               <Input
                 {...form.register(`affiliateLinks.${index}.url`)}
-                placeholder="https://..."
-                type="url"
+                placeholder="URL (optional)"
                 className="flex-1"
               />
               <Button
@@ -181,10 +123,9 @@ export function BlogForm({ defaultValues, onSubmit, onPublishNow, isLoading, isP
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <Popover>
               <PopoverTrigger asChild>
-                <Button
+                <Button 
                   variant="outline"
-                  className={`w-full sm:w-auto ${!isFormDateValid ? "border-destructive text-destructive" : ""}`}
-                >
+                  className={`w-full sm:w-auto ${!isFormDateValid ? "border-red-500" : ""}`}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime())
                     ? format(form.watch("scheduledDate"), "PPP")
@@ -196,23 +137,22 @@ export function BlogForm({ defaultValues, onSubmit, onPublishNow, isLoading, isP
                   mode="single"
                   selected={form.watch("scheduledDate")}
                   onSelect={(date) => {
-                    if (date) {
-                      const currentDate = form.watch("scheduledDate");
-                      date.setHours(currentDate.getHours(), currentDate.getMinutes());
-                      form.setValue("scheduledDate", date);
-                    }
+                    const currentDate = form.watch("scheduledDate");
+                    const newDate = date || new Date();
+                    newDate.setHours(currentDate.getHours(), currentDate.getMinutes());
+                    form.setValue("scheduledDate", newDate);
                   }}
+                  initialFocus
                   disabled={(date) => isBefore(date, startOfMinute(new Date()))}
                 />
               </PopoverContent>
             </Popover>
-
             <Input
               type="time"
-              value={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime())
-                ? format(form.watch("scheduledDate"), "HH:mm")
+              value={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
+                ? format(form.watch("scheduledDate"), "HH:mm") 
                 : "00:00"}
-              className={`w-full sm:w-auto ${!isFormDateValid ? "border-destructive text-destructive" : ""}`}
+              className={`w-full sm:w-auto ${!isFormDateValid ? "border-red-500" : ""}`}
               onChange={(e) => {
                 try {
                   const [hours, minutes] = e.target.value.split(":");
@@ -226,39 +166,19 @@ export function BlogForm({ defaultValues, onSubmit, onPublishNow, isLoading, isP
             />
           </div>
           {!isFormDateValid && (
-            <p className="text-sm text-destructive">
+            <p className="text-sm text-red-500">
               Please select a future date and time
             </p>
           )}
         </div>
 
-        <div className="flex gap-4">
-          <Button
-            type="submit"
-            disabled={isLoading || !isFormDateValid}
-            className="w-full sm:w-auto"
-          >
-            {isLoading ? "Scheduling..." : "Schedule Post"}
-          </Button>
-
-          {onPublishNow && (
-            <Button
-              type="button"
-              onClick={() => {
-                const isValid = form.trigger();
-                if (isValid) {
-                  const data = form.getValues();
-                  onPublishNow(data);
-                }
-              }}
-              disabled={isPublishing || !isFormDateValid}
-              variant="secondary"
-              className="w-full sm:w-auto"
-            >
-              {isPublishing ? "Publishing..." : "Publish Now"}
-            </Button>
-          )}
-        </div>
+        <Button 
+          type="submit" 
+          disabled={isLoading || !isFormDateValid}
+          className="w-full sm:w-auto"
+        >
+          {isLoading ? "Adding..." : "Add Post"}
+        </Button>
       </form>
     </Form>
   );

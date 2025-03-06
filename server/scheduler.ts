@@ -1,18 +1,14 @@
 import { storage } from './storage';
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
-import { lt, eq, and, isNull, or } from 'drizzle-orm';
+import { lt, eq, and } from 'drizzle-orm';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-export async function generateContent(keywords: string[], context: string, wordCounts: {
-  intro: number;
-  section: number;
-  conclusion: number;
-}, affiliateLinks: { name: string; url: string; }[]): Promise<{
+export async function generateContent(keywords: string[]): Promise<{
   content: string;
   title: string;
   description: string;
@@ -22,27 +18,21 @@ export async function generateContent(keywords: string[], context: string, wordC
     model: "o3-mini",
     messages: [{
       role: "user",
-      content: `You are a professional content writer creating factual, well-researched blog content. Your task is to write about: ${context}
+      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
 
-Keywords to focus on: ${keywords.join(", ")}
+Use grade 7-8 English. Keep most sentences short and simple. Mix in a few longer sentences now and then to make a strong point. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
 
-Important Instructions:
-1. Only include factual, verifiable information. No made-up stories or speculative content.
-2. Use credible sources and current data where applicable.
-3. Natural tone while maintaining professionalism.
-4. Include the keyword phrases naturally without forcing them.
-5. Where possible, use these affiliate products/services as MAIN SECTION HEADINGS (not subsections): ${affiliateLinks.map(link => link.name).join(", ")}
+For the keyword phrase: ${keywords.join(", ")}
 
-Create a title and outline for a comprehensive blog post with these specifications:
-1. Introduction 
-2. 6-8 main sections, prioritizing affiliate products as section headings where relevant
-3. 2-3 sub-sections for each main section
-4. Conclusion
+Create a catchy title that naturally includes the keyword phrase and an outline for a comprehensive blog post between 1500 and 4000 words. The outline should include:
+1. Introduction
+2. At least 6-8 main sections with descriptive headings
+3. Multiple sub-sections (3-4) for each main section
+4. A conclusion section
 
 Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).`
     }],
     response_format: { type: "json_object" },
-    max_completion_tokens: 4000,
     top_p: 1
   });
 
@@ -65,23 +55,16 @@ Respond in JSON format with these fields: 'title' and 'outline' (an array of sec
     model: "o3-mini",
     messages: [{
       role: "user",
-      content: `Write a factual, well-researched introduction for a blog post with the title: "${title}". 
+      content: `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast.
 
-Context: ${context}
-Keywords: ${keywords.join(", ")}
+Use grade 7-8 English. Keep most sentences short and simple. Mix in a few longer sentences now and then to make a strong point. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
 
-Important Instructions:
-1. Only include verifiable facts and data
-2. No speculative or made-up content
-3. Natural tone while maintaining professionalism
-4. Include key statistics or data points where relevant
-
+Write an engaging introduction (400-500 words) for a blog post with the title: "${title}" about the keywords: ${keywords.join(", ")}. 
 Also provide a compelling meta description under 155 characters.
 
 Respond in JSON format with these fields: 'introduction' and 'description'.`
     }],
     response_format: { type: "json_object" },
-    max_completion_tokens: 4000,
     top_p: 1
   });
 
@@ -98,12 +81,12 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
     console.error('Error parsing intro JSON:', error);
   }
 
-  // Step 3: Generate table of contents and full content
+  // Step 3: Generate content for each section
   let fullContent = `# ${title}\n\n${introduction}\n\n`;
 
   // Table of contents
   fullContent += "## Table of Contents\n";
-  outline.forEach(section => {
+  outline.forEach((section, index) => {
     fullContent += `- [${section.heading}](#${section.heading.toLowerCase().replace(/[^\w]+/g, '-')})\n`;
     if (section.subheadings && section.subheadings.length > 0) {
       section.subheadings.forEach(subheading => {
@@ -113,94 +96,48 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
   });
   fullContent += "\n";
 
-  // Track used affiliate links to prevent duplicates
-  const usedAffiliateLinks = new Set();
-
   // Generate content for each section and its subsections
   for (const section of outline) {
-    // Check if this section heading matches an unused affiliate link
-    const matchingLink = affiliateLinks.find(link =>
-      !usedAffiliateLinks.has(link.name) &&
-      section.heading.toLowerCase().includes(link.name.toLowerCase())
-    );
+    const sectionPrompt = `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer with expertise about: ${keywords.join(", ")}.
 
-    if (matchingLink) {
-      usedAffiliateLinks.add(matchingLink.name);
-      // Use the affiliate link as a heading with proper markdown link
-      fullContent += `## [${matchingLink.name}](${matchingLink.url})\n\n`;
-    } else {
-      fullContent += `## ${section.heading}\n\n`;
-    }
+Use grade 7-8 English. Keep most sentences short and simple. Mix in a few longer sentences now and then to make a strong point. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+
+Write a detailed section (600-800 words) for the heading "${section.heading}" that's part of an article titled "${title}".
+Include rich details, examples, personal anecdotes, and naturally place affiliate links where relevant.
+Format in markdown and make it engaging and informative.
+Include all these subheadings: ${section.subheadings.join(", ")}.
+
+Respond with just the markdown content, no explanations or extra text.`;
 
     const sectionResponse = await openai.chat.completions.create({
       model: "o3-mini",
-      messages: [{
-        role: "user",
-        content: `Write a factual, well-researched section for the heading "${section.heading}" that's part of an article titled "${title}".
-
-Context: ${context}
-Keywords: ${keywords.join(", ")}
-
-Required subheadings:
-${section.subheadings.join("\n")}
-
-Important Instructions:
-1. Only include verifiable facts and data
-2. No speculative or made-up content
-3. Natural tone while maintaining professionalism
-4. Include relevant statistics and data points
-${!matchingLink && affiliateLinks.length > 0 ? `5. If relevant, naturally incorporate ONE of these unused affiliate links as a subheading:
-${affiliateLinks
-  .filter(link => !usedAffiliateLinks.has(link.name))
-  .map(link => `   - ${link.name}`)
-  .join('\n')}` : ''}
-
-Format in markdown and make it informative and engaging.`
-      }],
-      max_completion_tokens: 4000,
+      messages: [{ role: "user", content: sectionPrompt }],
       top_p: 1
     });
 
     const sectionContent = sectionResponse.choices[0].message.content || '';
-
-    // If we found any unused affiliate links in the content, mark them as used
-    // and convert them to proper markdown links
-    affiliateLinks.forEach(link => {
-      if (!usedAffiliateLinks.has(link.name) && sectionContent.includes(link.name)) {
-        usedAffiliateLinks.add(link.name);
-        // Replace the affiliate link name with a markdown link
-        const regex = new RegExp(`# ${link.name}|## ${link.name}|### ${link.name}`, 'g');
-        sectionContent = sectionContent.replace(regex, `### [${link.name}](${link.url})`);
-      }
-    });
-
     fullContent += `${sectionContent}\n\n`;
   }
 
   // Step 4: Generate conclusion
+  const conclusionPrompt = `You are a happy and cheerful white woman who lives in Canada. You are a blog content writer.
+
+Use grade 7-8 English. Keep most sentences short and simple. Mix in a few longer sentences now and then to make a strong point. Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+
+Write a compelling conclusion (300-400 words) for a blog post with the title: "${title}" about the keywords: ${keywords.join(", ")}.
+Summarize key points, include a call to action, and remind readers about the value of the topic.
+Format in markdown and end with an encouraging note.
+
+Respond with just the markdown content, no explanations or extra text.`;
+
   const conclusionResponse = await openai.chat.completions.create({
     model: "o3-mini",
-    messages: [{
-      role: "user",
-      content: `Write a factual, evidence-based conclusion for a blog post with the title: "${title}".
-
-Context: ${context}
-Keywords: ${keywords.join(", ")}
-
-Important Instructions:
-1. Summarize key points with supporting evidence
-2. Include relevant statistics or data points discussed
-3. No speculative or made-up content
-4. End with actionable insights based on the presented facts
-
-Format in markdown and end with a clear call to action.`
-    }],
-    max_completion_tokens: 4000,
+    messages: [{ role: "user", content: conclusionPrompt }],
     top_p: 1
   });
 
-  const conclusion = conclusionResponse.choices[0].message.content || '';
-  fullContent += `## Conclusion\n\n${conclusion}`;
+  const conclusionContent = conclusionResponse.choices[0].message.content || '';
+  fullContent += `${conclusionContent}`;
 
   return {
     title,
@@ -213,39 +150,21 @@ export async function checkScheduledPosts() {
   try {
     const now = new Date();
 
-    // Find all draft posts that are scheduled for now or earlier AND have no content
+    // Find all draft posts that are scheduled for now or earlier
     const scheduledPosts = await db
       .select()
       .from(blogPosts)
       .where(
         and(
           lt(blogPosts.scheduledDate, now),
-          eq(blogPosts.status, 'draft'),
-          or(
-            isNull(blogPosts.content),
-            eq(blogPosts.content, ''),
-            eq(blogPosts.title, '')
-          )
+          eq(blogPosts.status, 'draft')
         )
       );
 
-    console.log(`Found ${scheduledPosts.length} new posts to generate content for...`);
-
     for (const post of scheduledPosts) {
       try {
-        console.log(`Generating content for post ${post.id}...`);
-
         // Generate content using OpenAI
-        const generated = await generateContent(
-          post.keywords,
-          post.contextDescription || '',
-          {
-            intro: post.introLength || 400,
-            section: post.sectionLength || 600,
-            conclusion: post.conclusionLength || 300
-          },
-          post.affiliateLinks || []
-        );
+        const generated = await generateContent(post.keywords);
 
         // Update the post with generated content
         const updatedPost = await storage.updateBlogPost(post.id, {
@@ -253,6 +172,14 @@ export async function checkScheduledPosts() {
           content: generated.content,
           seoDescription: generated.description,
           status: 'published'
+        });
+
+        // Publish to WordPress
+        const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+        await fetch(`${baseUrl}/api/wordpress/publish`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedPost)
         });
 
         console.log(`Published post ${post.id} successfully`);
@@ -266,5 +193,6 @@ export async function checkScheduledPosts() {
 }
 
 // Automatic scheduler enabled
-setInterval(checkScheduledPosts, 3600000); // Check every hour instead of every minute
-console.log('Automatic post scheduling is enabled. Posts will be automatically published every hour.');
+// To disable, comment out the line below
+setInterval(checkScheduledPosts, 60000);
+console.log('Automatic post scheduling is enabled. Posts will be automatically published every minute.');
