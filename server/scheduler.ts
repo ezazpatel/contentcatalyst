@@ -195,25 +195,12 @@ Respond with just the markdown content, no explanations or extra text.`;
 export async function checkScheduledPosts() {
   try {
     const now = new Date();
-    console.log(`[Scheduler] Checking for scheduled posts at ${now.toISOString()}`);
 
     // Find all draft posts that are scheduled for now or earlier using storage interface
     const scheduledPosts = await storage.getScheduledPosts(now);
-    console.log(`[Scheduler] Found ${scheduledPosts.length} scheduled posts to process`);
-    
-    // Also log all posts to see what's in the database
-    const allPosts = await storage.getAllBlogPosts();
-    console.log(`[Scheduler] Total posts in database: ${allPosts.length}`);
-    console.log(`[Scheduler] Posts details: ${JSON.stringify(allPosts.map(p => ({ 
-      id: p.id, 
-      status: p.status, 
-      scheduledDate: p.scheduledDate,
-      keywords: p.keywords
-    })))}`);
 
     for (const post of scheduledPosts) {
       try {
-        console.log(`[Scheduler] Starting to process post ${post.id} with keywords: ${post.keywords.join(', ')}`);
         console.log(`Processing scheduled post ${post.id}`);
 
         // Generate content using OpenAI
@@ -267,37 +254,6 @@ export function stopScheduler() {
   if (schedulerInterval) {
     clearInterval(schedulerInterval);
     console.log('Automatic post scheduling has been stopped.');
-  }
-}
-
-// Function to manually process a specific post
-export async function processPost(postId: number) {
-  try {
-    console.log(`[Scheduler] Manually processing post ${postId}`);
-    const post = await storage.getBlogPost(postId);
-    
-    if (!post) {
-      throw new Error(`Post with ID ${postId} not found`);
-    }
-    
-    console.log(`[Scheduler] Processing post ${post.id} with keywords: ${post.keywords.join(', ')}`);
-    
-    // Generate content using OpenAI
-    const generated = await generateContent(post.keywords);
-    
-    // Update the post with generated content
-    const updatedPost = await storage.updateBlogPost(post.id, {
-      title: generated.title,
-      content: generated.content,
-      seoDescription: generated.description,
-      status: 'published'
-    });
-    
-    console.log(`[Scheduler] Post ${post.id} processed successfully`);
-    return updatedPost;
-  } catch (error) {
-    console.error(`[Scheduler] Failed to process post ${postId}:`, error instanceof Error ? error.message : String(error));
-    throw error;
   }
 }
 
