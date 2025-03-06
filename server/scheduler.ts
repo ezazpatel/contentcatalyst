@@ -192,5 +192,7 @@ export async function checkScheduledPosts() {
   }
 }
 
-// Run the scheduler every minute
-setInterval(checkScheduledPosts, 60000);
+// Disable automatic scheduler
+// To re-enable, uncomment the line below
+// setInterval(checkScheduledPosts, 60000);
+console.log('Automatic post scheduling is disabled. Posts will not be automatically published.');
