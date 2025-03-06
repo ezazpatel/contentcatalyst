@@ -1,6 +1,6 @@
-import { BlogPost, InsertBlogPost, blogPosts as postsTable } from "../shared/schema";
+import { BlogPost, InsertBlogPost, blogPosts } from "@shared/schema";
 import { db } from "./db";
-import { eq, lt, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
@@ -8,35 +8,28 @@ export interface IStorage {
   getAllBlogPosts(): Promise<BlogPost[]>;
   updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost>;
   deleteBlogPost(id: number): Promise<void>;
-  getScheduledPosts(before: Date): Promise<BlogPost[]>;
 }
 
 export class DatabaseStorage implements IStorage {
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
-    const [blogPost] = await db.insert(postsTable).values(post).returning();
-    if (!blogPost) {
-      throw new Error("Failed to create blog post");
-    }
+    const [blogPost] = await db.insert(blogPosts).values(post).returning();
     return blogPost;
   }
 
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
-    const [blogPost] = await db
-      .select()
-      .from(postsTable)
-      .where(eq(postsTable.id, id));
+    const [blogPost] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
     return blogPost;
   }
 
   async getAllBlogPosts(): Promise<BlogPost[]> {
-    return await db.select().from(postsTable);
+    return await db.select().from(blogPosts);
   }
 
   async updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost> {
     const [updated] = await db
-      .update(postsTable)
+      .update(blogPosts)
       .set(post)
-      .where(eq(postsTable.id, id))
+      .where(eq(blogPosts.id, id))
       .returning();
 
     if (!updated) {
@@ -47,19 +40,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBlogPost(id: number): Promise<void> {
-    await db.delete(postsTable).where(eq(postsTable.id, id));
-  }
-
-  async getScheduledPosts(before: Date): Promise<BlogPost[]> {
-    return await db
-      .select()
-      .from(postsTable)
-      .where(
-        and(
-          lt(postsTable.scheduledDate, before),
-          eq(postsTable.status, 'draft')
-        )
-      );
+    await db.delete(blogPosts).where(eq(blogPosts.id, id));
   }
 }
 

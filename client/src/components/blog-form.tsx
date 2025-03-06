@@ -1,20 +1,17 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Plus, Trash } from "lucide-react";
 import { insertBlogPostSchema, type InsertBlogPost } from "@shared/schema";
 import { format, isBefore, startOfMinute } from "date-fns";
-import { zonedTimeToUtc } from "date-fns-tz";
-import { toast } from "@/hooks/use-toast";
-import { useMemo } from "react";
 
 interface BlogFormProps {
   defaultValues?: Partial<InsertBlogPost>;
-  onSubmit: (data: InsertBlogPost) => Promise<void>;
+  onSubmit: (data: InsertBlogPost) => void;
   isLoading?: boolean;
 }
 
@@ -23,82 +20,143 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
     resolver: zodResolver(insertBlogPostSchema),
     defaultValues: {
       keywords: [""],
-      affiliateLinks: [{ name: "", url: "" }],
-      scheduledDate: new Date(Date.now() + 15 * 60 * 1000), // Default to 15 minutes from now
+      affiliateLinks: [],
+      scheduledDate: new Date(),
+      status: "draft",
       ...defaultValues,
     },
   });
 
-  const scheduledDate = form.watch("scheduledDate");
-
-  const isDateValid = useMemo(() => {
+  const isDateValid = (date: Date) => {
     const now = startOfMinute(new Date());
-    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const utcDate = zonedTimeToUtc(scheduledDate, userTimezone);
-    return !isBefore(utcDate, now);
-  }, [scheduledDate]);
-
-  const onSubmitWithValidation = async (data: InsertBlogPost) => {
-    try {
-      if (!isDateValid) {
-        form.setError("scheduledDate", {
-          type: "manual",
-          message: "Please select a future date and time"
-        });
-        return;
-      }
-      await onSubmit(data);
-    } catch (error) {
-      console.error("Form submission error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to submit the post. Please try again.",
-        variant: "destructive"
-      });
-    }
+    return !isBefore(date, now);
   };
+
+  const isFormDateValid = isDateValid(form.watch("scheduledDate"));
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmitWithValidation)} className="space-y-6 w-full max-w-2xl mx-auto px-4 sm:px-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 w-full max-w-2xl mx-auto px-4 sm:px-6">
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Keywords</h3>
+          {form.watch("keywords").map((_, index) => (
+            <div key={index} className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1">
+                <Input
+                  {...form.register(`keywords.${index}`)}
+                  placeholder="Enter keyword"
+                  className="w-full"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  const keywords = form.getValues("keywords");
+                  keywords.splice(index, 1);
+                  form.setValue("keywords", keywords);
+                }}
+                className="self-end sm:self-auto"
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              const keywords = form.getValues("keywords");
+              form.setValue("keywords", [...keywords, ""]);
+            }}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" /> Add Keyword
+          </Button>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Affiliate Links (Optional)</h3>
+          {form.watch("affiliateLinks").map((_, index) => (
+            <div key={index} className="flex flex-col sm:flex-row gap-2">
+              <Input
+                {...form.register(`affiliateLinks.${index}.name`)}
+                placeholder="Link name (optional)"
+                className="flex-1"
+              />
+              <Input
+                {...form.register(`affiliateLinks.${index}.url`)}
+                placeholder="URL (optional)"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  const links = form.getValues("affiliateLinks");
+                  links.splice(index, 1);
+                  form.setValue("affiliateLinks", links);
+                }}
+                className="self-end sm:self-auto"
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              const links = form.getValues("affiliateLinks");
+              form.setValue("affiliateLinks", [...links, { name: "", url: "" }]);
+            }}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" /> Add Affiliate Link
+          </Button>
+        </div>
+
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Schedule</h3>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <Popover>
               <PopoverTrigger asChild>
                 <Button 
-                  variant="outline" 
-                  className={`w-full sm:w-auto ${!isDateValid ? "border-destructive text-destructive" : ""}`}
-                >
+                  variant="outline"
+                  className={`w-full sm:w-auto ${!isFormDateValid ? "border-red-500" : ""}`}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {scheduledDate ? format(scheduledDate, "PPP") : "Select date"}
+                  {form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime())
+                    ? format(form.watch("scheduledDate"), "PPP")
+                    : "Select a date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={scheduledDate}
+                  selected={form.watch("scheduledDate")}
                   onSelect={(date) => {
-                    if (date) {
-                      const newDate = date;
-                      newDate.setHours(scheduledDate.getHours(), scheduledDate.getMinutes());
-                      form.setValue("scheduledDate", newDate);
-                    }
+                    const currentDate = form.watch("scheduledDate");
+                    const newDate = date || new Date();
+                    newDate.setHours(currentDate.getHours(), currentDate.getMinutes());
+                    form.setValue("scheduledDate", newDate);
                   }}
-                  disabled={(date) => isBefore(date, startOfMinute(new Date()))}
                   initialFocus
+                  disabled={(date) => isBefore(date, startOfMinute(new Date()))}
                 />
               </PopoverContent>
             </Popover>
-
             <Input
               type="time"
-              value={scheduledDate ? format(scheduledDate, "HH:mm") : "00:00"}
-              className={`w-full sm:w-auto ${!isDateValid ? "border-destructive text-destructive" : ""}`}
+              value={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
+                ? format(form.watch("scheduledDate"), "HH:mm") 
+                : "00:00"}
+              className={`w-full sm:w-auto ${!isFormDateValid ? "border-red-500" : ""}`}
               onChange={(e) => {
                 try {
                   const [hours, minutes] = e.target.value.split(":");
-                  const newDate = new Date(scheduledDate);
+                  const newDate = new Date(form.watch("scheduledDate"));
                   newDate.setHours(parseInt(hours), parseInt(minutes));
                   form.setValue("scheduledDate", newDate);
                 } catch (err) {
@@ -107,21 +165,16 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
               }}
             />
           </div>
-          {!isDateValid && (
-            <p className="text-sm text-destructive">
+          {!isFormDateValid && (
+            <p className="text-sm text-red-500">
               Please select a future date and time
-            </p>
-          )}
-          {form.formState.errors.scheduledDate && (
-            <p className="text-sm text-destructive">
-              {form.formState.errors.scheduledDate.message}
             </p>
           )}
         </div>
 
         <Button 
           type="submit" 
-          disabled={isLoading || !isDateValid}
+          disabled={isLoading || !isFormDateValid}
           className="w-full sm:w-auto"
         >
           {isLoading ? "Adding..." : "Add Post"}

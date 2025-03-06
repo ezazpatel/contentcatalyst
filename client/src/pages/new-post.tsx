@@ -1,47 +1,62 @@
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { BlogForm } from "@/components/blog-form";
-import { Navbar } from "@/components/navbar";
-import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { toast } from "@/hooks/use-toast";
 import type { InsertBlogPost } from "@shared/schema";
+import { Navbar } from "@/components/navbar";
 
 export default function NewPost() {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
+  // Create post mutation
   const createPost = useMutation({
     mutationFn: async (data: InsertBlogPost) => {
-      const response = await apiRequest("POST", "/api/posts", data);
-      return response.json();
+      return await apiRequest("POST", "/api/posts", data);
     },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Post created successfully",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       navigate("/blogs");
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to create post",
+        description: `Failed to create post: ${error.message}`,
         variant: "destructive",
       });
     },
   });
 
+  const defaultValues: InsertBlogPost = {
+    title: "",
+    content: "",
+    keywords: [""],
+    affiliateLinks: [{ name: "", url: "" }],
+    scheduledDate: new Date(),
+    status: "draft",
+    seoTitle: "",
+    seoDescription: "",
+    headings: [],
+  };
+
   return (
     <div>
       <Navbar />
       <div className="container mx-auto py-8">
-        <h1 className="text-2xl font-bold mb-8">Create New Post</h1>
-        <BlogForm 
-          onSubmit={async (data) => {
-            await createPost.mutateAsync(data);
-          }}
-          isLoading={createPost.isPending}
-        />
+        <h1 className="text-3xl font-bold mb-8">Create New Post</h1>
+        <div className="grid gap-8">
+          <BlogForm
+            defaultValues={defaultValues}
+            onSubmit={(data) => createPost.mutate(data as InsertBlogPost)}
+            isLoading={createPost.isPending}
+          />
+        </div>
       </div>
     </div>
   );
