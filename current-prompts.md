@@ -14,17 +14,17 @@ Important Instructions:
 5. The blog post structure should naturally incorporate these affiliate products/services as section headings where appropriate: ${affiliateLinks.map(link => link.name).join(", ")}
 
 Create a title and outline for a comprehensive blog post with these specifications:
-1. Introduction (exactly ${wordCounts.intro} words)
-2. 6-8 main sections including affiliate products as section headings where relevant (exactly ${wordCounts.section} words each)
+1. Introduction
+2. 6-8 main sections including affiliate products as section headings where relevant
 3. 2-3 sub-sections for each main section
-4. Conclusion (exactly ${wordCounts.conclusion} words)
+4. Conclusion
 
 Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).
 ```
 
 ## 2. Introduction Generation Prompt
 ```
-Write a factual, well-researched introduction (exactly ${wordCounts.intro} words) for a blog post with the title: "${title}". 
+Write a factual, well-researched introduction for a blog post with the title: "${title}". 
 
 Context: ${context}
 Keywords: ${keywords.join(", ")}
@@ -34,7 +34,6 @@ Important Instructions:
 2. No speculative or made-up content
 3. Natural tone while maintaining professionalism
 4. Include key statistics or data points where relevant
-5. The introduction must be EXACTLY ${wordCounts.intro} words - no more, no less.
 
 Also provide a compelling meta description under 155 characters.
 
@@ -44,7 +43,7 @@ Respond in JSON format with these fields: 'introduction' and 'description'.
 ## 3. Section Content Generation Prompt
 For each section, the following prompt is used:
 ```
-Write a factual, well-researched section (exactly ${wordCounts.section} words) for the heading "${section.heading}" that's part of an article titled "${title}".
+Write a factual, well-researched section for the heading "${section.heading}" that's part of an article titled "${title}".
 
 Context: ${context}
 Keywords: ${keywords.join(", ")}
@@ -57,8 +56,7 @@ Important Instructions:
 2. No speculative or made-up content
 3. Natural tone while maintaining professionalism
 4. Include relevant statistics and data points
-5. The section must be EXACTLY ${wordCounts.section} words - no more, no less
-${!matchingLink && affiliateLinks.length > 0 ? `6. If relevant, naturally incorporate ONE of these unused affiliate links:
+${!matchingLink && affiliateLinks.length > 0 ? `5. If relevant, naturally incorporate ONE of these unused affiliate links:
 ${affiliateLinks
   .filter(link => !usedAffiliateLinks.has(link.name))
   .map(link => `   - [${link.name}](${link.url})`)
@@ -69,7 +67,7 @@ Format in markdown and make it informative and engaging.
 
 ## 4. Conclusion Generation Prompt
 ```
-Write a factual, evidence-based conclusion (exactly ${wordCounts.conclusion} words) for a blog post with the title: "${title}".
+Write a factual, evidence-based conclusion for a blog post with the title: "${title}".
 
 Context: ${context}
 Keywords: ${keywords.join(", ")}
@@ -79,7 +77,6 @@ Important Instructions:
 2. Include relevant statistics or data points discussed
 3. No speculative or made-up content
 4. End with actionable insights based on the presented facts
-5. The conclusion must be EXACTLY ${wordCounts.conclusion} words - no more, no less
 
 Format in markdown and end with a clear call to action.
 ```
