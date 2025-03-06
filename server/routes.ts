@@ -1,13 +1,12 @@
-
 import express from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { BlogPostStatus } from "../shared/schema";
-import { generateBlogPost } from "./scheduler";
+import { generateBlogContent } from "./openai-config";
 
 export async function registerRoutes(app: express.Express) {
   const server = createServer(app);
-  
+
   app.get("/api/posts", async (req, res) => {
     try {
       const blogPosts = await storage.getAllBlogPosts();
@@ -63,22 +62,28 @@ export async function registerRoutes(app: express.Express) {
     try {
       const id = Number(req.params.id);
       const post = await storage.getBlogPost(id);
-      
+
       if (!post) {
         return res.status(404).json({ message: "Blog post not found" });
       }
 
-      const result = await generateBlogPost(post);
-      
+      if (!post.keywords || !Array.isArray(post.keywords)) {
+        return res.status(400).json({ message: "Post keywords are required for generation" });
+      }
+
+      const result = await generateBlogContent(post.keywords);
+
       if (!result) {
         return res.status(400).json({ message: "Failed to generate blog post" });
       }
-      
+
       const updatedPost = await storage.updateBlogPost(id, {
         content: result.content,
-        status: BlogPostStatus.PUBLISHED,
+        title: result.title,
+        description: result.description,
+        status: BlogPostStatus.PUBLISHED
       });
-      
+
       res.json(updatedPost);
     } catch (error) {
       console.error("Error generating blog post:", error);
