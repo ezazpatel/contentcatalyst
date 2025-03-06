@@ -1,7 +1,7 @@
 import { storage } from './storage';
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
-import { lt, eq, and } from 'drizzle-orm';
+import { lt, eq, and, isNull, or, isEmpty } from 'drizzle-orm';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -158,8 +158,8 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
   // Generate content for each section and its subsections
   for (const section of outline) {
     // Check if this section heading matches an unused affiliate link
-    const matchingLink = affiliateLinks.find(link => 
-      !usedAffiliateLinks.has(link.name) && 
+    const matchingLink = affiliateLinks.find(link =>
+      !usedAffiliateLinks.has(link.name) &&
       section.heading.toLowerCase().includes(link.name.toLowerCase())
     );
 
@@ -187,9 +187,9 @@ Important Instructions:
 4. Include relevant statistics and data points
 ${!matchingLink && affiliateLinks.length > 0 ? `5. If relevant, naturally incorporate ONE of these unused affiliate links as a subheading:
 ${affiliateLinks
-  .filter(link => !usedAffiliateLinks.has(link.name))
-  .map(link => `   - ${link.name}`)
-  .join('\n')}` : ''}
+        .filter(link => !usedAffiliateLinks.has(link.name))
+        .map(link => `   - ${link.name}`)
+        .join('\n')}` : ''}
 
 Format in markdown and make it informative and engaging.`,
       wordCounts.section,
@@ -241,19 +241,28 @@ export async function checkScheduledPosts() {
   try {
     const now = new Date();
 
-    // Find all draft posts that are scheduled for now or earlier
+    // Find all draft posts that are scheduled for now or earlier AND have no content
     const scheduledPosts = await db
       .select()
       .from(blogPosts)
       .where(
         and(
           lt(blogPosts.scheduledDate, now),
-          eq(blogPosts.status, 'draft')
+          eq(blogPosts.status, 'draft'),
+          or(
+            isNull(blogPosts.content),
+            eq(blogPosts.content, ''),
+            eq(blogPosts.title, '')
+          )
         )
       );
 
+    console.log(`Found ${scheduledPosts.length} new posts to generate content for...`);
+
     for (const post of scheduledPosts) {
       try {
+        console.log(`Generating content for post ${post.id}...`);
+
         // Generate content using OpenAI
         const generated = await generateContent(
           post.keywords,
