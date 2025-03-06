@@ -14,7 +14,7 @@ export async function generateContent(keywords: string[]): Promise<{
   try {
     // Step 1: Generate title and outline
     const outlineResponse = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "o3-mini",
       messages: [{
         role: "user",
         content: `You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
@@ -50,7 +50,7 @@ Respond in JSON format with these fields: 'title' and 'outline' (an array of sec
 
     // Step 2: Generate introduction
     const introResponse = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "o3-mini",
       messages: [{
         role: "user",
         content: `You are a blog content writer and SEO expert and you are also a travel and experiences enthusiast who loves exploring the different regions of Canada and experiencing new things - both indoor and outdoor. Naturally, you are very knowledgeable about your experiences and love to share them with others.
@@ -110,7 +110,7 @@ Include all these subheadings: ${section.subheadings.join(", ")}.
 Respond with just the markdown content, no explanations or extra text.`;
 
       const sectionResponse = await openai.chat.completions.create({
-        model: "gpt-4",
+        model: "o3-mini",
         messages: [{ role: "user", content: sectionPrompt }],
         max_tokens: 1500
       });
@@ -130,7 +130,7 @@ Format in markdown and end with an encouraging note.
 Respond with just the markdown content, no explanations or extra text.`;
 
     const conclusionResponse = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "o3-mini",
       messages: [{ role: "user", content: conclusionPrompt }],
       max_tokens: 1000
     });
@@ -202,9 +202,9 @@ export function startScheduler() {
   // Then schedule future runs
   schedulerInterval = setInterval(() => {
     checkScheduledPosts().catch(console.error);
-  }, 60000); // Run every minute
+  }, 60000); // Run every hour
 
-  console.log('Automatic post scheduling is enabled. Posts will be automatically published every minute.');
+  console.log('Automatic post scheduling is enabled. Posts will be automatically published every hour.');
 }
 
 export function stopScheduler() {
