@@ -8,11 +8,10 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-async function generateContent(keywords: string[]): Promise<{
+export async function generateContent(keywords: string[]): Promise<{
   content: string;
   title: string;
   description: string;
-  seoMetaDescription: string;
 }> {
   const response = await openai.chat.completions.create({
     model: "o1-mini",

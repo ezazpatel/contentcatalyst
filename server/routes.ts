@@ -57,6 +57,35 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.post("/api/posts/:id/regenerate", async (req, res) => {
+    try {
+      const post = await storage.getBlogPost(Number(req.params.id));
+      if (!post) {
+        res.status(404).json({ message: "Post not found" });
+        return;
+      }
+
+      // Import the generateContent function from scheduler
+      const { generateContent } = await import("./scheduler");
+      
+      // Generate new content using the same keywords
+      const generated = await generateContent(post.keywords);
+      
+      // Update the post with newly generated content
+      const updatedPost = await storage.updateBlogPost(post.id, {
+        title: generated.title,
+        content: generated.content,
+        seoDescription: generated.description,
+        status: 'draft' // Reset to draft status
+      });
+      
+      res.json(updatedPost);
+    } catch (error) {
+      console.error('Error regenerating post:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Unknown error occurred" });
+    }
+  });
+
   app.post("/api/wordpress/publish-all", async (_req, res) => {
     try {
       if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN) {
