@@ -292,24 +292,85 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Import marked package at the top of the file
+  import { marked } from 'marked';
+
+  // Update the existing WordPress publish endpoint to use marked
+  app.post("/api/wordpress/publish", async (req, res) => {
+    try {
+      if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN || !process.env.WORDPRESS_USERNAME) {
+        throw new Error('WordPress credentials are not configured. Please set WORDPRESS_API_URL, WORDPRESS_USERNAME, and WORDPRESS_AUTH_TOKEN environment variables.');
+      }
+
+      // Create Basic Auth token from username and application password
+      const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+
+      const apiUrl = process.env.WORDPRESS_API_URL;
+      const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
+
+      // Convert markdown content to HTML for WordPress
+      const htmlContent = marked.parse(req.body.content);
+      
+      console.log('Publishing to WordPress endpoint:', endpoint);
+      console.log('Publishing content:', {
+        title: req.body.title,
+        content: htmlContent ? htmlContent.substring(0, 100) + '...' : 'No content',
+        excerpt: req.body.excerpt ? req.body.excerpt.substring(0, 100) + '...' : 'No excerpt'
+      });
+
+      // Log the authorization header (without the actual token)
+      console.log('Using Authorization header:', 'Basic ' + '*'.repeat(20));
+      console.log('Using WordPress username:', process.env.WORDPRESS_USERNAME);
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${authToken}`,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          title: { raw: req.body.title },
+          content: { raw: htmlContent }, // Use the HTML content instead of markdown
+          status: 'publish',
+          excerpt: { raw: req.body.excerpt || '' },
+          meta: {
+            _yoast_wpseo_metadesc: req.body.seoDescription || '',
+            _yoast_wpseo_title: req.body.seoTitle || '',
+            _yoast_wpseo_focuskw: req.body.keywords?.join(', ') || '',
+            _yoast_wpseo_linkdex: '50'
+          },
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('WordPress API response:', errorText);
+        throw new Error(`WordPress API error: ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Successfully published to WordPress:', result);
+
+      // Return the WordPress post URL along with the result
+      res.json({
+        ...result,
+        postUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`,
+        message: 'Post published successfully to WordPress'
+      });
+    } catch (error) {
+      console.error('Error publishing to WordPress:', error);
+      res.status(500).json({ 
+        message: 'Failed to publish to WordPress', 
+        error: error instanceof Error ? error.message : String(error),
+        details: `Please ensure:
+1. You have created an application password in WordPress (Users → Profile → Application Passwords)
+2. The WORDPRESS_AUTH_TOKEN contains the application password
+3. The WordPress REST API is enabled
+4. The user has permissions to create posts`
+      });
+    }
+  });
+
   return httpServer;
 }
-import { marked } from 'marked';
-
-// Add this to your WordPress publish endpoint
-app.post('/api/wordpress/publish', async (req, res) => {
-  try {
-    const post = req.body;
-    
-    // Convert markdown content to HTML for WordPress
-    const htmlContent = marked.parse(post.content);
-    
-    // Now send htmlContent to WordPress instead of the raw markdown
-    // Your existing WordPress API code here, but using htmlContent instead of post.content
-    
-    res.json({ success: true, message: 'Post published to WordPress' });
-  } catch (error) {
-    console.error('Error publishing to WordPress:', error);
-    res.status(500).json({ success: false, error: 'Failed to publish to WordPress' });
-  }
-});
