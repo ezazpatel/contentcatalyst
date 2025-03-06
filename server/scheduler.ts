@@ -23,8 +23,9 @@ async function getValidatedResponse(prompt: string, targetWordCount: number, tol
       model,
       messages: [{
         role: "user",
-        content: `${prompt}\n\nIMPORTANT: Your response should be between ${minWords} and ${maxWords} words.`
+        content: `${prompt}\n\nIMPORTANT: Your response MUST be between ${minWords} and ${maxWords} words. This is a strict requirement - responses outside this range will be rejected.`
       }],
+      temperature: 0.7,
       top_p: 1
     });
 
@@ -38,7 +39,7 @@ async function getValidatedResponse(prompt: string, targetWordCount: number, tol
     console.log(`Attempt ${i + 1}: Generated ${wordCount} words, target was ${targetWordCount} (±${tolerance}). Retrying...`);
   }
 
-  throw new Error(`Failed to generate content within word count range after ${maxRetries} attempts`);
+  throw new Error(`Failed to generate content within word count range (${minWords}-${maxWords} words) after ${maxRetries} attempts`);
 }
 
 export async function generateContent(keywords: string[], context: string, wordCounts: {
@@ -126,8 +127,9 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
     introduction = parsedIntro.introduction || '';
     const introWordCount = countWords(introduction);
     if (introWordCount < wordCounts.intro - 200 || introWordCount > wordCounts.intro + 200) {
+      console.log(`Introduction word count ${introWordCount} outside allowed range (${wordCounts.intro}±200), regenerating...`);
       introduction = await getValidatedResponse(
-        `Write a factual introduction for "${title}". Context: ${context}`,
+        `Write a factual, well-researched introduction for "${title}". Context: ${context}. Keywords: ${keywords.join(", ")}`,
         wordCounts.intro,
         200
       );
