@@ -25,6 +25,7 @@ async function getValidatedResponse(prompt: string, targetWordCount: number, tol
         role: "user",
         content: `${prompt}\n\nIMPORTANT: Your response MUST be between ${minWords} and ${maxWords} words. This is a strict requirement - responses outside this range will be rejected.`
       }],
+      max_completion_tokens: 4000,
       top_p: 1
     });
 
@@ -41,6 +42,7 @@ async function getValidatedResponse(prompt: string, targetWordCount: number, tol
   throw new Error(`Failed to generate content within word count range (${minWords}-${maxWords} words) after ${maxRetries} attempts`);
 }
 
+// Update other OpenAI API calls with the same parameter
 export async function generateContent(keywords: string[], context: string, wordCounts: {
   intro: number;
   section: number;
@@ -75,6 +77,7 @@ Create a title and outline for a comprehensive blog post with these specificatio
 Respond in JSON format with these fields: 'title' and 'outline' (an array of section objects containing 'heading' and 'subheadings' array).`
     }],
     response_format: { type: "json_object" },
+    max_completion_tokens: 4000,
     top_p: 1
   });
 
@@ -113,6 +116,7 @@ Also provide a compelling meta description under 155 characters.
 Respond in JSON format with these fields: 'introduction' and 'description'.`
     }],
     response_format: { type: "json_object" },
+    max_completion_tokens: 4000,
     top_p: 1
   });
 
