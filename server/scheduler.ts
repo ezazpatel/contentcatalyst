@@ -59,7 +59,8 @@ export async function checkScheduledPosts() {
         console.log(`Database connection attempt ${retries} failed: ${dbError.message}`);
         
         if (retries >= maxRetries) {
-          throw dbError; // Rethrow if we've exhausted retries
+          console.warn("Failed to connect to database after multiple attempts. Scheduled posts will not be processed.");
+          return; // Just return instead of throwing to allow the app to continue running
         }
         
         // Wait before retrying (exponential backoff)
