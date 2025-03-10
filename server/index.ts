@@ -47,36 +47,6 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Handle graceful shutdown
-  const gracefulShutdown = async (signal: string) => {
-    console.log(`Received ${signal}, starting graceful shutdown...`);
-    
-    // Close HTTP server
-    server.close(() => {
-      console.log('HTTP server closed');
-    });
-
-    // Close DB connections and other resources
-    try {
-      console.log('Cleaning up resources...');
-      
-      // Import and stop the scheduler
-      const { stopScheduler } = await import('./scheduler');
-      stopScheduler();
-      
-      console.log('All resources cleaned up');
-    } catch (err) {
-      console.error('Error during cleanup:', err);
-    }
-
-    // Exit process
-    process.exit(0);
-  };
-
-  // Register shutdown handlers
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes

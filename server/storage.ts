@@ -1,6 +1,6 @@
 import { BlogPost, InsertBlogPost, blogPosts } from "@shared/schema";
 import { db } from "./db";
-import { eq, lt, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
@@ -8,7 +8,6 @@ export interface IStorage {
   getAllBlogPosts(): Promise<BlogPost[]>;
   updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost>;
   deleteBlogPost(id: number): Promise<void>;
-  getScheduledPosts(before: Date): Promise<BlogPost[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -42,18 +41,6 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBlogPost(id: number): Promise<void> {
     await db.delete(blogPosts).where(eq(blogPosts.id, id));
-  }
-
-  async getScheduledPosts(before: Date): Promise<BlogPost[]> {
-    return await db
-      .select()
-      .from(blogPosts)
-      .where(
-        and(
-          lt(blogPosts.scheduledDate, before),
-          eq(blogPosts.status, 'draft')
-        )
-      );
   }
 }
 
