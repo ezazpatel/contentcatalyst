@@ -1,7 +1,7 @@
 import { storage } from './storage';
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
-import { lt, eq } from 'drizzle-orm';
+import { lt, eq, and } from 'drizzle-orm';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -57,18 +57,37 @@ export async function checkScheduledPosts() {
 
     // Find all draft posts that are scheduled for now or earlier
     try {
+      // Only get posts that are:
+      // 1. In 'draft' status
+      // 2. Have a scheduled date that has passed
       const scheduledPosts = await db
         .select()
         .from(blogPosts)
         .where(
-          lt(blogPosts.scheduledDate, now),
-          eq(blogPosts.status, 'draft')
+          and(
+            lt(blogPosts.scheduledDate, now),
+            eq(blogPosts.status, 'draft')
+          )
         );
 
-      console.log(`Found ${scheduledPosts.length} posts to process`);
+      console.log(`Found ${scheduledPosts.length} draft posts scheduled for processing`);
+
+      // Log details of found posts
+      scheduledPosts.forEach(post => {
+        console.log(`Post ID ${post.id}: "${post.title}" - Status: ${post.status}, Scheduled for: ${post.scheduledDate}`);
+      });
 
       for (const post of scheduledPosts) {
         try {
+          // Verify post is still in draft status
+          const currentPost = await storage.getBlogPost(post.id);
+          if (!currentPost || currentPost.status !== 'draft') {
+            console.log(`Skipping post ${post.id} - no longer in draft status`);
+            continue;
+          }
+
+          console.log(`Processing draft post ${post.id}: "${post.title}"`);
+
           // Generate content using OpenAI with the post's specified word count
           const generated = await generateContent(
             post.keywords, 
@@ -93,20 +112,17 @@ export async function checkScheduledPosts() {
             body: JSON.stringify(updatedPost)
           });
 
-          console.log(`Published post ${post.id} successfully`);
+          console.log(`Successfully published post ${post.id}`);
         } catch (error) {
           console.error(`Failed to process post ${post.id}:`, error);
         }
       }
     } catch (dbError) {
       console.error('Database query error:', dbError);
-      // Re-throw to be caught by the outer try/catch
       throw dbError;
     }
   } catch (error) {
     console.error('Error checking scheduled posts:', error);
-
-    // Don't crash the application, we'll try again on the next interval
   }
 }
 
