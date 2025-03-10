@@ -8,7 +8,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-async function generateContent(keywords: string[], wordCount: number = 500, description: string = ""): Promise<{
+async function generateContent(keywords: string[], wordCount: number, description: string = ""): Promise<{
   content: string;
   title: string;
   description: string;
@@ -64,8 +64,12 @@ export async function checkScheduledPosts() {
 
       for (const post of scheduledPosts) {
         try {
-          // Generate content using OpenAI
-          const generated = await generateContent(post.keywords, post.wordCount || 500, post.description || "");
+          // Generate content using OpenAI with the post's specified word count
+          const generated = await generateContent(
+            post.keywords, 
+            post.wordCount, // Remove the fallback since we have a default in the schema
+            post.description || ""
+          );
 
           // Update the post with generated content
           const updatedPost = await storage.updateBlogPost(post.id, {
