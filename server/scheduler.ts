@@ -19,27 +19,27 @@ async function generateContent(keywords: string[], wordCount: number = 500, desc
     messages: [
       {
         role: "system",
-        content: `You are a professional blog content writer. Generate a blog post that is EXACTLY ${wordCount} words long. Do not deviate from this word count requirement.`
+        content: `You are a professional blog content writer. Generate a blog post that is approximately ${wordCount} words in length, aiming to be within 10% of the target length.`
       },
       {
         role: "user",
-        content: `Write a detailed blog post about ${keywords.join(", ")} with EXACTLY ${wordCount} words.
+        content: `Write a detailed blog post about ${keywords.join(", ")} with approximately ${wordCount} words.
 ${description ? `Context about the keywords: ${description}\n` : ''}
-Include a title, main content (in markdown format), and meta description. The content must be EXACTLY ${wordCount} words - this is a strict requirement.
-Respond in JSON format with 'title', 'content', and 'description' fields.
-Before responding, count the words in your content to ensure it matches ${wordCount} exactly.`
+Include a title, main content (in markdown format), and meta description.
+Respond in JSON format with 'title', 'content', and 'description' fields.`
       }
     ],
     response_format: { type: "json_object" },
     temperature: 1.0, // Increased temperature for more creative content
-    max_tokens: 8000  // Increased max_tokens
+    max_completion_tokens: 8000  // Updated to use max_completion_tokens instead of max_tokens
   });
 
   const result = JSON.parse(response.choices[0].message.content);
 
-  // Verify word count (though this check is unreliable as it doesn't account for different word counting methods)
+  // Log word count for monitoring purposes
   const wordCountCheck = result.content.split(/\s+/).length;
-  console.log(`Generated content word count: ${wordCountCheck}`);
+  console.log(`Generated content word count: ${wordCountCheck} (target: ${wordCount})`);
+  console.log(`Word count difference: ${Math.abs(wordCountCheck - wordCount)} words (${Math.abs(wordCountCheck - wordCount) / wordCount * 100}% variance)`);
 
   return result;
 }
