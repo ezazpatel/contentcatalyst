@@ -8,6 +8,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Plus, Trash } from "lucide-react";
 import { insertBlogPostSchema, type InsertBlogPost } from "@shared/schema";
 import { format } from "date-fns";
+import {FormLabel, FormControl, FormItem, FormField, FormMessage} from "@/components/ui/form"; // Added imports
+
 
 interface BlogFormProps {
   defaultValues?: Partial<InsertBlogPost>;
@@ -23,6 +25,7 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
       affiliateLinks: [],
       scheduledDate: new Date(),
       status: "draft",
+      wordCount: 500, // Added default word count
       ...defaultValues,
     },
   });
@@ -157,6 +160,26 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
             />
           </div>
         </div>
+
+        <FormField
+          control={form.control}
+          name="wordCount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Word Count</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  placeholder="Word Count"
+                  {...field}
+                  onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 500)} // Added parseInt and default 500
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
 
         <Button type="submit" disabled={isLoading}>
           {isLoading ? "Adding..." : "Add Post"}

@@ -43,6 +43,7 @@ export default function NewPost() {
     seoTitle: "",
     seoDescription: "",
     headings: [],
+    wordCount: 500,
   };
 
   return (

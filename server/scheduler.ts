@@ -8,7 +8,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-async function generateContent(keywords: string[]): Promise<{
+async function generateContent(keywords: string[], wordCount: number = 500): Promise<{
   content: string;
   title: string;
   description: string;
@@ -23,7 +23,7 @@ async function generateContent(keywords: string[]): Promise<{
       },
       {
         role: "user",
-        content: `Write a blog post about ${keywords.join(", ")}. Include a title, main content (in markdown format), and meta description. Respond in JSON format with 'title', 'content', and 'description' fields.`
+        content: `Write a blog post about ${keywords.join(", ")} with approximately ${wordCount} words. Include a title, main content (in markdown format), and meta description. Respond in JSON format with 'title', 'content', and 'description' fields.`
       }
     ],
     response_format: { type: "json_object" }
@@ -48,7 +48,7 @@ export async function checkScheduledPosts() {
     for (const post of scheduledPosts) {
       try {
         // Generate content using OpenAI
-        const generated = await generateContent(post.keywords);
+        const generated = await generateContent(post.keywords, post.wordCount || 500);
 
         // Update the post with generated content
         const updatedPost = await storage.updateBlogPost(post.id, {
