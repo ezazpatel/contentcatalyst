@@ -10,7 +10,6 @@ import { CalendarIcon, Plus, Trash } from "lucide-react";
 import { insertBlogPostSchema, type InsertBlogPost } from "@shared/schema";
 import { format } from "date-fns";
 import {FormLabel, FormControl, FormItem, FormField, FormMessage} from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
 
 
 interface BlogFormProps {
@@ -20,7 +19,6 @@ interface BlogFormProps {
 }
 
 export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) {
-  // Use state to preserve form values between renders
   const form = useForm<InsertBlogPost>({
     resolver: zodResolver(insertBlogPostSchema),
     defaultValues: {
@@ -31,8 +29,6 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
       wordCount: 500,
       ...defaultValues,
     },
-    // Don't reset form on submission - let the parent component navigate away on success
-    shouldUnregister: false,
   });
 
   return (
