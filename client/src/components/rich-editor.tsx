@@ -74,14 +74,14 @@ export function RichEditor({
   };
 
   return (
-    <div className="space-y-6 w-full max-w-4xl mx-auto px-4 sm:px-6">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <Card className="p-4">
         <div className="space-y-4">
           <Input
             placeholder="Post Title"
             value={localTitle}
             onChange={(e) => setLocalTitle(e.target.value)}
-            className="text-xl sm:text-2xl font-bold"
+            className="text-2xl font-bold"
           />
 
           <Input
@@ -93,7 +93,7 @@ export function RichEditor({
 
           <div className="flex flex-wrap gap-2">
             {localMetaTags.map((tag, index) => (
-              <div key={index} className="flex items-center gap-2 w-full sm:w-auto">
+              <div key={index} className="flex items-center gap-2">
                 <Input
                   value={tag}
                   onChange={(e) => {
@@ -102,7 +102,7 @@ export function RichEditor({
                     setLocalMetaTags(newTags);
                   }}
                   placeholder="Meta Tag"
-                  className="flex-1 sm:w-32"
+                  className="w-32"
                 />
                 <Button
                   variant="ghost"
@@ -120,7 +120,6 @@ export function RichEditor({
               variant="outline"
               size="sm"
               onClick={() => setLocalMetaTags([...localMetaTags, ""])}
-              className="w-full sm:w-auto"
             >
               Add Meta Tag
             </Button>
@@ -142,8 +141,8 @@ export function RichEditor({
       </Card>
 
       <Card className="p-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <div className="flex flex-wrap gap-2">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -194,7 +193,7 @@ export function RichEditor({
             </Button>
           </div>
 
-          <Button onClick={handleSave} className="w-full sm:w-auto gap-2">
+          <Button onClick={handleSave} className="gap-2">
             <Save className="h-4 w-4" />
             Save Changes
           </Button>
@@ -202,7 +201,7 @@ export function RichEditor({
 
         <div
           contentEditable
-          className="min-h-[400px] p-4 border rounded-md prose prose-sm max-w-none focus:outline-none overflow-x-auto"
+          className="min-h-[400px] p-4 border rounded-md prose prose-sm max-w-none focus:outline-none"
           dangerouslySetInnerHTML={{ __html: localContent }}
           onInput={(e) => setLocalContent(e.currentTarget.innerHTML)}
         />

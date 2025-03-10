@@ -30,23 +30,6 @@ export default function Dashboard() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Blog Dashboard</h1>
         <div className="flex gap-4">
-          <Button 
-            variant="outline"
-            onClick={async () => {
-              try {
-                const response = await fetch('/api/check-scheduled', {
-                  method: 'POST',
-                });
-                const data = await response.json();
-                alert(data.message);
-              } catch (error) {
-                console.error('Error checking scheduled posts:', error);
-                alert('Failed to check scheduled posts');
-              }
-            }}
-          >
-            Check Scheduled Posts
-          </Button>
           <CSVUpload onUpload={(data) => createPosts.mutate(data as BlogPost[])} />
           <Link href="/new">
             <Button>
