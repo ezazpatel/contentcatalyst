@@ -2,10 +2,10 @@ import { storage } from './storage';
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
 import { lt, eq, and } from 'drizzle-orm';
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY // Make sure to add this to your environment variables
 });
 
 async function generateContent(keywords: string[], wordCount: number, description: string = ""): Promise<{
@@ -13,27 +13,38 @@ async function generateContent(keywords: string[], wordCount: number, descriptio
   title: string;
   description: string;
 }> {
-  // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content: `You are a professional blog content writer. Generate a blog post that is approximately ${wordCount} words in length, aiming to be within 10% of the target length.`
-      },
-      {
-        role: "user",
-        content: `Write a detailed blog post about ${keywords.join(", ")} with approximately ${wordCount} words.
+  const prompt = `<thinking>
+You are a professional blog content writer. Generate a blog post that is approximately ${wordCount} words in length, aiming to be within 10% of the target length.
+
+Write a detailed blog post about ${keywords.join(", ")} with approximately ${wordCount} words.
 ${description ? `Context about the keywords: ${description}\n` : ''}
 Include a title, main content (in markdown format), and meta description.
 Focus on writing concise, meaningful content that fits within the ${wordCount} word target (±20%).
-Respond in JSON format with 'title', 'content', and 'description' fields.`
+
+You MUST respond in JSON format with 'title', 'content', and 'description' fields.
+Make sure to count your words carefully to meet the target word count of ${wordCount}.
+</thinking>
+
+Write a detailed blog post about ${keywords.join(", ")} with approximately ${wordCount} words.
+${description ? `Context about the keywords: ${description}\n` : ''}
+Include a title, main content (in markdown format), and meta description.
+Respond in JSON format with 'title', 'content', and 'description' fields.`;
+
+  const response = await anthropic.messages.create({
+    model: "claude-3-5-sonnet-20240620", // Claude 3.5 Haiku is "claude-3-5-sonnet-20240620"
+    max_tokens: wordCount * 6, // Roughly 6 tokens per word for safety
+    system: "You are a professional blog content writer who specializes in creating content within strict word count limits.",
+    messages: [
+      {
+        role: "user",
+        content: prompt
       }
     ],
-    response_format: { type: "json_object" },
+    temperature: 0.7
   });
 
-  const result = JSON.parse(response.choices[0].message.content);
+  const content = response.content[0].text;
+  const result = JSON.parse(content);
 
   // Log word count for monitoring purposes
   const wordCountCheck = result.content.split(/\s+/).length;
