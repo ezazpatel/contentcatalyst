@@ -44,7 +44,36 @@ Respond in JSON format with 'title', 'content', and 'description' fields.`;
   });
 
   const content = response.content[0].text;
-  const result = JSON.parse(content);
+  
+  // Improved JSON parsing with error handling
+  let result;
+  try {
+    // Clean up potential control characters before parsing
+    const cleanedContent = content.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+    result = JSON.parse(cleanedContent);
+  } catch (parseError) {
+    console.error("JSON parsing error:", parseError);
+    console.log("Raw content causing parsing issues:", content);
+    
+    // Attempt to extract JSON using regex as fallback
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const cleanedJson = jsonMatch[0].replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+        result = JSON.parse(cleanedJson);
+      } else {
+        throw new Error("Could not extract valid JSON");
+      }
+    } catch (fallbackError) {
+      // Create a basic fallback response
+      console.error("Fallback parsing failed, using default structure:", fallbackError);
+      result = {
+        title: "Generated Content (JSON Parsing Error)",
+        content: "The AI generated content that could not be properly parsed. Please check the logs and try again.",
+        description: "AI-generated content with parsing error."
+      };
+    }
+  }
 
   // Log word count for monitoring purposes
   const wordCountCheck = result.content.split(/\s+/).length;
