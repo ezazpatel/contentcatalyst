@@ -5,8 +5,8 @@ import * as schema from "@shared/schema";
 
 // Configure WebSocket for Neon
 neonConfig.webSocketConstructor = ws;
-// Use direct connections to avoid proxy issues
-neonConfig.wsProxy = false;
+// Configure connection settings
+neonConfig.wsProxy = process.env.NODE_ENV === 'production'; // Only use proxy in production
 neonConfig.pipelineConnect = true;
 neonConfig.webSocketPingInterval = 15_000; // 15 seconds
 
