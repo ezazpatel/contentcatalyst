@@ -26,12 +26,13 @@ async function generateContent(keywords: string[], wordCount: number, descriptio
         content: `Write a detailed blog post about ${keywords.join(", ")} with approximately ${wordCount} words.
 ${description ? `Context about the keywords: ${description}\n` : ''}
 Include a title, main content (in markdown format), and meta description.
+Focus on writing concise, meaningful content that fits within the ${wordCount} word target (±10%).
 Respond in JSON format with 'title', 'content', and 'description' fields.`
       }
     ],
     response_format: { type: "json_object" },
-    temperature: 1.0, // Increased temperature for more creative content
-    max_completion_tokens: 8000  // Updated to use max_completion_tokens instead of max_tokens
+    temperature: 0.7, // Reduced temperature for more consistent length
+    max_tokens: Math.min(4000, wordCount * 4), // Limit tokens based on target word count
   });
 
   const result = JSON.parse(response.choices[0].message.content);
@@ -40,6 +41,12 @@ Respond in JSON format with 'title', 'content', and 'description' fields.`
   const wordCountCheck = result.content.split(/\s+/).length;
   console.log(`Generated content word count: ${wordCountCheck} (target: ${wordCount})`);
   console.log(`Word count difference: ${Math.abs(wordCountCheck - wordCount)} words (${Math.abs(wordCountCheck - wordCount) / wordCount * 100}% variance)`);
+
+  // If the word count is too far off, try regenerating once
+  if (Math.abs(wordCountCheck - wordCount) / wordCount > 0.2) { // If more than 20% off
+    console.log(`Word count ${wordCountCheck} too far from target ${wordCount}, regenerating...`);
+    return generateContent(keywords, wordCount, description);
+  }
 
   return result;
 }
@@ -67,7 +74,7 @@ export async function checkScheduledPosts() {
           // Generate content using OpenAI with the post's specified word count
           const generated = await generateContent(
             post.keywords, 
-            post.wordCount, // Remove the fallback since we have a default in the schema
+            post.wordCount, 
             post.description || ""
           );
 
