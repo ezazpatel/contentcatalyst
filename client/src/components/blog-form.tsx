@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -137,9 +138,13 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
               value={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
                 ? format(form.watch("scheduledDate"), "HH:mm") 
                 : "00:00"}
-              className={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
-                ? "" 
-                : "border-red-500"}
+              className={
+                !form.watch("scheduledDate") || !(form.watch("scheduledDate") instanceof Date) || isNaN(form.watch("scheduledDate").getTime())
+                  ? "border-red-500" 
+                  : form.watch("scheduledDate") < new Date() 
+                    ? "border-red-500"
+                    : ""
+              }
               onChange={(e) => {
                 try {
                   const [hours, minutes] = e.target.value.split(":");
