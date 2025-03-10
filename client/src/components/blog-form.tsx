@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Plus, Trash } from "lucide-react";
 import { insertBlogPostSchema, type InsertBlogPost } from "@shared/schema";
 import { format } from "date-fns";
-import {FormLabel, FormControl, FormItem, FormField, FormMessage} from "@/components/ui/form";
+import {FormLabel, FormControl, FormItem, FormField, FormMessage} from "@/components/ui/form"; // Added imports
 
 
 interface BlogFormProps {
@@ -26,7 +26,7 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
       affiliateLinks: [],
       scheduledDate: new Date(),
       status: "draft",
-      wordCount: 500,
+      wordCount: 500, // Added default word count
       ...defaultValues,
     },
   });
@@ -67,24 +67,6 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
             <Plus className="h-4 w-4 mr-2" /> Add Keyword
           </Button>
         </div>
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Keyword Context Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Provide context about the keyword phrase and what you expect from the blog"
-                  className="min-h-[100px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Affiliate Links (Optional)</h3>
@@ -195,7 +177,7 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
                   type="number"
                   placeholder="Word Count"
                   {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 500)}
+                  onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 500)} // Added parseInt and default 500
                 />
               </FormControl>
               <FormMessage />
@@ -203,6 +185,23 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
           )}
         />
 
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Keyword Context Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Provide context about the keyword phrase and what you expect from the blog"
+                  className="min-h-[100px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <Button type="submit" disabled={isLoading}>
           {isLoading ? "Adding..." : "Add Post"}
