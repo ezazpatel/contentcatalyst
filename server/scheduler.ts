@@ -32,7 +32,7 @@ Respond in JSON format with 'title', 'content', and 'description' fields.`;
 
   const response = await anthropic.messages.create({
     model: "claude-3-5-sonnet-20240620", // Claude 3.5 Haiku is "claude-3-5-sonnet-20240620"
-    max_tokens: wordCount * 6, // Roughly 6 tokens per word for safety
+    max_tokens: Math.min(wordCount * 4, 8000), // Limit to 8000 tokens (below Claude's 8192 limit)
     system: "You are a professional blog content writer who specializes in creating content within strict word count limits.",
     messages: [
       {
