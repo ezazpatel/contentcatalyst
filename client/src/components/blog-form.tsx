@@ -10,6 +10,7 @@ import { CalendarIcon, Plus, Trash } from "lucide-react";
 import { insertBlogPostSchema, type InsertBlogPost } from "@shared/schema";
 import { format } from "date-fns";
 import {FormLabel, FormControl, FormItem, FormField, FormMessage} from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
 
 
 interface BlogFormProps {
