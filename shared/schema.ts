@@ -31,6 +31,7 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts)
     excerpt: z.string().optional(),
     slug: z.string().optional(),
     wordCount: z.number().min(100).optional(),
+    description: z.string().optional(),
   });
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;

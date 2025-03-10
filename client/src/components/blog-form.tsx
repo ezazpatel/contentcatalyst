@@ -180,6 +180,23 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
           )}
         />
 
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Keyword Context Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Provide context about the keyword phrase and what you expect from the blog"
+                  className="min-h-[100px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <Button type="submit" disabled={isLoading}>
           {isLoading ? "Adding..." : "Add Post"}
