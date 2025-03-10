@@ -5,10 +5,11 @@ import * as schema from "@shared/schema";
 
 // Configure WebSocket for Neon
 neonConfig.webSocketConstructor = ws;
-// Configure connection settings
-neonConfig.wsProxy = process.env.NODE_ENV === 'production'; // Only use proxy in production
-neonConfig.pipelineConnect = true;
-neonConfig.webSocketPingInterval = 15_000; // 15 seconds
+
+// Let Neon handle the WebSocket proxy configuration automatically
+// Do not set wsProxy as it should be determined from the connection string
+neonConfig.pipelineConnect = "password";
+neonConfig.useSecureWebSocket = true;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
