@@ -38,16 +38,21 @@ export async function checkScheduledPosts() {
   try {
     const now = new Date();
     
+    console.log(`Checking for scheduled posts at ${now.toISOString()}`);
+    
     // Find all draft posts that are scheduled for now or earlier
-    const scheduledPosts = await db
-      .select()
-      .from(blogPosts)
-      .where(
-        lt(blogPosts.scheduledDate, now),
-        eq(blogPosts.status, 'draft')
-      );
+    try {
+      const scheduledPosts = await db
+        .select()
+        .from(blogPosts)
+        .where(
+          lt(blogPosts.scheduledDate, now),
+          eq(blogPosts.status, 'draft')
+        );
+      
+      console.log(`Found ${scheduledPosts.length} posts to process`);
 
-    for (const post of scheduledPosts) {
+      for (const post of scheduledPosts) {
       try {
         // Generate content using OpenAI
         const generated = await generateContent(post.keywords, post.wordCount || 500, post.description || "");
@@ -74,10 +79,28 @@ export async function checkScheduledPosts() {
         console.error(`Failed to process post ${post.id}:`, error);
       }
     }
+    } catch (dbError) {
+      console.error('Database query error:', dbError);
+      // Re-throw to be caught by the outer try/catch
+      throw dbError;
+    }
   } catch (error) {
     console.error('Error checking scheduled posts:', error);
+    
+    // Don't crash the application, we'll try again on the next interval
   }
 }
 
-// Run the scheduler every minute
-setInterval(checkScheduledPosts, 60000);
+// Run the scheduler every 2 minutes to reduce connection attempts
+const SCHEDULER_INTERVAL = 120000; // 2 minutes
+
+console.log(`Scheduler set to run every ${SCHEDULER_INTERVAL/1000} seconds`);
+setInterval(checkScheduledPosts, SCHEDULER_INTERVAL);
+
+// Execute once at startup to verify configuration
+setTimeout(() => {
+  console.log('Running initial scheduled posts check');
+  checkScheduledPosts().catch(err => {
+    console.error('Initial scheduler check failed:', err);
+  });
+}, 5000); // Wait 5 seconds after startup
