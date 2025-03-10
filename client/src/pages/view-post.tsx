@@ -64,7 +64,7 @@ export default function ViewPost() {
             <div className="flex justify-between items-center">
               <div>
                 <div className="text-sm text-muted-foreground mb-2">
-                  Keywords: {post.keywords.join(", ")}
+                  Keyword Phrases: {post.keywords.join(", ")}
                 </div>
                 <CardTitle className="text-3xl">{post.title}</CardTitle>
               </div>

@@ -30,7 +30,7 @@ export default function BlogsList() {
               <Card className="cursor-pointer hover:bg-accent h-full">
                 <CardHeader>
                   <div className="text-sm text-muted-foreground mb-2">
-                    Keywords: {post.keywords.join(", ")}
+                    Keyword Phrases: {post.keywords.join(", ")}
                   </div>
                   <CardTitle className="line-clamp-2">{post.title || "Untitled Post"}</CardTitle>
                 </CardHeader>

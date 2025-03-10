@@ -35,12 +35,12 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl mx-auto">
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Keywords</h3>
+          <h3 className="text-lg font-medium">Keyword Phrase</h3>
           {form.watch("keywords").map((_, index) => (
             <div key={index} className="flex gap-2">
               <Input
                 {...form.register(`keywords.${index}`)}
-                placeholder="Enter keyword"
+                placeholder="Enter keyword phrase"
               />
               <Button
                 type="button"
@@ -64,7 +64,7 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
               form.setValue("keywords", [...keywords, ""]);
             }}
           >
-            <Plus className="h-4 w-4 mr-2" /> Add Keyword
+            <Plus className="h-4 w-4 mr-2" /> Add Keyword Phrase
           </Button>
         </div>
 
