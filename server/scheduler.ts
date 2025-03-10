@@ -38,14 +38,34 @@ export async function checkScheduledPosts() {
   try {
     const now = new Date();
     
-    // Find all draft posts that are scheduled for now or earlier
-    const scheduledPosts = await db
-      .select()
-      .from(blogPosts)
-      .where(
-        lt(blogPosts.scheduledDate, now),
-        eq(blogPosts.status, 'draft')
-      );
+    // Add retry logic for database connection
+    const maxRetries = 3;
+    let retries = 0;
+    let scheduledPosts = [];
+    
+    while (retries < maxRetries) {
+      try {
+        // Find all draft posts that are scheduled for now or earlier
+        scheduledPosts = await db
+          .select()
+          .from(blogPosts)
+          .where(
+            lt(blogPosts.scheduledDate, now),
+            eq(blogPosts.status, 'draft')
+          );
+        break; // If successful, exit the retry loop
+      } catch (dbError) {
+        retries++;
+        console.log(`Database connection attempt ${retries} failed: ${dbError.message}`);
+        
+        if (retries >= maxRetries) {
+          throw dbError; // Rethrow if we've exhausted retries
+        }
+        
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retries)));
+      }
+    }
 
     for (const post of scheduledPosts) {
       try {
