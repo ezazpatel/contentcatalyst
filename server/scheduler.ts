@@ -15,10 +15,10 @@ async function generateContent(keywords: string[]): Promise<{
 }> {
   // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
   const response = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "o3-mini",
     messages: [
       {
-        role: "system",
+        role: "user",
         content: "You are a professional blog content writer. Generate a blog post based on the provided keywords."
       },
       {
