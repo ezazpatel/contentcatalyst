@@ -6,12 +6,17 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+// Log OpenAI API key status (without exposing the key)
+console.log('OpenAI API Key status:', process.env.OPENAI_API_KEY ? 'Present' : 'Missing');
+
 export async function generateContent(keywords: string[]): Promise<{
   content: string;
   title: string;
   description: string;
 }> {
   try {
+    console.log('Starting content generation for keywords:', keywords);
+
     // Step 1: Generate title and outline
     const outlineResponse = await openai.chat.completions.create({
       model: "o3-mini",
@@ -47,7 +52,7 @@ Respond in JSON format with these fields: 'title' and 'outline' (an array of sec
         console.warn('JSON parsing failed, attempting to extract structured data from response');
         const titleMatch = outlineContent.match(/["']title["']\s*:\s*["'](.+?)["']/);
         const outlineMatches = outlineContent.match(/["']outline["']\s*:\s*(\[.+?\])/s);
-        
+
         if (titleMatch && outlineMatches) {
           try {
             parsedOutline = {
@@ -63,7 +68,7 @@ Respond in JSON format with these fields: 'title' and 'outline' (an array of sec
           throw new Error('Failed to parse AI response');
         }
       }
-      
+
       title = parsedOutline.title || '';
       outline = parsedOutline.outline || [];
     } catch (error) {
@@ -101,16 +106,16 @@ Respond in JSON format with these fields: 'introduction' and 'description'.`
         console.warn('JSON parsing failed, attempting to extract data from text response');
         const introMatch = introContent.match(/["']introduction["']\s*:\s*["'](.+?)["']/s);
         const descMatch = introContent.match(/["']description["']\s*:\s*["'](.+?)["']/s);
-        
+
         parsedIntro = {
           introduction: introMatch ? introMatch[1] : '',
           description: descMatch ? descMatch[1] : ''
         };
       }
-      
+
       introduction = parsedIntro.introduction || '';
       description = parsedIntro.description || '';
-      
+
       // If we still don't have an introduction, use the entire response as the introduction
       if (!introduction && introContent) {
         introduction = introContent;
@@ -180,6 +185,7 @@ Respond with just the markdown content, no explanations or extra text.`;
     const conclusionContent = conclusionResponse.choices[0].message.content || '';
     fullContent += `${conclusionContent}`;
 
+    console.log('Content generation complete.');
     return {
       title,
       content: fullContent,
@@ -191,13 +197,20 @@ Respond with just the markdown content, no explanations or extra text.`;
   }
 }
 
-// Make this function exportable for manual triggers
 export async function checkScheduledPosts() {
   try {
     const now = new Date();
+    console.log('Checking scheduled posts at:', now.toISOString());
 
     // Find all draft posts that are scheduled for now or earlier using storage interface
     const scheduledPosts = await storage.getScheduledPosts(now);
+    console.log('Found scheduled posts:', scheduledPosts.length, 'posts');
+    console.log('Posts details:', scheduledPosts.map(post => ({
+      id: post.id,
+      scheduledDate: post.scheduledDate,
+      status: post.status,
+      keywords: post.keywords
+    })));
 
     for (const post of scheduledPosts) {
       try {
@@ -205,6 +218,7 @@ export async function checkScheduledPosts() {
 
         // Generate content using OpenAI
         const generated = await generateContent(post.keywords);
+        console.log(`Content generated successfully for post ${post.id}`);
 
         // Update the post with generated content
         const updatedPost = await storage.updateBlogPost(post.id, {
@@ -213,6 +227,7 @@ export async function checkScheduledPosts() {
           seoDescription: generated.description,
           status: 'published'
         });
+        console.log(`Post ${post.id} updated with generated content`);
 
         // Publish to WordPress if configured
         if (process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN) {
@@ -239,11 +254,14 @@ export async function checkScheduledPosts() {
 let schedulerInterval: NodeJS.Timeout;
 
 export function startScheduler() {
+  console.log('Starting scheduler...');
+
   // Check immediately on startup
   checkScheduledPosts().catch(console.error);
 
   // Then schedule future runs
   schedulerInterval = setInterval(() => {
+    console.log('Running scheduled check...');
     checkScheduledPosts().catch(console.error);
   }, 60000); // Run every minute
 
