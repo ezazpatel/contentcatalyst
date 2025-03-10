@@ -26,13 +26,13 @@ async function generateContent(keywords: string[], wordCount: number, descriptio
         content: `Write a detailed blog post about ${keywords.join(", ")} with approximately ${wordCount} words.
 ${description ? `Context about the keywords: ${description}\n` : ''}
 Include a title, main content (in markdown format), and meta description.
-Focus on writing concise, meaningful content that fits within the ${wordCount} word target (±10%).
+Focus on writing concise, meaningful content that fits within the ${wordCount} word target (±20%).
 Respond in JSON format with 'title', 'content', and 'description' fields.`
       }
     ],
     response_format: { type: "json_object" },
     temperature: 0.7, // Reduced temperature for more consistent length
-    max_tokens: Math.min(4000, wordCount * 4), // Limit tokens based on target word count
+    max_completion_tokens: Math.min(6000, wordCount * 4), // Limit tokens based on target word count
   });
 
   const result = JSON.parse(response.choices[0].message.content);
@@ -43,7 +43,7 @@ Respond in JSON format with 'title', 'content', and 'description' fields.`
   console.log(`Word count difference: ${Math.abs(wordCountCheck - wordCount)} words (${Math.abs(wordCountCheck - wordCount) / wordCount * 100}% variance)`);
 
   // If the word count is too far off, try regenerating once
-  if (Math.abs(wordCountCheck - wordCount) / wordCount > 0.2) { // If more than 20% off
+  if (Math.abs(wordCountCheck - wordCount) / wordCount > 0.3) { // If more than 30% off
     console.log(`Word count ${wordCountCheck} too far from target ${wordCount}, regenerating...`);
     return generateContent(keywords, wordCount, description);
   }
