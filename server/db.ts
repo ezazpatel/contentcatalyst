@@ -5,9 +5,9 @@ import * as schema from "@shared/schema";
 
 // Configure WebSocket for Neon
 neonConfig.webSocketConstructor = ws;
-// Increase the WebSocket ping interval to keep connections alive
-neonConfig.wsProxy = true;
-neonConfig.pipelineConnect = false;
+// Use direct connections to avoid proxy issues
+neonConfig.wsProxy = false;
+neonConfig.pipelineConnect = true;
 neonConfig.webSocketPingInterval = 15_000; // 15 seconds
 
 if (!process.env.DATABASE_URL) {
