@@ -1,7 +1,7 @@
 import { storage } from './storage';
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
-import { lt, eq, and } from 'drizzle-orm';
+import { lt, eq } from 'drizzle-orm';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -31,7 +31,6 @@ Respond in JSON format with 'title', 'content', and 'description' fields.`
       }
     ],
     response_format: { type: "json_object" },
-    max_completion_tokens: Math.min(6000, wordCount * 4), // Limit tokens based on target word count
   });
 
   const result = JSON.parse(response.choices[0].message.content);
@@ -62,24 +61,14 @@ export async function checkScheduledPosts() {
         .select()
         .from(blogPosts)
         .where(
-          and(
-            lt(blogPosts.scheduledDate, now),
-            eq(blogPosts.status, 'draft') // Only select posts in draft status
-          )
+          lt(blogPosts.scheduledDate, now),
+          eq(blogPosts.status, 'draft')
         );
 
-      console.log(`Found ${scheduledPosts.length} draft posts ready for processing`);
+      console.log(`Found ${scheduledPosts.length} posts to process`);
 
       for (const post of scheduledPosts) {
         try {
-          console.log(`Processing post ${post.id}: "${post.title}" (Status: ${post.status})`);
-
-          // Double check status before processing
-          if (post.status !== 'draft') {
-            console.log(`Skipping post ${post.id} as it's no longer in draft status`);
-            continue;
-          }
-
           // Generate content using OpenAI with the post's specified word count
           const generated = await generateContent(
             post.keywords, 
