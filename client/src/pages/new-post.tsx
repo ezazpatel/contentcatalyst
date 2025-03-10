@@ -14,6 +14,15 @@ export default function NewPost() {
   // Create post mutation
   const createPost = useMutation({
     mutationFn: async (data: InsertBlogPost) => {
+      // Validate that the scheduled date is in the future
+      if (!data.scheduledDate || data.scheduledDate < new Date()) {
+        toast({
+          title: "Invalid scheduled date",
+          description: "The scheduled date must be in the future",
+          variant: "destructive",
+        });
+        return; // Prevent API call if date is invalid
+      }
       return await apiRequest("POST", "/api/posts", data);
     },
     onSuccess: () => {
