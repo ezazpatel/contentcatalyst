@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -16,6 +16,8 @@ export const blogPosts = pgTable("blog_posts", {
   slug: text("slug"),
   metaTags: text("meta_tags").array(),
   headings: jsonb("headings").$type<{level: number, text: string}[]>().notNull(),
+  wordCount: integer("word_count").notNull().default(500),
+  description: text("description"),
 });
 
 export const insertBlogPostSchema = createInsertSchema(blogPosts)

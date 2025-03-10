@@ -18,28 +18,38 @@ async function generateContent(keywords: string[], wordCount: number = 500, desc
     model: "o3-mini",
     messages: [
       {
-        role: "user",
-        content: "You are a professional blog content writer. Generate a blog post based on the provided keywords."
+        role: "system",
+        content: `You are a professional blog content writer. Generate a blog post that is EXACTLY ${wordCount} words long. Do not deviate from this word count requirement.`
       },
       {
         role: "user",
-        content: `Write a blog post about ${keywords.join(", ")} with approximately ${wordCount} words.
+        content: `Write a detailed blog post about ${keywords.join(", ")} with EXACTLY ${wordCount} words.
 ${description ? `Context about the keywords: ${description}\n` : ''}
-Include a title, main content (in markdown format), and meta description. Respond in JSON format with 'title', 'content', and 'description' fields.`
+Include a title, main content (in markdown format), and meta description. The content must be EXACTLY ${wordCount} words - this is a strict requirement.
+Respond in JSON format with 'title', 'content', and 'description' fields.
+Before responding, count the words in your content to ensure it matches ${wordCount} exactly.`
       }
     ],
-    response_format: { type: "json_object" }
+    response_format: { type: "json_object" },
+    temperature: 1.0, // Increased temperature for more creative content
+    max_tokens: 8000  // Increased max_tokens
   });
 
-  return JSON.parse(response.choices[0].message.content);
+  const result = JSON.parse(response.choices[0].message.content);
+
+  // Verify word count (though this check is unreliable as it doesn't account for different word counting methods)
+  const wordCountCheck = result.content.split(/\s+/).length;
+  console.log(`Generated content word count: ${wordCountCheck}`);
+
+  return result;
 }
 
 export async function checkScheduledPosts() {
   try {
     const now = new Date();
-    
+
     console.log(`Checking for scheduled posts at ${now.toISOString()}`);
-    
+
     // Find all draft posts that are scheduled for now or earlier
     try {
       const scheduledPosts = await db
@@ -49,36 +59,36 @@ export async function checkScheduledPosts() {
           lt(blogPosts.scheduledDate, now),
           eq(blogPosts.status, 'draft')
         );
-      
+
       console.log(`Found ${scheduledPosts.length} posts to process`);
 
       for (const post of scheduledPosts) {
-      try {
-        // Generate content using OpenAI
-        const generated = await generateContent(post.keywords, post.wordCount || 500, post.description || "");
+        try {
+          // Generate content using OpenAI
+          const generated = await generateContent(post.keywords, post.wordCount || 500, post.description || "");
 
-        // Update the post with generated content
-        const updatedPost = await storage.updateBlogPost(post.id, {
-          title: generated.title,
-          content: generated.content,
-          seoDescription: generated.description,
-          status: 'published'
-        });
+          // Update the post with generated content
+          const updatedPost = await storage.updateBlogPost(post.id, {
+            title: generated.title,
+            content: generated.content,
+            seoDescription: generated.description,
+            status: 'published'
+          });
 
-        // Publish to WordPress
-        // Use absolute URL to fix URL parsing error
-        const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
-        await fetch(`${baseUrl}/api/wordpress/publish`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedPost)
-        });
+          // Publish to WordPress
+          // Use absolute URL to fix URL parsing error
+          const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
+          await fetch(`${baseUrl}/api/wordpress/publish`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedPost)
+          });
 
-        console.log(`Published post ${post.id} successfully`);
-      } catch (error) {
-        console.error(`Failed to process post ${post.id}:`, error);
+          console.log(`Published post ${post.id} successfully`);
+        } catch (error) {
+          console.error(`Failed to process post ${post.id}:`, error);
+        }
       }
-    }
     } catch (dbError) {
       console.error('Database query error:', dbError);
       // Re-throw to be caught by the outer try/catch
@@ -86,7 +96,7 @@ export async function checkScheduledPosts() {
     }
   } catch (error) {
     console.error('Error checking scheduled posts:', error);
-    
+
     // Don't crash the application, we'll try again on the next interval
   }
 }
