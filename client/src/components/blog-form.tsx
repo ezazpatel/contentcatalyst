@@ -137,13 +137,9 @@ export function BlogForm({ defaultValues, onSubmit, isLoading }: BlogFormProps) 
               value={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
                 ? format(form.watch("scheduledDate"), "HH:mm") 
                 : "00:00"}
-              className={
-                !form.watch("scheduledDate") || !(form.watch("scheduledDate") instanceof Date) || isNaN(form.watch("scheduledDate").getTime())
-                  ? "border-red-500" 
-                  : form.watch("scheduledDate") < new Date() 
-                    ? "border-red-500"
-                    : ""
-              }
+              className={form.watch("scheduledDate") instanceof Date && !isNaN(form.watch("scheduledDate").getTime()) 
+                ? "" 
+                : "border-red-500"}
               onChange={(e) => {
                 try {
                   const [hours, minutes] = e.target.value.split(":");
