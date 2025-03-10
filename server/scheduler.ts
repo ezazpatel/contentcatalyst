@@ -1,7 +1,7 @@
 import { storage } from './storage';
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
-import { lt, eq } from 'drizzle-orm';
+import { lt, eq, and } from 'drizzle-orm';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -15,7 +15,7 @@ async function generateContent(keywords: string[], wordCount: number, descriptio
 }> {
   // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
   const response = await openai.chat.completions.create({
-    model: "o3-mini",
+    model: "gpt-4o",
     messages: [
       {
         role: "system",
@@ -31,7 +31,6 @@ Respond in JSON format with 'title', 'content', and 'description' fields.`
       }
     ],
     response_format: { type: "json_object" },
-    temperature: 0.7, // Reduced temperature for more consistent length
     max_completion_tokens: Math.min(6000, wordCount * 4), // Limit tokens based on target word count
   });
 
@@ -63,14 +62,24 @@ export async function checkScheduledPosts() {
         .select()
         .from(blogPosts)
         .where(
-          lt(blogPosts.scheduledDate, now),
-          eq(blogPosts.status, 'draft')
+          and(
+            lt(blogPosts.scheduledDate, now),
+            eq(blogPosts.status, 'draft') // Only select posts in draft status
+          )
         );
 
-      console.log(`Found ${scheduledPosts.length} posts to process`);
+      console.log(`Found ${scheduledPosts.length} draft posts ready for processing`);
 
       for (const post of scheduledPosts) {
         try {
+          console.log(`Processing post ${post.id}: "${post.title}" (Status: ${post.status})`);
+
+          // Double check status before processing
+          if (post.status !== 'draft') {
+            console.log(`Skipping post ${post.id} as it's no longer in draft status`);
+            continue;
+          }
+
           // Generate content using OpenAI with the post's specified word count
           const generated = await generateContent(
             post.keywords, 
