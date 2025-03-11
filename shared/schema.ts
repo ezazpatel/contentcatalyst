@@ -14,7 +14,7 @@ export const blogPosts = pgTable("blog_posts", {
   keywords: text("keywords").array().default([]).notNull(),
   description: text("description"),
   scheduledDate: timestamp("scheduled_date"),
-  publishedDate: timestamp("published_date"),
+  publishedDate: timestamp("published_at"),
 });
 
 export const insertBlogPostSchema = createInsertSchema(blogPosts)
