@@ -8,32 +8,31 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY // Make sure to add this to your environment variables
 });
 
-async function generateContent(keywords: string[], wordCount: number, description: string = ""): Promise<{
+async function generateContent(keywords: string[], description: string = ""): Promise<{
   content: string;
   title: string;
   description: string;
 }> {
   const prompt = `<thinking>
-You are a professional blog content writer. Generate a blog post that is approximately ${wordCount} words in length, aiming to be within 10% of the target length.
+You are a professional blog content writer. Generate a comprehensive blog post.
 
-Write a detailed blog post about ${keywords.join(", ")} with approximately ${wordCount} words.
+Write a detailed blog post about ${keywords.join(", ")}.
 ${description ? `Context about the keywords: ${description}\n` : ''}
 Include a title, main content (in markdown format), and meta description.
-Focus on writing concise, meaningful content that fits within the ${wordCount} word target (±20%).
+Focus on writing concise, meaningful content.
 
 You MUST respond in JSON format with 'title', 'content', and 'description' fields.
-Make sure to count your words carefully to meet the target word count of ${wordCount}.
 </thinking>
 
-Write a detailed blog post about ${keywords.join(", ")} with approximately ${wordCount} words.
+Write a detailed blog post about ${keywords.join(", ")}.
 ${description ? `Context about the keywords: ${description}\n` : ''}
 Include a title, main content (in markdown format), and meta description.
 Respond in JSON format with 'title', 'content', and 'description' fields.`;
 
   const response = await anthropic.messages.create({
     model: "claude-3-5-sonnet-20241022", // Claude 3.5 Haiku is "claude-3-5-sonnet-20241022"
-    max_tokens: Math.min(wordCount * 4, 8000), // Limit to 8000 tokens (below Claude's 8192 limit)
-    system: "You are a professional blog content writer who specializes in creating content within strict word count limits.",
+    max_tokens: 8000, // Limit to 8000 tokens (below Claude's 8192 limit)
+    system: "You are a professional blog content writer who specializes in creating quality blog content.",
     messages: [
       {
         role: "user",
@@ -77,14 +76,7 @@ Respond in JSON format with 'title', 'content', and 'description' fields.`;
 
   // Log word count for monitoring purposes
   const wordCountCheck = result.content.split(/\s+/).length;
-  console.log(`Generated content word count: ${wordCountCheck} (target: ${wordCount})`);
-  console.log(`Word count difference: ${Math.abs(wordCountCheck - wordCount)} words (${Math.abs(wordCountCheck - wordCount) / wordCount * 100}% variance)`);
-
-  // If the word count is too far off, try regenerating once
-  if (Math.abs(wordCountCheck - wordCount) / wordCount > 0.3) { // If more than 30% off
-    console.log(`Word count ${wordCountCheck} too far from target ${wordCount}, regenerating...`);
-    return generateContent(keywords, wordCount, description);
-  }
+  console.log(`Generated content word count: ${wordCountCheck}`);
 
   return result;
 }
@@ -128,10 +120,9 @@ export async function checkScheduledPosts() {
 
           console.log(`Processing draft post ${post.id}: "${post.title}"`);
 
-          // Generate content using OpenAI with the post's specified word count
+          // Generate content using Anthropic
           const generated = await generateContent(
             post.keywords, 
-            post.wordCount, 
             post.description || ""
           );
 

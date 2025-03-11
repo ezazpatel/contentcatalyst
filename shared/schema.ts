@@ -5,19 +5,15 @@ import { z } from "zod";
 export const blogPosts = pgTable("blog_posts", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  content: text("content").notNull(),
-  keywords: text("keywords").array().notNull(),
-  affiliateLinks: jsonb("affiliate_links").$type<{name: string, url: string}[]>().notNull().default([]),
-  scheduledDate: timestamp("scheduled_date").notNull(),
-  status: text("status", { enum: ["draft", "published"] }).notNull().default("draft"),
+  content: text("content").default(""),
+  status: text("status").default("draft").notNull(),
+  excerpt: text("excerpt"),
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
-  excerpt: text("excerpt"),
-  slug: text("slug"),
-  metaTags: text("meta_tags").array(),
-  headings: jsonb("headings").$type<{level: number, text: string}[]>().notNull(),
-  wordCount: integer("word_count").notNull().default(500),
+  keywords: text("keywords").array().default([]).notNull(),
   description: text("description"),
+  scheduledDate: timestamp("scheduled_date"),
+  publishedDate: timestamp("published_date"),
 });
 
 export const insertBlogPostSchema = createInsertSchema(blogPosts)
@@ -32,7 +28,6 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts)
     metaTags: z.array(z.string()).optional(),
     excerpt: z.string().optional(),
     slug: z.string().optional(),
-    wordCount: z.number().min(100).optional(),
     description: z.string().optional(),
   });
 
