@@ -29,7 +29,10 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts)
     excerpt: z.string().optional(),
     slug: z.string().optional(),
     description: z.string().optional(),
+    wordCount: z.number().optional(), // Make wordCount optional
+    headings: z.array(z.string()).optional(), // Make headings optional
   });
+</old_str>
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type BlogPost = typeof blogPosts.$inferSelect;

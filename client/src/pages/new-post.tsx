@@ -51,8 +51,6 @@ export default function NewPost() {
     status: "draft",
     seoTitle: "",
     seoDescription: "",
-    headings: [],
-    wordCount: 500,
     description: "",
   };
 
