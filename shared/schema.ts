@@ -1,3 +1,4 @@
+
 import { pgTable, text, serial, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -32,7 +33,6 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts)
     wordCount: z.number().optional(), // Make wordCount optional
     headings: z.array(z.string()).optional(), // Make headings optional
   });
-</old_str>
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type BlogPost = typeof blogPosts.$inferSelect;
