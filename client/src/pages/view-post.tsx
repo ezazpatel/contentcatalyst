@@ -11,17 +11,15 @@ import { useToast } from "@/hooks/use-toast";
 export default function ViewPost() {
   const [, params] = useRoute<{ id: string }>("/view/:id");
   const [, navigate] = useLocation();
-  const { toast } = useToast();
   const postId = params?.id ? parseInt(params.id) : null;
 
-  if (!postId) {
-    navigate("/blogs");
-    return null;
-  }
-
+  // Always declare all hooks before any conditional returns
   const { data: post, isLoading } = useQuery<BlogPost>({
     queryKey: [`/api/posts/${postId}`],
+    // Only fetch if we have a valid postId
+    enabled: postId !== null && !isNaN(postId)
   });
+  const { toast } = useToast();
 
   const republishToWordPress = useMutation({
     mutationFn: async () => {
@@ -46,6 +44,12 @@ export default function ViewPost() {
       });
     },
   });
+
+
+  if (!postId) {
+    navigate("/");
+    return null;
+  }
 
   if (isLoading) {
     return <div className="container mx-auto py-8">Loading...</div>;
