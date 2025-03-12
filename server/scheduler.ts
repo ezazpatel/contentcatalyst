@@ -14,19 +14,29 @@ async function generateContent(keywords: string[], description: string = ""): Pr
   description: string;
 }> {
   const prompt = `<thinking>
-You are a professional blog content writer. Generate a comprehensive blog post.
+You are a professional blog content writer. Generate an extremely comprehensive and in-depth blog post.
 
-Write a detailed blog post about ${keywords.join(", ")}.
+Write a highly detailed, extensive blog post about ${keywords.join(", ")}.
 ${description ? `Context about the keywords: ${description}\n` : ''}
-Include a title, main content (in markdown format), and meta description.
-Focus on writing concise, meaningful content.
+
+Your blog post should:
+- Include a compelling title
+- Contain at least 10-15 distinct sections with clear headings and subheadings
+- Explore the topic thoroughly with multiple perspectives and angles
+- Include specific examples, data points, and details where relevant
+- Provide comprehensive information that would satisfy someone looking for complete information on this topic
+- Format all content in markdown format
+- Include a meta description that captures the essence of the content
+
+Structure the blog post with an introduction, multiple body sections (including H2 and H3 headings), and a conclusion.
+Aim to be extremely thorough in your coverage of the topic.
 
 You MUST respond in JSON format with 'title', 'content', and 'description' fields.
 </thinking>
 
-Write a detailed blog post about ${keywords.join(", ")}.
+Write an extremely comprehensive and in-depth blog post about ${keywords.join(", ")}.
 ${description ? `Context about the keywords: ${description}\n` : ''}
-Include a title, main content (in markdown format), and meta description.
+Include a compelling title, extensive main content (in markdown format with multiple sections), and meta description.
 Respond in JSON format with 'title', 'content', and 'description' fields.`;
 
   const response = await anthropic.messages.create({
