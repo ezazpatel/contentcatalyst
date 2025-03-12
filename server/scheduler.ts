@@ -30,7 +30,7 @@ Include a title, main content (in markdown format), and meta description.
 Respond in JSON format with 'title', 'content', and 'description' fields.`;
 
   const response = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-20241022", // Claude 3.5 Haiku is "claude-3-5-sonnet-20241022"
+    model: "claude-3-haiku-20240307", 
     max_tokens: 8000, // Limit to 8000 tokens (below Claude's 8192 limit)
     system: "You are a professional blog content writer who specializes in creating quality blog content.",
     messages: [
@@ -43,7 +43,7 @@ Respond in JSON format with 'title', 'content', and 'description' fields.`;
   });
 
   const content = response.content[0].text;
-  
+
   // Improved JSON parsing with error handling
   let result;
   try {
@@ -53,7 +53,7 @@ Respond in JSON format with 'title', 'content', and 'description' fields.`;
   } catch (parseError) {
     console.error("JSON parsing error:", parseError);
     console.log("Raw content causing parsing issues:", content);
-    
+
     // Attempt to extract JSON using regex as fallback
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
