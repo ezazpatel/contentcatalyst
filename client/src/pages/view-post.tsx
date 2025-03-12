@@ -87,7 +87,7 @@ export default function ViewPost() {
               <div dangerouslySetInnerHTML={{ __html: post.content }} />
             </div>
 
-            {post.affiliateLinks.length > 0 && (
+            {post.affiliateLinks?.length > 0 && (
               <div className="mt-8 border-t pt-4">
                 <h3 className="text-lg font-medium mb-2">Related Links</h3>
                 <ul className="list-disc pl-5">
