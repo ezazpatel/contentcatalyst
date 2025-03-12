@@ -30,8 +30,8 @@ Include a title, main content (in markdown format), and meta description.
 Respond in JSON format with 'title', 'content', and 'description' fields.`;
 
   const response = await anthropic.messages.create({
-    model: "claude-3-haiku-20240307", 
-    max_tokens: 8000, // Limit to 8000 tokens (below Claude's 8192 limit)
+    model: "claude-3-5-haiku-20241022", 
+    max_tokens: 4000, // Setting to 4000 tokens to stay within model limits
     system: "You are a professional blog content writer who specializes in creating quality blog content.",
     messages: [
       {
