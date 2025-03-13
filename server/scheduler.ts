@@ -76,6 +76,19 @@ Ensure JSON is properly formatted with no trailing commas.`;
       outlineResult = { title: "Blog Post About " + keywords.join(", "), outline: [] };
     }
 
+    // Prepare affiliate links section
+    let affiliateLinksMarkdown = "";
+    if (Array.isArray(post.affiliateLinks) && post.affiliateLinks.length > 0) {
+      const validAffiliateLinks = post.affiliateLinks.filter(link => link.name && link.url);
+      if (validAffiliateLinks.length > 0) {
+        affiliateLinksMarkdown = "\n\n## Recommended Resources\n\n";
+        validAffiliateLinks.forEach(link => {
+          affiliateLinksMarkdown += `* [${link.name}](${link.url})\n`;
+        });
+        affiliateLinksMarkdown += "\n";
+      }
+    }
+
     console.log("Step 2: Generating introduction...");
     const introPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
 - Use grade 5-6 level Canadian English. 
@@ -110,10 +123,23 @@ Format your response with proper markdown:
       introduction: introResponse.content[0].text
     };
 
-    console.log("Step 3: Generating section content...");
-    let fullContent = introResult.introduction + "\n\n";
+    // Insert the affiliate links right after the title
+    let fullContent = introResult.introduction;
+    if (affiliateLinksMarkdown) {
+      // Find the position after the title
+      const titleEndIndex = fullContent.indexOf('\n\n');
+      if (titleEndIndex !== -1) {
+        fullContent = fullContent.substring(0, titleEndIndex + 2) + 
+                      affiliateLinksMarkdown + 
+                      fullContent.substring(titleEndIndex + 2);
+      } else {
+        fullContent += affiliateLinksMarkdown;
+      }
+    }
+    
+    fullContent += "\n\n";
 
-    // Track the number of times each affiliate link has been used
+    // Track the number of times each affiliate link has been used - we'll still reference them in the content
     const affiliateLinkUsage = {};
 
     for (const section of outlineResult.outline.slice(0, Math.min(outlineResult.outline.length, 10))) {
@@ -127,22 +153,22 @@ Format your response with proper markdown:
 
         if (validAffiliateLinks.length > 0) {
           affiliateLinksInstruction = `
-- Important: Naturally incorporate these affiliate links in your content, preferably under an H2 or H3 heading:
+- Important: Mention these products/resources naturally in your content where relevant:
 ${validAffiliateLinks.map(link => {
   // Initialize usage counter if not exists
   if (!affiliateLinkUsage[link.url]) {
     affiliateLinkUsage[link.url] = 0;
   }
 
-  // Only include links that haven't been used twice yet
+  // Only include mentions of links that haven't been referenced twice yet
   if (affiliateLinkUsage[link.url] < 2) {
     affiliateLinkUsage[link.url]++;
-    return `  - [${link.name}](${link.url})`;
+    return `  - ${link.name}`;
   }
   return null;
 }).filter(Boolean).join('\n')}
-- Each affiliate link should be mentioned naturally within the content, using the exact link text and URL provided.
-- Do not list them as a separate list, but weave them into the content in a way that feels natural and helpful to the reader.`;
+- Note: Do NOT include the links in your response. Only mention the names naturally within the content.
+- The links are already listed at the beginning of the post.`;
         }
       }
 

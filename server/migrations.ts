@@ -1,31 +1,67 @@
-
-import { sql } from "drizzle-orm";
-import { db } from "./db";
+import { sql } from '@vercel/postgres';
+import { db } from './db';
+import { blogPosts } from '@shared/schema';
 
 export async function runMigrations() {
-  console.log("Running database migrations...");
-  
   try {
-    // Check if wordpress_url column exists
-    const result = await db.execute(sql`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name='blog_posts' AND column_name='wordpress_url'
+    console.log('Running migrations...');
+
+    // Check if the blog_posts table exists
+    const tableExists = await db.execute(sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'blog_posts'
+      );
     `);
-    
-    // If wordpress_url column doesn't exist, add it
-    if (result.rows.length === 0) {
-      console.log("Adding wordpress_url column to blog_posts table...");
+
+    // Create the table if it doesn't exist
+    if (!tableExists.rows[0].exists) {
+      console.log('Creating blog_posts table...');
       await db.execute(sql`
-        ALTER TABLE blog_posts 
-        ADD COLUMN wordpress_url TEXT
+        CREATE TABLE blog_posts (
+          id SERIAL PRIMARY KEY,
+          title TEXT NOT NULL,
+          content TEXT DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'draft',
+          excerpt TEXT,
+          seo_title TEXT,
+          seo_description TEXT,
+          keywords TEXT[] DEFAULT '{}' NOT NULL,
+          description TEXT,
+          scheduled_date TIMESTAMP,
+          published_at TIMESTAMP,
+          wordpress_url TEXT
+        );
       `);
-      console.log("Migration complete: wordpress_url column added.");
+      console.log('Table created successfully');
     } else {
-      console.log("wordpress_url column already exists.");
+      console.log('Table blog_posts already exists');
+
+      // Check if wordpress_url column exists, and add it if it doesn't
+      const columnExists = await db.execute(sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_name = 'blog_posts' AND column_name = 'wordpress_url'
+        );
+      `);
+
+      if (!columnExists.rows[0].exists) {
+        console.log('Adding wordpress_url column to blog_posts table...');
+        await db.execute(sql`
+          ALTER TABLE blog_posts 
+          ADD COLUMN wordpress_url TEXT;
+        `);
+        console.log('Column added successfully');
+      } else {
+        console.log('Column wordpress_url already exists');
+      }
     }
+
+    // Add any new migrations below this line
+
+    console.log('All migrations completed');
   } catch (error) {
-    console.error("Migration failed:", error);
+    console.error('Error running migrations:', error);
     throw error;
   }
 }
