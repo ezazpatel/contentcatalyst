@@ -1,7 +1,8 @@
 
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
-import { sql } from '@neondatabase/serverless';
+import { neon } from '@neondatabase/serverless';
+const sql = neon.sql;
 
 export async function runMigrations() {
   try {
