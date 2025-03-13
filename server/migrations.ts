@@ -2,14 +2,13 @@
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
 import { neon } from '@neondatabase/serverless';
-const sql = neon.sql;
 
 export async function runMigrations() {
   try {
     console.log('Running migrations...');
 
     // Check if the blog_posts table exists
-    const tableExists = await db.execute(sql`
+    const tableExists = await db.execute(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_name = 'blog_posts'
@@ -19,7 +18,7 @@ export async function runMigrations() {
     // Create the table if it doesn't exist
     if (!tableExists.rows[0].exists) {
       console.log('Creating blog_posts table...');
-      await db.execute(sql`
+      await db.execute(`
         CREATE TABLE blog_posts (
           id SERIAL PRIMARY KEY,
           title TEXT NOT NULL,
@@ -41,7 +40,7 @@ export async function runMigrations() {
       console.log('Table blog_posts already exists');
 
       // Check if wordpress_url column exists, and add it if it doesn't
-      const wordpressUrlExists = await db.execute(sql`
+      const wordpressUrlExists = await db.execute(`
         SELECT EXISTS (
           SELECT FROM information_schema.columns 
           WHERE table_name = 'blog_posts' AND column_name = 'wordpress_url'
@@ -50,7 +49,7 @@ export async function runMigrations() {
 
       if (!wordpressUrlExists.rows[0].exists) {
         console.log('Adding wordpress_url column to blog_posts table...');
-        await db.execute(sql`
+        await db.execute(`
           ALTER TABLE blog_posts 
           ADD COLUMN wordpress_url TEXT;
         `);
@@ -60,7 +59,7 @@ export async function runMigrations() {
       }
       
       // Check if affiliate_links column exists, and add it if it doesn't
-      const affiliateLinksExists = await db.execute(sql`
+      const affiliateLinksExists = await db.execute(`
         SELECT EXISTS (
           SELECT FROM information_schema.columns 
           WHERE table_name = 'blog_posts' AND column_name = 'affiliate_links'
@@ -69,7 +68,7 @@ export async function runMigrations() {
 
       if (!affiliateLinksExists.rows[0].exists) {
         console.log('Adding affiliate_links column to blog_posts table...');
-        await db.execute(sql`
+        await db.execute(`
           ALTER TABLE blog_posts 
           ADD COLUMN affiliate_links JSONB DEFAULT '{}';
         `);
