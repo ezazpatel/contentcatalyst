@@ -5,11 +5,22 @@ import { insertBlogPostSchema } from "@shared/schema";
 import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
 
+function convertMarkdownToHTML(markdown: string): string {
+  return markdown
+    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^\s*[-+*]\s+(.*)/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+    .replace(/^\d+\.\s+(.*)/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>')
+    .replace(/^(?!<[uo]l|<li|<h[1-6])(.*$)/gm, '<p>$1</p>');
+}
+
 export async function registerRoutes(app: Express) {
-  // Run database migrations
   await runMigrations();
-  
-  // Initialize the scheduler when the server starts
   checkScheduledPosts();
   const httpServer = createServer(app);
 
@@ -61,7 +72,6 @@ export async function registerRoutes(app: Express) {
         throw new Error('WordPress credentials are not configured');
       }
 
-      // Get all unpublished posts
       const posts = await storage.getAllBlogPosts();
       const unpublishedPosts = posts.filter(post => post.status !== "published");
 
@@ -69,21 +79,15 @@ export async function registerRoutes(app: Express) {
         return res.json({ message: "No unpublished posts found" });
       }
 
-      // Start the publishing process
       console.log(`Starting to publish ${unpublishedPosts.length} posts...`);
-
-      // We'll return immediately but continue processing
       res.json({ 
         message: `Started publishing ${unpublishedPosts.length} posts. Check logs for progress.`,
         totalPosts: unpublishedPosts.length
       });
 
-      // Process posts with delay
       for (const post of unpublishedPosts) {
         try {
-          // Create Basic Auth token from application password
           const authToken = Buffer.from(`admin:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
-
           const apiUrl = process.env.WORDPRESS_API_URL;
           const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
 
@@ -115,49 +119,34 @@ export async function registerRoutes(app: Express) {
           const result = await response.json();
           console.log(`Successfully published post ${post.id} to WordPress: ${result.link}`);
 
-          // Update post status and WordPress URL in our database
           await storage.updateBlogPost(post.id, { 
             status: "published",
             wordpressUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
           });
 
-          // Wait for 2 minutes before publishing the next post
           await new Promise(resolve => setTimeout(resolve, 120000));
         } catch (error) {
           console.error(`Failed to publish post ${post.id}:`, error);
-          // Continue with next post even if this one failed
         }
       }
 
       console.log('Finished publishing all posts');
     } catch (error) {
       console.error('Error in publish-all process:', error);
-      // Note: We don't send this error to the client as we've already sent a response
     }
   });
 
   app.post("/api/wordpress/publish", async (req, res) => {
     try {
       if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN || !process.env.WORDPRESS_USERNAME) {
-        throw new Error('WordPress credentials are not configured. Please set WORDPRESS_API_URL, WORDPRESS_USERNAME, and WORDPRESS_AUTH_TOKEN environment variables.');
+        throw new Error('WordPress credentials are not configured');
       }
 
-      // Create Basic Auth token from username and application password
       const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
-
       const apiUrl = process.env.WORDPRESS_API_URL;
       const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
 
-      console.log('Publishing to WordPress endpoint:', endpoint);
-      console.log('Publishing content:', {
-        title: req.body.title,
-        content: req.body.content ? req.body.content.substring(0, 100) + '...' : 'No content',
-        excerpt: req.body.excerpt ? req.body.excerpt.substring(0, 100) + '...' : 'No excerpt'
-      });
-
-      // Log the authorization header (without the actual token)
-      console.log('Using Authorization header:', 'Basic ' + '*'.repeat(20));
-      console.log('Using WordPress username:', process.env.WORDPRESS_USERNAME);
+      const htmlContent = convertMarkdownToHTML(req.body.content);
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -168,7 +157,7 @@ export async function registerRoutes(app: Express) {
         },
         body: JSON.stringify({
           title: { raw: req.body.title },
-          content: { raw: req.body.content },
+          content: { raw: htmlContent },
           status: 'publish',
           excerpt: { raw: req.body.excerpt || '' },
           meta: {
@@ -187,7 +176,6 @@ export async function registerRoutes(app: Express) {
       const result = await response.json();
       console.log('Successfully published to WordPress:', result);
 
-      // Return the WordPress post URL along with the result
       res.json({
         ...result,
         postUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`,
@@ -198,11 +186,11 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ 
         message: 'Failed to publish to WordPress', 
         error: error.message,
-        details: `Please ensure:
-1. You have created an application password in WordPress (Users → Profile → Application Passwords)
-2. The WORDPRESS_AUTH_TOKEN contains the application password
-3. The WordPress REST API is enabled
-4. The user has permissions to create posts`
+        details: `Please verify:
+1. WORDPRESS_API_URL is correct and ends with /wp-json
+2. Application password is correctly formatted
+3. WordPress user has administrator privileges
+4. REST API is enabled in WordPress`
       });
     }
   });
@@ -213,9 +201,7 @@ export async function registerRoutes(app: Express) {
         throw new Error('WordPress credentials are not configured');
       }
 
-      // Create Basic Auth token
       const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
-
       const apiUrl = process.env.WORDPRESS_API_URL;
       const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
 
@@ -224,7 +210,6 @@ export async function registerRoutes(app: Express) {
       console.log('Auth Header:', `Basic ${authToken.substring(0, 5)}...`);
       console.log('Using WordPress username:', process.env.WORDPRESS_USERNAME);
 
-      // First, try to get posts to verify authentication
       const response = await fetch(endpoint, {
         method: 'GET',
         headers: {

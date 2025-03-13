@@ -7,16 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function ViewPost() {
   const [, params] = useRoute<{ id: string }>("/view/:id");
   const [, navigate] = useLocation();
   const postId = params?.id ? parseInt(params.id) : null;
 
-  // Always declare all hooks before any conditional returns
   const { data: post, isLoading } = useQuery<BlogPost>({
     queryKey: [`/api/posts/${postId}`],
-    // Only fetch if we have a valid postId
     enabled: postId !== null && !isNaN(postId)
   });
   const { toast } = useToast();
@@ -31,7 +31,6 @@ export default function ViewPost() {
         title: "Success",
         description: "Post republished to WordPress successfully",
       });
-      // If there's a WordPress URL in the response, you could open it in a new tab
       if (data.postUrl) {
         window.open(data.postUrl, '_blank');
       }
@@ -44,7 +43,6 @@ export default function ViewPost() {
       });
     },
   });
-
 
   if (!postId) {
     navigate("/");
@@ -87,8 +85,10 @@ export default function ViewPost() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none">
-              <div dangerouslySetInnerHTML={{ __html: post.content }} />
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {post.content}
+              </ReactMarkdown>
             </div>
 
             {post.affiliateLinks?.length > 0 && (
