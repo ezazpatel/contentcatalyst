@@ -303,5 +303,5 @@ async function processScheduledPosts() {
   }
 }
 
-// Start the scheduler when the server starts
+// Start the scheduler when this file is imported
 checkScheduledPosts();
