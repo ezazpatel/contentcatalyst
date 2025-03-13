@@ -1,7 +1,16 @@
-
 import { Anthropic } from "@anthropic-ai/sdk";
 import { storage } from "./storage";
 import { BlogPost } from "@shared/schema";
+
+// Function to generate content (placeholder - replace with your actual function)
+async function generateContent(keywords: string[], description: string, post: any) {
+  // Placeholder implementation
+  return {
+    title: post.title || `Article about ${keywords.join(", ")}`,
+    content: post.content || `Generated content about ${keywords.join(", ")}. ${description}`,
+    description: description || `Article about ${keywords.join(", ")}`
+  };
+}
 
 // Create a scheduler that runs every 2 minutes
 const SCHEDULER_INTERVAL = 120 * 1000; // 120 seconds
@@ -11,7 +20,7 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY // Make sure to add this to your environment variables
 });
 
-async function generateContent(keywords: string[], description: string = "", post: any = {}): Promise<{
+async function generateContentOriginal(keywords: string[], description: string = "", post: any = {}): Promise<{
   content: string;
   title: string;
   description: string;
@@ -54,7 +63,7 @@ Ensure JSON is properly formatted with no trailing commas.`;
     const outlineText = outlineResponse.content[0].text;
     const outlineJson = outlineText.match(/```json\s*([\s\S]*?)\s*```/) || outlineText.match(/{[\s\S]*}/);
     let outlineResult;
-    
+
     if (outlineJson) {
       try {
         outlineResult = JSON.parse(outlineJson[0].replace(/```json|```/g, '').trim());
@@ -103,19 +112,19 @@ Format your response with proper markdown:
 
     console.log("Step 3: Generating section content...");
     let fullContent = introResult.introduction + "\n\n";
-    
+
     // Track the number of times each affiliate link has been used
     const affiliateLinkUsage = {};
-    
+
     for (const section of outlineResult.outline.slice(0, Math.min(outlineResult.outline.length, 10))) {
       console.log("Generating content for section:", section.heading);
-      
+
       // Prepare affiliate links instruction
       let affiliateLinksInstruction = "";
       if (Array.isArray(post.affiliateLinks) && post.affiliateLinks.length > 0) {
         // Filter out empty links
         const validAffiliateLinks = post.affiliateLinks.filter(link => link.name && link.url);
-        
+
         if (validAffiliateLinks.length > 0) {
           affiliateLinksInstruction = `
 - Important: Naturally incorporate these affiliate links in your content, preferably under an H2 or H3 heading:
@@ -124,7 +133,7 @@ ${validAffiliateLinks.map(link => {
   if (!affiliateLinkUsage[link.url]) {
     affiliateLinkUsage[link.url] = 0;
   }
-  
+
   // Only include links that haven't been used twice yet
   if (affiliateLinkUsage[link.url] < 2) {
     affiliateLinkUsage[link.url]++;
@@ -136,7 +145,7 @@ ${validAffiliateLinks.map(link => {
 - Do not list them as a separate list, but weave them into the content in a way that feels natural and helpful to the reader.`;
         }
       }
-      
+
       const sectionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
 - Use grade 5-6 level Canadian English. 
 - Vary sentence lengths and structure to mimic human writing
@@ -228,43 +237,14 @@ Use proper markdown:
   }
 }
 
-// Function to check for scheduled posts and generate content
 export async function checkScheduledPosts() {
-  console.log("🚀 Scheduler initializing - set to run every", SCHEDULER_INTERVAL / 1000, "seconds");
-  
-  try {
-    // Immediately check for scheduled posts when the server starts
-    console.log("📋 Running initial scheduled post check...");
-    await processScheduledPosts();
-
-    // Set up the interval to check for scheduled posts
-    console.log("⏰ Setting up recurring scheduler...");
-    const intervalId = setInterval(async () => {
-      try {
-        await processScheduledPosts();
-      } catch (error) {
-        console.error("❌ Error in scheduler interval:", error);
-      }
-    }, SCHEDULER_INTERVAL);
-    
-    console.log("✅ Scheduler successfully initialized with interval ID:", intervalId);
-    
-    // Return the interval ID in case we need to clear it later
-    return intervalId;
-  } catch (error) {
-    console.error("❌ Failed to initialize scheduler:", error);
-    throw error;
-  }
-}
-
-async function processScheduledPosts() {
+  console.log("Checking for scheduled posts at " + new Date().toLocaleString());
   const now = new Date();
-  console.log("Checking for scheduled posts at", now.toISOString());
 
   try {
     // Get all scheduled posts where the date is in the past and content hasn't been generated yet
     const posts = await storage.getAllBlogPosts();
-    
+
     // Filter for posts that need processing (scheduled or draft with scheduledDate in the past and content is empty)
     const postsToProcess = posts.filter(post => {
       return (
@@ -276,7 +256,7 @@ async function processScheduledPosts() {
     });
 
     console.log(`Found ${postsToProcess.length} posts to process`);
-    
+
     // Log more details about which posts were found
     if (postsToProcess.length > 0) {
       postsToProcess.forEach(post => {
@@ -293,10 +273,10 @@ async function processScheduledPosts() {
     // Process each post one by one
     for (const post of postsToProcess) {
       console.log(`Processing post ID ${post.id}: ${post.keywords.join(", ")}`);
-      
+
       try {
         // Generate content using Anthropic
-        const generated = await generateContent(
+        const generated = await generateContentOriginal(
           post.keywords, 
           post.description || "",
           post
@@ -312,11 +292,11 @@ async function processScheduledPosts() {
         });
 
         console.log(`Successfully generated content for post ID ${post.id}`);
-        
+
         // Now publish to WordPress if credentials are available
         if (process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
           console.log(`Attempting to publish post ID ${post.id} to WordPress...`);
-          
+
           try {
             // Create Basic Auth token from username and application password
             const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
@@ -337,7 +317,7 @@ async function processScheduledPosts() {
             };
 
             console.log(`Publishing to WordPress endpoint: ${endpoint}`);
-            
+
             const response = await fetch(endpoint, {
               method: 'POST',
               headers: {
@@ -355,7 +335,7 @@ async function processScheduledPosts() {
 
             const result = await response.json();
             console.log(`✅ Successfully published post ID ${post.id} to WordPress: ${result.link}`);
-            
+
             // Update the post with WordPress URL if available
             if (result.link) {
               await storage.updateBlogPost(post.id, {
@@ -376,7 +356,10 @@ async function processScheduledPosts() {
   } catch (error) {
     console.error("Error in scheduler:", error);
   }
+
+  // Schedule the next check (every 2 minutes)
+  setTimeout(checkScheduledPosts, 120000);
 }
 
 // The scheduler will be initialized from routes.ts
-console.log("✅ Scheduler module loaded and ready to be initialized");
+console.log("✅ Scheduler module loaded and ready");

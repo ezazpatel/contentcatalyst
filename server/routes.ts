@@ -3,8 +3,12 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
 import { checkScheduledPosts } from "./scheduler";
+import { runMigrations } from "./migrations";
 
 export async function registerRoutes(app: Express) {
+  // Run database migrations
+  await runMigrations();
+  
   // Initialize the scheduler when the server starts
   checkScheduledPosts();
   const httpServer = createServer(app);
