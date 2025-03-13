@@ -3,12 +3,12 @@ import { useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Link } from 'wouter';
 import { Loader } from 'lucide-react';
 
 export default function ViewPost() {
-  const [, params] = useRoute('/view/:id');
+  const [, params] = useRoute('/blogs/:id');
   const postId = params?.id;
 
   const { data: post, isLoading, error } = useQuery({
@@ -24,11 +24,11 @@ export default function ViewPost() {
     enabled: !!postId,
   });
 
+  const { toast } = useToast();
+  
   useEffect(() => {
     if (error) {
-      const { toast } = useToast();
-// ...later in your code, when using toast:
-toast({
+      toast({
         title: 'Error',
         description: 'Failed to load post. Please try again.',
         variant: 'destructive',
@@ -94,6 +94,37 @@ toast({
             </p>
           </div>
         )}
+        
+        <div className="mt-4">
+          <Button 
+            onClick={() => {
+              fetch("/api/wordpress/publish", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(post),
+              })
+              .then(response => response.json())
+              .then(data => {
+                toast({
+                  title: "Success",
+                  description: "Post republished to WordPress successfully",
+                });
+              })
+              .catch(error => {
+                toast({
+                  title: "Error",
+                  description: "Failed to republish to WordPress",
+                  variant: "destructive",
+                });
+              });
+            }}
+            variant="outline"
+          >
+            Republish to WordPress
+          </Button>
+        </div>
       </div>
     </div>
   );
