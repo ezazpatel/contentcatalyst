@@ -17,18 +17,19 @@ async function generateContent(keywords: string[], description: string = ""): Pr
   
   // Step 1: Generate outline
   console.log("Step 1: Generating outline...");
-  const outlinePrompt = `Your task is to generate a detailed blog post based on provided keywords. The blog post should be written from the perspective of a cheerful white woman living in Canada who is a content creator. Use a casual, friendly tone as if talking to a friend, and aim for a grade 7-8 English level. Keep most sentences short and simple, but mix in a few longer sentences to make strong points. Use simple words that everyone can understand.
+  const outlinePrompt = `Your task is to generate a detailed blog post based on provided keywords. The blog post should be written from the perspective of a cheerful white woman living in Canada who is a content creator. Use a casual, friendly tone as if talking to a friend, and aim for a grade 5-6 Canadian English level. Keep most sentences short and simple, but mix in a few longer sentences to make strong points. Use simple words that everyone can understand.
 
 You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. 
 - Use grade 5-6 level Canadian English. 
 - Vary sentence lengths and structure to mimic human writing
 - Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+- Only include factual information. Do not make up any details.
 
 Create a detailed outline for a blog post about these keywords: ${keywords.join(", ")}.
 ${description ? `Context about the keywords: ${description}\n` : ''}
 
 - Generate one main title line and 10 sections with a heading for each section.
-- Under each section heading, also create 4 level-2 subheadings.
+- Under each section heading, also create 2-3 level-2 subheadings.
 - Respond in JSON format with these fields: 'title' and 'outline'.
 
 The 'outline' should be an array of objects, each with 'heading' and 'subheadings' fields. 'subheadings' should be an array of strings.`;
@@ -63,6 +64,7 @@ The 'outline' should be an array of objects, each with 'heading' and 'subheading
 - Use grade 5-6 level Canadian English. 
 - Vary sentence lengths and structure to mimic human writing
 - Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+- Only include factual information. Do not make up any details.
 
 Write an engaging introduction (200-300 words) for a blog post with the title: "${outlineResult.title}".
 
@@ -110,8 +112,9 @@ Format in markdown and include relevant affiliate links naturally where appropri
 - Use grade 5-6 level Canadian English. 
 - Vary sentence lengths and structure to mimic human writing
 - Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+- Only include factual information. Do not make up any details.
 
-Write a detailed section (300-400 words) for the heading "${section.heading}" that's part of an article titled "${outlineResult.title}".
+Write a detailed section (200-300 words) for the heading "${section.heading}" that's part of an article titled "${outlineResult.title}".
 Include rich details, examples, personal anecdotes, and naturally place affiliate links where relevant.
 - Format in markdown and make it engaging and informative.
 - Include all these subheadings: ${section.subheadings.join(", ")}.
@@ -140,6 +143,7 @@ Include rich details, examples, personal anecdotes, and naturally place affiliat
 - Use grade 5-6 level Canadian English. 
 - Vary sentence lengths and structure to mimic human writing
 - Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+- Only include factual information. Do not make up any details.
 
 Write a compelling conclusion (300-400 words) for a blog post with the title: "${outlineResult.title}" about the keywords: ${keywords.join(", ")}.
 Summarize key points, include a call to action, and remind readers about the value of the topic.
