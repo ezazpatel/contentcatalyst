@@ -3,7 +3,7 @@ import { useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/toast';
+import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 import { Loader } from 'lucide-react';
 
@@ -26,7 +26,9 @@ export default function ViewPost() {
 
   useEffect(() => {
     if (error) {
-      toast({
+      const { toast } = useToast();
+// ...later in your code, when using toast:
+toast({
         title: 'Error',
         description: 'Failed to load post. Please try again.',
         variant: 'destructive',
