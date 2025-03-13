@@ -303,4 +303,5 @@ async function processScheduledPosts() {
   }
 }
 
-// The scheduler will be started when explicitly called from routes.ts
+// Start the scheduler when the server starts
+checkScheduledPosts();
