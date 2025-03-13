@@ -8,7 +8,7 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY // Make sure to add this to your environment variables
 });
 
-async function generateContent(keywords: string[], description: string = ""): Promise<{
+async function generateContent(keywords: string[], description: string = "", post: any = {}): Promise<{
   content: string;
   title: string;
   description: string;
@@ -106,13 +106,45 @@ Format in markdown and include relevant affiliate links naturally where appropri
   console.log("Step 3: Generating section content...");
   let fullContent = introResult.introduction + "\n\n";
   
+  // Track the number of times each affiliate link has been used
+  const affiliateLinkUsage = {};
+  
   for (const section of outlineResult.outline.slice(0, Math.min(outlineResult.outline.length, 10))) {
     console.log("Generating content for section:", section.heading);
+    
+    // Prepare affiliate links instruction
+    let affiliateLinksInstruction = "";
+    if (Array.isArray(post.affiliateLinks) && post.affiliateLinks.length > 0) {
+      // Filter out empty links
+      const validAffiliateLinks = post.affiliateLinks.filter(link => link.name && link.url);
+      
+      if (validAffiliateLinks.length > 0) {
+        affiliateLinksInstruction = `
+- Important: Naturally incorporate these affiliate links in your content, preferably under an H2 or H3 heading:
+${validAffiliateLinks.map(link => {
+  // Initialize usage counter if not exists
+  if (!affiliateLinkUsage[link.url]) {
+    affiliateLinkUsage[link.url] = 0;
+  }
+  
+  // Only include links that haven't been used twice yet
+  if (affiliateLinkUsage[link.url] < 2) {
+    affiliateLinkUsage[link.url]++;
+    return `  - [${link.name}](${link.url})`;
+  }
+  return null;
+}).filter(Boolean).join('\n')}
+- Each affiliate link should be mentioned naturally within the content, using the exact link text and URL provided.
+- Do not list them as a separate list, but weave them into the content in a way that feels natural and helpful to the reader.`;
+      }
+    }
+    
     const sectionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
 - Use grade 5-6 level Canadian English. 
 - Vary sentence lengths and structure to mimic human writing
 - Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
 - Only include factual information. Do not make up any details.
+${affiliateLinksInstruction}
 
 Write a detailed section (200-300 words) for the heading "${section.heading}" that's part of an article titled "${outlineResult.title}".
 Include rich details, examples, personal anecdotes, and naturally place affiliate links where relevant.
@@ -219,7 +251,8 @@ export async function checkScheduledPosts() {
           // Generate content using Anthropic
           const generated = await generateContent(
             post.keywords, 
-            post.description || ""
+            post.description || "",
+            post
           );
 
           // Update the post with generated content
