@@ -3,7 +3,7 @@ import { useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/components/ui/toast';
 import { Link } from 'wouter';
 import { Loader } from 'lucide-react';
 
