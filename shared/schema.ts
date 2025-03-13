@@ -15,6 +15,7 @@ export const blogPosts = pgTable("blog_posts", {
   scheduledDate: timestamp("scheduled_date"),
   publishedDate: timestamp("published_at"),
   wordpressUrl: text("wordpress_url"), // Added wordpressUrl column
+  affiliateLinks: jsonb("affiliate_links").default({})
 });
 
 export const insertBlogPostSchema = createInsertSchema(blogPosts)

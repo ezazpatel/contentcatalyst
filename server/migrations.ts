@@ -1,6 +1,7 @@
-import { sql } from '@vercel/postgres';
+
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
+import { sql } from '@neondatabase/serverless';
 
 export async function runMigrations() {
   try {
@@ -30,7 +31,8 @@ export async function runMigrations() {
           description TEXT,
           scheduled_date TIMESTAMP,
           published_at TIMESTAMP,
-          wordpress_url TEXT
+          wordpress_url TEXT,
+          affiliate_links JSONB DEFAULT '{}'
         );
       `);
       console.log('Table created successfully');
@@ -38,14 +40,14 @@ export async function runMigrations() {
       console.log('Table blog_posts already exists');
 
       // Check if wordpress_url column exists, and add it if it doesn't
-      const columnExists = await db.execute(sql`
+      const wordpressUrlExists = await db.execute(sql`
         SELECT EXISTS (
           SELECT FROM information_schema.columns 
           WHERE table_name = 'blog_posts' AND column_name = 'wordpress_url'
         );
       `);
 
-      if (!columnExists.rows[0].exists) {
+      if (!wordpressUrlExists.rows[0].exists) {
         console.log('Adding wordpress_url column to blog_posts table...');
         await db.execute(sql`
           ALTER TABLE blog_posts 
@@ -54,6 +56,25 @@ export async function runMigrations() {
         console.log('Column added successfully');
       } else {
         console.log('Column wordpress_url already exists');
+      }
+      
+      // Check if affiliate_links column exists, and add it if it doesn't
+      const affiliateLinksExists = await db.execute(sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_name = 'blog_posts' AND column_name = 'affiliate_links'
+        );
+      `);
+
+      if (!affiliateLinksExists.rows[0].exists) {
+        console.log('Adding affiliate_links column to blog_posts table...');
+        await db.execute(sql`
+          ALTER TABLE blog_posts 
+          ADD COLUMN affiliate_links JSONB DEFAULT '{}';
+        `);
+        console.log('Column added successfully');
+      } else {
+        console.log('Column affiliate_links already exists');
       }
     }
 
