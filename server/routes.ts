@@ -111,8 +111,11 @@ export async function registerRoutes(app: Express) {
           const result = await response.json();
           console.log(`Successfully published post ${post.id} to WordPress: ${result.link}`);
 
-          // Update post status in our database
-          await storage.updateBlogPost(post.id, { status: "published" });
+          // Update post status and WordPress URL in our database
+          await storage.updateBlogPost(post.id, { 
+            status: "published",
+            wordpressUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
+          });
 
           // Wait for 2 minutes before publishing the next post
           await new Promise(resolve => setTimeout(resolve, 120000));

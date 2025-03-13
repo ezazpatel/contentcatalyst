@@ -1,4 +1,3 @@
-
 import { pgTable, text, serial, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -15,6 +14,7 @@ export const blogPosts = pgTable("blog_posts", {
   description: text("description"),
   scheduledDate: timestamp("scheduled_date"),
   publishedDate: timestamp("published_at"),
+  wordpressUrl: text("wordpress_url"), // Added wordpressUrl column
 });
 
 export const insertBlogPostSchema = createInsertSchema(blogPosts)
@@ -32,6 +32,7 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts)
     description: z.string().optional(),
     wordCount: z.number().optional(), // Make wordCount optional
     headings: z.array(z.string()).optional(), // Make headings optional
+    wordpressUrl: z.string().url().optional(), // Added wordpressUrl to schema
   });
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
