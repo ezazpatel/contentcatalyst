@@ -8,7 +8,7 @@ import { Link } from 'wouter';
 import { Loader } from 'lucide-react';
 
 export default function ViewPost() {
-  const [, params] = useRoute('/posts/:id');
+  const [, params] = useRoute('/view/:id');
   const postId = params?.id;
 
   const { data: post, isLoading, error } = useQuery({
