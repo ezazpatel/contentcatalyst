@@ -303,5 +303,4 @@ async function processScheduledPosts() {
   }
 }
 
-// Start the scheduler when imported
-checkScheduledPosts();
+// The scheduler will be started when explicitly called from routes.ts
