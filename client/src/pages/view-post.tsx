@@ -1,130 +1,117 @@
-import React, { useState, useEffect } from 'react';
-import { useRoute } from 'wouter';
-import { useQuery } from '@tanstack/react-query';
-import { MarkdownRenderer } from '@/components/markdown-renderer';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { Link } from 'wouter';
-import { Loader } from 'lucide-react';
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useRoute, useLocation } from "wouter";
+import { BlogPost } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Navbar } from "@/components/navbar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from "date-fns";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ViewPost() {
-  const [, params] = useRoute('/blogs/:id');
-  const postId = params?.id;
+  const [, params] = useRoute<{ id: string }>("/view/:id");
+  const [, navigate] = useLocation();
+  const postId = params?.id ? parseInt(params.id) : null;
 
-  const { data: post, isLoading, error } = useQuery({
-    queryKey: ['post', postId],
-    queryFn: async () => {
-      if (!postId) return null;
-      const response = await fetch(`/api/posts/${postId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch post');
-      }
+  // Always declare all hooks before any conditional returns
+  const { data: post, isLoading } = useQuery<BlogPost>({
+    queryKey: [`/api/posts/${postId}`],
+    // Only fetch if we have a valid postId
+    enabled: postId !== null && !isNaN(postId)
+  });
+  const { toast } = useToast();
+
+  const republishToWordPress = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/wordpress/publish", post);
       return response.json();
     },
-    enabled: !!postId,
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: "Post republished to WordPress successfully",
+      });
+      // If there's a WordPress URL in the response, you could open it in a new tab
+      if (data.postUrl) {
+        window.open(data.postUrl, '_blank');
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to republish to WordPress",
+        variant: "destructive",
+      });
+    },
   });
 
-  const { toast } = useToast();
-  
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load post. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  }, [error]);
+
+  if (!postId) {
+    navigate("/");
+    return null;
+  }
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <Loader className="animate-spin h-8 w-8" />
-      </div>
-    );
+    return <div className="container mx-auto py-8">Loading...</div>;
   }
 
   if (!post) {
-    return (
-      <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">Post not found</h1>
-        <Button asChild>
-          <Link href="/posts">Back to Posts</Link>
-        </Button>
-      </div>
-    );
+    return <div className="container mx-auto py-8">Post not found. <Button onClick={() => navigate("/blogs")}>Back to Posts</Button></div>;
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <Button asChild variant="outline" size="sm">
-          <Link href="/posts">Back to Posts</Link>
-        </Button>
-      </div>
+    <div>
+      <Navbar />
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-sm text-muted-foreground mb-2">
+                  Keyword Phrases: {post.keywords.join(", ")}
+                </div>
+                <CardTitle className="text-3xl">{post.title}</CardTitle>
+              </div>
+              <div className="flex gap-4">
+                <Button variant="outline" onClick={() => navigate("/blogs")}>
+                  Back to Posts
+                </Button>
+                <Button 
+                  variant="secondary"
+                  onClick={() => republishToWordPress.mutate()}
+                  disabled={republishToWordPress.isPending}
+                >
+                  {republishToWordPress.isPending ? "Publishing..." : "Republish to WordPress"}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="prose prose-sm max-w-none">
+              <div dangerouslySetInnerHTML={{ __html: post.content }} />
+            </div>
 
-      <div className="bg-card rounded-lg shadow-md p-6">
-        <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
+            {post.affiliateLinks?.length > 0 && (
+              <div className="mt-8 border-t pt-4">
+                <h3 className="text-lg font-medium mb-2">Related Links</h3>
+                <ul className="list-disc pl-5">
+                  {post.affiliateLinks.map((link, index) => (
+                    <li key={index}>
+                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {link.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-        <div className="flex items-center text-sm text-muted-foreground mb-6">
-          <span>Published: {new Date(post.created_at).toLocaleDateString()}</span>
-          {post.updated_at && (
-            <span className="ml-4">
-              Updated: {new Date(post.updated_at).toLocaleDateString()}
-            </span>
-          )}
-        </div>
-
-        <div className="prose dark:prose-invert max-w-none">
-          <MarkdownRenderer content={post.content} />
-        </div>
-
-        {post.wordpress_url && (
-          <div className="mt-8 pt-4 border-t">
-            <p className="text-sm text-muted-foreground">
-              This post was also published on WordPress:{' '}
-              <a 
-                href={post.wordpress_url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                View on WordPress
-              </a>
-            </p>
-          </div>
-        )}
-        
-        <div className="mt-4">
-          <Button 
-            onClick={() => {
-              fetch("/api/wordpress/publish", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(post),
-              })
-              .then(response => response.json())
-              .then(data => {
-                toast({
-                  title: "Success",
-                  description: "Post republished to WordPress successfully",
-                });
-              })
-              .catch(error => {
-                toast({
-                  title: "Error",
-                  description: "Failed to republish to WordPress",
-                  variant: "destructive",
-                });
-              });
-            }}
-            variant="outline"
-          >
-            Republish to WordPress
-          </Button>
-        </div>
+            <div className="mt-8 text-sm text-muted-foreground">
+              <p>Status: {post.status}</p>
+              <p>Scheduled: {format(new Date(post.scheduledDate), "PPP")}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
