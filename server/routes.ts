@@ -5,6 +5,8 @@ import { insertBlogPostSchema } from "@shared/schema";
 import { checkScheduledPosts } from "./scheduler";
 
 export async function registerRoutes(app: Express) {
+  // Initialize the scheduler when the server starts
+  checkScheduledPosts();
   const httpServer = createServer(app);
 
   app.get("/api/posts", async (_req, res) => {

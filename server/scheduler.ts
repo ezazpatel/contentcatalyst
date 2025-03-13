@@ -230,13 +230,31 @@ Use proper markdown:
 
 // Function to check for scheduled posts and generate content
 export async function checkScheduledPosts() {
-  console.log("Scheduler set to run every", SCHEDULER_INTERVAL / 1000, "seconds");
+  console.log("🚀 Scheduler initializing - set to run every", SCHEDULER_INTERVAL / 1000, "seconds");
   
-  // Immediately check for scheduled posts when the server starts
-  await processScheduledPosts();
+  try {
+    // Immediately check for scheduled posts when the server starts
+    console.log("📋 Running initial scheduled post check...");
+    await processScheduledPosts();
 
-  // Set up the interval to check for scheduled posts
-  setInterval(processScheduledPosts, SCHEDULER_INTERVAL);
+    // Set up the interval to check for scheduled posts
+    console.log("⏰ Setting up recurring scheduler...");
+    const intervalId = setInterval(async () => {
+      try {
+        await processScheduledPosts();
+      } catch (error) {
+        console.error("❌ Error in scheduler interval:", error);
+      }
+    }, SCHEDULER_INTERVAL);
+    
+    console.log("✅ Scheduler successfully initialized with interval ID:", intervalId);
+    
+    // Return the interval ID in case we need to clear it later
+    return intervalId;
+  } catch (error) {
+    console.error("❌ Failed to initialize scheduler:", error);
+    throw error;
+  }
 }
 
 async function processScheduledPosts() {
@@ -303,5 +321,5 @@ async function processScheduledPosts() {
   }
 }
 
-// Start the scheduler when this file is imported
-checkScheduledPosts();
+// The scheduler will be initialized from routes.ts
+console.log("✅ Scheduler module loaded and ready to be initialized");
