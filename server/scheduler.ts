@@ -247,10 +247,10 @@ async function processScheduledPosts() {
     // Get all scheduled posts where the date is in the past and content hasn't been generated yet
     const posts = await storage.getAllBlogPosts();
     
-    // Filter for posts that need processing (scheduled in the past and content is empty)
+    // Filter for posts that need processing (scheduled or draft with scheduledDate in the past and content is empty)
     const postsToProcess = posts.filter(post => {
       return (
-        post.status === "scheduled" &&
+        (post.status === "scheduled" || post.status === "draft") &&
         post.scheduledDate &&
         new Date(post.scheduledDate) <= now &&
         (!post.content || post.content.length < 100) // Only generate if content is empty or very short
@@ -258,6 +258,19 @@ async function processScheduledPosts() {
     });
 
     console.log(`Found ${postsToProcess.length} posts to process`);
+    
+    // Log more details about which posts were found
+    if (postsToProcess.length > 0) {
+      postsToProcess.forEach(post => {
+        console.log(`- Post ID ${post.id}: "${post.title || 'Untitled'}" (${post.status}) scheduled for ${new Date(post.scheduledDate).toLocaleString()}`);
+      });
+    } else {
+      // If no posts were found, log a sample of all posts to help diagnose
+      console.log("No posts to process. Here are all available posts:");
+      posts.slice(0, 5).forEach(post => {
+        console.log(`- Post ID ${post.id}: "${post.title || 'Untitled'}" (${post.status}) scheduled for ${post.scheduledDate ? new Date(post.scheduledDate).toLocaleString() : 'not scheduled'}`);
+      });
+    }
 
     // Process each post one by one
     for (const post of postsToProcess) {
