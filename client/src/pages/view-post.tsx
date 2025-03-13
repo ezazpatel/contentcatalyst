@@ -116,3 +116,96 @@ export default function ViewPost() {
     </div>
   );
 }
+import { useQuery } from "@tanstack/react-query";
+import { useRoute, useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
+import type { BlogPost } from "@shared/schema";
+import { Navbar } from "@/components/navbar";
+import { format } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Edit } from "lucide-react";
+
+export default function ViewPost() {
+  const [, params] = useRoute<{ id: string }>("/view/:id");
+  const [, navigate] = useLocation();
+  const postId = params?.id ? parseInt(params.id) : null;
+
+  if (!postId) {
+    navigate("/blogs");
+    return null;
+  }
+
+  const { data: post, isLoading } = useQuery<BlogPost>({
+    queryKey: [`/api/posts/${postId}`],
+  });
+
+  if (isLoading) {
+    return <div className="container mx-auto py-8">Loading...</div>;
+  }
+
+  if (!post) {
+    return <div className="container mx-auto py-8">Post not found</div>;
+  }
+
+  return (
+    <div>
+      <Navbar />
+      <div className="container mx-auto py-8">
+        <div className="flex items-center mb-6 gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate("/blogs")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Posts
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate(`/edit/${post.id}`)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Post
+          </Button>
+        </div>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="flex gap-2 mb-2">
+                  {post.keywords.map((keyword, i) => (
+                    <Badge key={i} variant="secondary">
+                      {keyword}
+                    </Badge>
+                  ))}
+                </div>
+                <CardTitle className="text-3xl">{post.title}</CardTitle>
+              </div>
+              <Badge variant={post.status === "published" ? "default" : "outline"}>
+                {post.status}
+              </Badge>
+            </div>
+            <div className="text-sm text-muted-foreground mt-2">
+              {post.publishedDate
+                ? `Published: ${format(new Date(post.publishedDate), "PPP")}`
+                : `Scheduled: ${format(new Date(post.scheduledDate), "PPP")}`}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <MarkdownRenderer content={post.content} className="mt-6" />
+          </CardContent>
+        </Card>
+
+        {post.wordpressUrl && (
+          <div className="bg-muted p-4 rounded-md">
+            <p className="font-semibold">Published to WordPress:</p>
+            <a 
+              href={post.wordpressUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline break-all"
+            >
+              {post.wordpressUrl}
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
