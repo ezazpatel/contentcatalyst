@@ -303,15 +303,72 @@ async function processScheduledPosts() {
         );
 
         // Update the post with generated content
-        await storage.updateBlogPost(post.id, {
+        const updatedPost = await storage.updateBlogPost(post.id, {
           title: generated.title,
           content: generated.content,
           description: generated.description,
-          status: "published", // Mark as published
+          status: "published", // Mark as published locally
           publishedDate: new Date()
         });
 
         console.log(`Successfully generated content for post ID ${post.id}`);
+        
+        // Now publish to WordPress if credentials are available
+        if (process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
+          console.log(`Attempting to publish post ID ${post.id} to WordPress...`);
+          
+          try {
+            // Create Basic Auth token from username and application password
+            const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+
+            const apiUrl = process.env.WORDPRESS_API_URL;
+            const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
+
+            // Prepare the post data for WordPress
+            const postData = {
+              title: { raw: updatedPost.title },
+              content: { raw: updatedPost.content },
+              status: 'publish',
+              excerpt: { raw: updatedPost.description || '' },
+              meta: {
+                _yoast_wpseo_metadesc: updatedPost.seoDescription || '',
+                _yoast_wpseo_title: updatedPost.seoTitle || '',
+              }
+            };
+
+            console.log(`Publishing to WordPress endpoint: ${endpoint}`);
+            
+            const response = await fetch(endpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${authToken}`,
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify(postData)
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`WordPress API error: ${response.statusText} - ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log(`✅ Successfully published post ID ${post.id} to WordPress: ${result.link}`);
+            
+            // Update the post with WordPress URL if available
+            if (result.link) {
+              await storage.updateBlogPost(post.id, {
+                wordpressUrl: result.link
+              });
+            }
+          } catch (wpError) {
+            console.error(`❌ Error publishing post ID ${post.id} to WordPress:`, wpError);
+            // We continue processing other posts even if WordPress publishing fails
+          }
+        } else {
+          console.log(`⚠️ WordPress credentials not configured. Post ID ${post.id} was generated but not published to WordPress.`);
+        }
       } catch (error) {
         console.error(`Error processing post ID ${post.id}:`, error);
       }
