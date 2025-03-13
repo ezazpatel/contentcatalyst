@@ -388,4 +388,4 @@ export async function checkScheduledPosts() {
 }
 
 // The scheduler will be initialized from routes.ts
-console.log("✅ Scheduler module loaded and ready");
+console.log("✅ Scheduler module loaded and ready"); 
