@@ -28,7 +28,7 @@ You are a happy and cheerful woman who lives in Canada and works as an SEO conte
 Create a detailed outline for a blog post about these keywords: ${keywords.join(", ")}.
 ${description ? `Context about the keywords: ${description}\n` : ''}
 
-- Generate one main title line and 10 sections with a heading for each section.
+- Generate one main title line and 8 sections with a heading for each section.
 - Under each section heading, also create 2-3 level-2 subheadings.
 - Respond in JSON format with these fields: 'title' and 'outline'.
 
@@ -109,7 +109,7 @@ Format in markdown and include relevant affiliate links naturally where appropri
   // Track the number of times each affiliate link has been used
   const affiliateLinkUsage = {};
   
-  for (const section of outlineResult.outline.slice(0, Math.min(outlineResult.outline.length, 10))) {
+  for (const section of outlineResult.outline.slice(0, Math.min(outlineResult.outline.length, 8))) {
     console.log("Generating content for section:", section.heading);
     
     // Prepare affiliate links instruction
