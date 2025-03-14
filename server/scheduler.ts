@@ -1,4 +1,3 @@
-import { Anthropic } from "@anthropic-ai/sdk";
 import { storage } from "./storage";
 import { BlogPost } from "@shared/schema";
 
