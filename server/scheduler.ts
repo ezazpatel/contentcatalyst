@@ -78,7 +78,7 @@ Format your response as JSON:
       const validAffiliateLinks = post.affiliateLinks.filter(link => link.name && link.url);
       if (validAffiliateLinks.length > 0) {
         const categoryName = keywords[0] || "Resources";
-        affiliateLinksMarkdown = `\n\n## Top ${validAffiliateLinks.length} ${categoryName} Recommendations\n\n`;
+        affiliateLinksMarkdown = `## Top ${validAffiliateLinks.length} ${categoryName} Recommendations\n\n`;
         validAffiliateLinks.forEach(link => {
           affiliateLinksMarkdown += `* [${link.name}](${link.url})\n`;
         });
@@ -103,7 +103,7 @@ Include:
 - Natural transition to the first section: "${outlineResult.outline[0]?.heading || 'First Section'}"
 
 Format your response:
-# ${outlineResult.title}
+${outlineResult.title}
 
 [Your introduction here]`;
 
@@ -130,28 +130,33 @@ Format your response:
 
     fullContent += "\n\n";
 
-    // Track affiliate link usage
-    const affiliateLinkUsage = new Map<string, number>();
+    // Create a map of affiliate links for easier reference
+    const affiliateLinksMap = Array.isArray(post.affiliateLinks) 
+      ? post.affiliateLinks.reduce((acc, link) => {
+          if (link.name && link.url) {
+            acc[link.name] = link.url;
+          }
+          return acc;
+        }, {})
+      : {};
 
     for (const section of outlineResult.outline) {
       console.log("Generating content for section:", section.heading);
 
       let affiliateInstructions = "";
-      if (section.affiliate_connection && Array.isArray(post.affiliateLinks)) {
-        const affiliateProduct = post.affiliateLinks.find(link => link.name === section.affiliate_connection);
-        if (affiliateProduct) {
-          affiliateInstructions = `
-This section MUST clearly and naturally feature "${affiliateProduct.name}" as an H2 or H3 heading.
-Mention specific features or benefits naturally within the content.
-You MUST NOT explicitly write the URL again, as it is already listed at the top of the blog post.`;
-        }
-      } else if (post.affiliateLinks?.length) {
+      if (section.affiliate_connection && affiliateLinksMap[section.affiliate_connection]) {
         affiliateInstructions = `
-Clearly and naturally mention these affiliate products throughout this section if relevant:
-${post.affiliateLinks.map(link => `- "${link.name}"`).join("\n")}
+This section MUST clearly and naturally feature [${section.affiliate_connection}](${affiliateLinksMap[section.affiliate_connection]}) as an H2 or H3 heading.
+When mentioning this product in the content, ALWAYS use the markdown link format: [${section.affiliate_connection}](${affiliateLinksMap[section.affiliate_connection]})
+Mention specific features or benefits naturally within the content.`;
+      } else if (Object.keys(affiliateLinksMap).length > 0) {
+        affiliateInstructions = `
+When mentioning any of these products, ALWAYS use the proper markdown link format:
+${Object.entries(affiliateLinksMap).map(([name, url]) => `- [${name}](${url})`).join("\n")}
 
-- Use them as H2 or H3 headings if naturally suitable.
-- Highlight their benefits clearly, but do not explicitly insert URLs (links already included at the top).`;
+- Use them as H2 or H3 headings if naturally suitable
+- Highlight their benefits clearly
+- Ensure all product mentions use the proper markdown link format`;
       }
 
       const sectionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
@@ -160,7 +165,8 @@ Instructions:
 1. Use grade 5-6 level Canadian English
 2. Write naturally and conversationally
 3. Focus on providing valuable information
-4. Keep emoji usage minimal${affiliateInstructions}
+4. Keep emoji usage minimal
+${affiliateInstructions}
 
 Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
 Include rich details and examples.
@@ -202,6 +208,9 @@ Include:
 - Value provided to the reader
 - Call to action that encourages trying the recommendations
 
+When mentioning any products, use these markdown links:
+${Object.entries(affiliateLinksMap).map(([name, url]) => `- [${name}](${url})`).join("\n")}
+
 Use proper markdown:
 
 ## Final Thoughts
@@ -225,6 +234,14 @@ Use proper markdown:
     let finalDescription = description;
     if (!finalDescription) {
       finalDescription = fullContent.split("\n").slice(2, 4).join(" ").slice(0, 155) + "...";
+    }
+
+    // Remove duplicate title (only keep the first one)
+    const titleMatch = fullContent.match(/^.+?\n/);
+    if (titleMatch) {
+      const firstTitle = titleMatch[0];
+      // Remove any subsequent occurrences of the same title
+      fullContent = firstTitle + fullContent.substring(firstTitle.length).replace(new RegExp('^' + firstTitle.trim(), 'gm'), '');
     }
 
     return {
@@ -551,7 +568,10 @@ export async function checkScheduledPosts() {
             // Use the updatedPost data for WordPress
             const postData = {
               title: { raw: updatedPost.title },
-              content: { raw: updatedPost.content },
+              content: { 
+                // Remove the title from the content since WordPress will handle the title display
+                raw: updatedPost.content.replace(new RegExp('^' + updatedPost.title + '\\s*\\n+'), '')
+              },
               status: 'publish',
               excerpt: { raw: updatedPost.description || '' },
               meta: {
