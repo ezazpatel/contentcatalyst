@@ -1,0 +1,113 @@
+🔹 Step 1: Use Wouter’s built-in Link component for navigation.
+Change your links or buttons to use <Link> from Wouter:
+
+jsx
+Copy
+Edit
+import { Link } from 'wouter';
+
+function HomePage() {
+  return (
+    <div>
+      <Link href="/blogs">
+        <button>View All Posts</button>
+      </Link>
+    </div>
+  );
+}
+Do not directly set window.location or use plain <a href> tags without Link.
+
+🔹 Step 2: Make sure your blog list uses proper links too:
+When navigating from the blog list (/blogs) to the single post page, ensure you're also using <Link>:
+
+jsx
+Copy
+Edit
+import { Link } from 'wouter';
+
+function BlogsList({ posts }) {
+  return (
+    <div>
+      {posts.map(post => (
+        <Link key={post.id} href={`/view-post/${post.id}`}>
+          <div className="post-item">
+            {post.title}
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+🔹 Step 3: Correct your routes in App.jsx
+Update your route definitions to match the correct path pattern (/view-post/:id):
+
+jsx
+Copy
+Edit
+<Switch>
+  <Route path="/" component={NewPost} />
+  <Route path="/blogs" component={BlogsList} />
+  <Route path="/view-post/:id" component={ViewPost} />
+  <Route path="/keywords" component={KeywordsList} />
+  <Route component={NotFound} />
+</Switch>
+🔹 Step 4: Fix Breadcrumb Logic (Optional, but recommended):
+Your breadcrumbs should look like this for clarity:
+
+jsx
+Copy
+Edit
+const [location] = useLocation();
+
+<Breadcrumb>
+  <BreadcrumbList>
+    <BreadcrumbItem>
+      <BreadcrumbLink href="/">Home</BreadcrumbLink>
+    </BreadcrumbItem>
+
+    {location === "/blogs" && (
+      <BreadcrumbItem>
+        <BreadcrumbPage>Blogs</BreadcrumbPage>
+      </BreadcrumbItem>
+    )}
+
+    {location.startsWith("/view-post/") && (
+      <>
+        <BreadcrumbItem>
+          <BreadcrumbLink href="/blogs">Blogs</BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbItem>
+          <BreadcrumbPage>View Post</BreadcrumbPage>
+        </BreadcrumbItem>
+      </>
+    )}
+
+    {location === "/keywords" && (
+      <BreadcrumbItem>
+        <BreadcrumbPage>Keywords</BreadcrumbPage>
+      </BreadcrumbItem>
+    )}
+
+    {location === "/" && (
+      <BreadcrumbItem>
+        <BreadcrumbPage>New Post</BreadcrumbPage>
+      </BreadcrumbItem>
+    )}
+  </BreadcrumbList>
+</Breadcrumb>
+🚨 IMPORTANT NOTE (common mistake):
+If you are using something like this:
+
+jsx
+Copy
+Edit
+// WRONG WAY - will reload the whole app
+<a href="/blogs">Go to Blogs</a>
+
+// WRONG WAY - does not update history properly
+<button onClick={() => window.location = "/blogs"}>Blogs</button>
+Replace them with Wouter’s <Link>:
+
+jsx
+Copy
+Edit

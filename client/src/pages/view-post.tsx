@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRoute, useLocation } from "wouter";
+import { useRoute } from "wouter";
 import { BlogPost } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
@@ -9,10 +9,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Link } from "wouter";
 
 export default function ViewPost() {
-  const [, params] = useRoute<{ id: string }>("/view/:id");
-  const [, navigate] = useLocation();
+  const [match, params] = useRoute<{ id: string }>("/view/:id");
   const postId = params?.id ? parseInt(params.id) : null;
 
   const { data: post, isLoading } = useQuery<BlogPost>({
@@ -44,9 +44,8 @@ export default function ViewPost() {
     },
   });
 
-  if (!postId) {
-    navigate("/");
-    return null;
+  if (!match) {
+    return <Link href="/blogs">Redirecting to blogs...</Link>;
   }
 
   if (isLoading) {
@@ -54,7 +53,11 @@ export default function ViewPost() {
   }
 
   if (!post) {
-    return <div className="container mx-auto py-8">Post not found. <Button onClick={() => navigate("/blogs")}>Back to Posts</Button></div>;
+    return (
+      <div className="container mx-auto py-8">
+        Post not found. <Link href="/blogs"><Button>Back to Posts</Button></Link>
+      </div>
+    );
   }
 
   return (
@@ -71,9 +74,9 @@ export default function ViewPost() {
                 <CardTitle className="text-3xl">{post.title}</CardTitle>
               </div>
               <div className="flex gap-4">
-                <Button variant="outline" onClick={() => navigate("/blogs")}>
-                  Back to Posts
-                </Button>
+                <Link href="/blogs">
+                  <Button variant="outline">Back to Posts</Button>
+                </Link>
                 <Button 
                   variant="secondary"
                   onClick={() => republishToWordPress.mutate()}
@@ -91,7 +94,7 @@ export default function ViewPost() {
               </ReactMarkdown>
             </div>
 
-            {post.affiliateLinks?.length > 0 && (
+            {post.affiliateLinks && post.affiliateLinks.length > 0 && (
               <div className="mt-8 border-t pt-4">
                 <h3 className="text-lg font-medium mb-2">Related Links</h3>
                 <ul className="list-disc pl-5">
@@ -108,7 +111,9 @@ export default function ViewPost() {
 
             <div className="mt-8 text-sm text-muted-foreground">
               <p>Status: {post.status}</p>
-              <p>Scheduled: {format(new Date(post.scheduledDate), "PPP")}</p>
+              {post.scheduledDate && (
+                <p>Scheduled: {format(new Date(post.scheduledDate), "PPP")}</p>
+              )}
             </div>
           </CardContent>
         </Card>
