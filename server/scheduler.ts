@@ -18,7 +18,7 @@ async function generateContent(keywords: string[], description: string = "", pos
   try {
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a blog post about: ${keywords.join(", ")}.
-    
+
 ${post.description ? `
 Additional Context from User:
 ${post.description}
@@ -96,6 +96,10 @@ Instructions:
 4. Include keywords naturally
 5. Give a clear overview of what readers will learn
 
+${post.description ? `
+Important: Review this context from the user and incorporate any URLs or specific instructions:
+${post.description}` : ""}
+
 Write an engaging introduction (150-200 words) for "${outlineResult.title}".
 Include:
 - A hook that grabs attention
@@ -140,6 +144,12 @@ ${outlineResult.title}
         }, {})
       : {};
 
+    // Track affiliate link usage count
+    const affiliateLinkUsage = {};
+    Object.keys(affiliateLinksMap).forEach(name => {
+      affiliateLinkUsage[name] = 0;
+    });
+
     for (const section of outlineResult.outline) {
       console.log("Generating content for section:", section.heading);
 
@@ -148,15 +158,23 @@ ${outlineResult.title}
         affiliateInstructions = `
 This section MUST clearly and naturally feature [${section.affiliate_connection}](${affiliateLinksMap[section.affiliate_connection]}) as an H2 or H3 heading.
 When mentioning this product in the content, ALWAYS use the markdown link format: [${section.affiliate_connection}](${affiliateLinksMap[section.affiliate_connection]})
+Do NOT mention this product more than ${2 - (affiliateLinkUsage[section.affiliate_connection] || 0)} more times in this section.
 Mention specific features or benefits naturally within the content.`;
       } else if (Object.keys(affiliateLinksMap).length > 0) {
-        affiliateInstructions = `
-When mentioning any of these products, ALWAYS use the proper markdown link format:
-${Object.entries(affiliateLinksMap).map(([name, url]) => `- [${name}](${url})`).join("\n")}
+        const availableLinks = Object.entries(affiliateLinksMap)
+          .filter(([name]) => (affiliateLinkUsage[name] || 0) < 2)
+          .map(([name, url]) => `- [${name}](${url})`);
+
+        if (availableLinks.length > 0) {
+          affiliateInstructions = `
+When mentioning any of these products (ONLY if they haven't been used twice yet), ALWAYS use the proper markdown link format:
+${availableLinks.join("\n")}
 
 - Use them as H2 or H3 headings if naturally suitable
 - Highlight their benefits clearly
-- Ensure all product mentions use the proper markdown link format`;
+- Ensure all product mentions use the proper markdown link format
+- Each product can only be mentioned up to 2 times in total throughout the article`;
+        }
       }
 
       const sectionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
@@ -167,6 +185,10 @@ Instructions:
 3. Focus on providing valuable information
 4. Keep emoji usage minimal
 ${affiliateInstructions}
+
+${post.description ? `
+Important: Review this context from the user and naturally incorporate any URLs or specific instructions:
+${post.description}` : ""}
 
 Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
 Include rich details and examples.
@@ -191,7 +213,18 @@ ${section.subheadings.map(subheading => `### ${subheading}\n\n[Subheading conten
         messages: [{ role: "user", content: sectionPrompt }]
       });
 
-      fullContent += sectionResponse.content[0].text + "\n\n";
+      const sectionContent = sectionResponse.content[0].text;
+
+      // Count affiliate link usage in this section
+      Object.keys(affiliateLinksMap).forEach(name => {
+        const regex = new RegExp(`\\[${name}\\]\\(${affiliateLinksMap[name]}\\)`, 'g');
+        const matches = sectionContent.match(regex);
+        if (matches) {
+          affiliateLinkUsage[name] = (affiliateLinkUsage[name] || 0) + matches.length;
+        }
+      });
+
+      fullContent += sectionContent + "\n\n";
     }
 
     console.log("Step 4: Generating conclusion...");
@@ -209,7 +242,10 @@ Include:
 - Call to action that encourages trying the recommendations
 
 When mentioning any products, use these markdown links:
-${Object.entries(affiliateLinksMap).map(([name, url]) => `- [${name}](${url})`).join("\n")}
+${Object.entries(affiliateLinksMap)
+  .filter(([name]) => (affiliateLinkUsage[name] || 0) < 2)
+  .map(([name, url]) => `- [${name}](${url})`)
+  .join("\n")}
 
 Use proper markdown:
 
