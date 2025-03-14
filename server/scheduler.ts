@@ -18,7 +18,7 @@ async function generateContent(keywords: string[], description: string = "", pos
   try {
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a blog post about: ${keywords.join(", ")}.
-
+    
 ${post.description ? `
 Additional Context from User:
 ${post.description}
@@ -548,7 +548,7 @@ export async function checkScheduledPosts() {
             const apiUrl = process.env.WORDPRESS_API_URL;
             const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
 
-            // Prepare the post data for WordPress
+            // Use the updatedPost data for WordPress
             const postData = {
               title: { raw: updatedPost.title },
               content: { raw: updatedPost.content },
@@ -580,7 +580,7 @@ export async function checkScheduledPosts() {
             const result = await response.json();
             console.log(`✅ Successfully published post ID ${post.id} to WordPress: ${result.link}`);
 
-            // Update the post with WordPress URL if available
+            // Update the post with WordPress URL
             if (result.link) {
               await storage.updateBlogPost(post.id, {
                 wordpressUrl: result.link
