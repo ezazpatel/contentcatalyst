@@ -19,11 +19,13 @@ function Router() {
           <BreadcrumbItem>
             <BreadcrumbLink href="/">Home</BreadcrumbLink>
           </BreadcrumbItem>
-          {location.startsWith("/blogs") && (
+
+          {location === "/blogs" && (
             <BreadcrumbItem>
-              <BreadcrumbLink href="/blogs">Blogs</BreadcrumbLink>
+              <BreadcrumbPage>Blogs</BreadcrumbPage>
             </BreadcrumbItem>
           )}
+
           {location.startsWith("/view/") && (
             <>
               <BreadcrumbItem>
@@ -33,6 +35,18 @@ function Router() {
                 <BreadcrumbPage>View Post</BreadcrumbPage>
               </BreadcrumbItem>
             </>
+          )}
+
+          {location === "/" && (
+            <BreadcrumbItem>
+              <BreadcrumbPage>New Post</BreadcrumbPage>
+            </BreadcrumbItem>
+          )}
+
+          {location === "/keywords" && (
+            <BreadcrumbItem>
+              <BreadcrumbPage>Keywords</BreadcrumbPage>
+            </BreadcrumbItem>
           )}
         </BreadcrumbList>
       </Breadcrumb>
