@@ -18,32 +18,32 @@ async function generateContent(keywords: string[], description: string = "", pos
   try {
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a blog post about: ${keywords.join(", ")}.
-
-${post.description ? `Additional Context from User: ${post.description}
-
-Please incorporate this context into your writing and follow any specific instructions provided.` : ""}
-
-Instructions:
-1. Write in grade 5-6 level Canadian English
-2. Create an engaging but SEO-friendly title (60-70 characters)
-3. Create a detailed outline with 4-6 main sections
-4. For each section, include:
-   - A clear H2 heading that's topically relevant
-   - 2-3 H3 subheadings under each main section
-   - If any of these affiliate products/resources fit naturally as section topics, use them:
-     ${Array.isArray(post.affiliateLinks) ? post.affiliateLinks.map(link => `- ${link.name}`).join('\n     ') : ''}
-
-Format your response as JSON:
-{
-  "title": "Your Blog Post Title",
-  "outline": [
-    { 
-      "heading": "First Main Section",
-      "subheadings": ["Subheading 1", "Subheading 2"],
-      "affiliate_connection": "Product name if section should feature it, or null"
-    }
-  ]
-}`;
+21:
+22:${post.description ? `Additional Context from User: ${post.description}
+23:
+24:Please incorporate this context into your writing and follow any specific instructions provided.` : ""}
+25:
+26:Instructions:
+27:1. Write in grade 5-6 level Canadian English
+28:2. Create an engaging but SEO-friendly title (60-70 characters)
+29:3. Create a detailed outline with 4-6 main sections
+30:4. For each section, include:
+31:   - A clear H2 heading that's topically relevant
+32:   - 2-3 H3 subheadings under each main section
+33:   - If any of these affiliate products/resources fit naturally as section topics, use them:
+34:     ${Array.isArray(post.affiliateLinks) ? post.affiliateLinks.map(link => `- ${link.name}`).join('\n     ') : ''}
+35:
+36:Format your response as JSON:
+37:{
+38:  "title": "Your Blog Post Title",
+39:  "outline": [
+40:    { 
+41:      "heading": "First Main Section",
+42:      "subheadings": ["Subheading 1", "Subheading 2"],
+43:      "affiliate_connection": "Product name if section should feature it, or null"
+44:    }
+45:  ]
+46:}`;
 
     const outlineResponse = await client.messages.create({
       model: ANTHROPIC_MODEL,
@@ -86,21 +86,22 @@ Format your response as JSON:
 
     console.log("Step 2: Generating introduction...");
     const introPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
+- Use grade 5-6 level Canadian English. 
+- Use a casual, friendly tone like you're talking to a friend.
+- Only include factual information. Do not make up any details.
 
-Instructions:
-1. Use grade 5-6 level Canadian English
-2. Write in a professional but friendly tone
-3. Keep emoji usage minimal - only if absolutely necessary
-4. Include keywords naturally
-5. Give a clear overview of what readers will learn
+${post.description ? `Additional Context from User: ${post.description}
+Please incorporate this context into your writing and follow any specific instructions provided.
+` : ""}
 
-Write an engaging introduction (150-200 words) for "${outlineResult.title}".
-Include:
-- A hook that grabs attention
-- Brief mention of key benefits readers will get
-- Natural transition to the first section: "${outlineResult.outline[0]?.heading || 'First Section'}"
+Write an engaging introduction (150-200 words) for a blog post titled "${outlineResult.title}". 
+The introduction should:
+- Hook the reader with something interesting
+- Include the keywords naturally
+- Give an overview of what the article will cover
+- End with a transition to the first section: "${outlineResult.outline[0]?.heading || 'First Section'}"
 
-Format your response:
+Format your response with proper markdown:
 # ${outlineResult.title}
 
 [Your introduction here]`;
@@ -147,28 +148,31 @@ This section should naturally highlight the benefits of ${affiliateProduct.name}
       }
 
       const sectionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
+- Use grade 5-6 level Canadian English. 
+- Vary sentence lengths and structure to mimic human writing
+- Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
+- Only include factual information. Do not make up any details.
 
-Instructions:
-1. Use grade 5-6 level Canadian English
-2. Write naturally and conversationally
-3. Focus on providing valuable information
-4. Keep emoji usage minimal${affiliateInstructions}
+${post.description ? `Additional Context from User: ${post.description}
+Please incorporate this context into your writing and follow any specific instructions provided.
+` : ""}
+${affiliateInstructions}
 
-Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
-Include rich details and examples.
+Write a detailed section (200-300 words) for the heading "${section.heading}" that's part of "${outlineResult.title}".
+Include rich details, examples, personal anecdotes, and naturally place affiliate links where relevant.
 
 Also create content for these subheadings:
 ${section.subheadings.map(subheading => `- ## ${subheading}`).join('\n')}
 
-Each subheading section should be 100-150 words with specific, useful information.
+Each subheading section should be 100-150 words and provide specific, useful information related to the subheading topic.
 
-Format with proper markdown:
+Format your response with proper markdown headings:
 
 ## ${section.heading}
 
-[Main section content]
+[Content for main section]
 
-${section.subheadings.map(subheading => `### ${subheading}\n\n[Subheading content]`).join('\n\n')}`;
+${section.subheadings.map(subheading => `### ${subheading}\n\n[Content for this subheading]`).join('\n\n')}`;
 
       const sectionResponse = await client.messages.create({
         model: ANTHROPIC_MODEL,
@@ -182,21 +186,23 @@ ${section.subheadings.map(subheading => `### ${subheading}\n\n[Subheading conten
 
     console.log("Step 4: Generating conclusion...");
     const conclusionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. 
+- Use grade 5-6 level Canadian English. 
+- Use a casual, friendly tone like you're talking to a friend.
+- Only include factual information. Do not make up any details.
 
-Instructions:
-1. Use grade 5-6 level Canadian English
-2. Keep the tone professional but warm
-3. Avoid emoji usage
+${post.description ? `Additional Context from User: ${post.description}
+Please incorporate this context into your writing and follow any specific instructions provided.
+` : ""}
 
-Write a conclusion (150-200 words) for "${outlineResult.title}" about ${keywords.join(", ")}.
-Include:
-- Summary of key points
-- Value provided to the reader
-- Call to action that encourages trying the recommendations
+Write a conclusion (150-200 words) for a blog post titled "${outlineResult.title}" about ${keywords.join(", ")}.
+The conclusion should:
+- Summarize the key points from the article
+- Include a personal reflection or takeaway
+- End with a call to action or question for the reader
 
 Use proper markdown:
 
-## Final Thoughts
+## Wrapping Up
 
 [Your conclusion here]`;
 
@@ -241,6 +247,10 @@ async function generateContentOriginal(keywords: string[], description: string =
 - Use grade 5-6 level Canadian English for all content. 
 - Only include factual information. Do not make up any details.
 
+${post.description ? `Additional Context from User: ${post.description}
+Please incorporate this context into your writing and follow any specific instructions provided.
+` : ""}
+
 Instructions:
 1. Create an engaging but SEO-friendly title for the blog post (60-70 characters)
 2. Create an outline with 4-6 main sections. For each section, provide:
@@ -258,7 +268,7 @@ Format your response as JSON with this structure:
 Ensure JSON is properly formatted with no trailing commas.`;
 
     const outlineResponse = await client.messages.create({
-      model: "claude-3-opus-20240229",
+      model: ANTHROPIC_MODEL,
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
@@ -305,6 +315,10 @@ Ensure JSON is properly formatted with no trailing commas.`;
 - Use a casual, friendly tone like you're talking to a friend.
 - Only include factual information. Do not make up any details.
 
+${post.description ? `Additional Context from User: ${post.description}
+Please incorporate this context into your writing and follow any specific instructions provided.
+` : ""}
+
 Write an engaging introduction (150-200 words) for a blog post titled "${outlineResult.title}". 
 The introduction should:
 - Hook the reader with something interesting
@@ -318,7 +332,7 @@ Format your response with proper markdown:
 [Your introduction here]`;
 
     const introResponse = await client.messages.create({
-      model: "claude-3-opus-20240229",
+      model: ANTHROPIC_MODEL,
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
@@ -387,7 +401,10 @@ ${validAffiliateLinks.map(link => {
 - Vary sentence lengths and structure to mimic human writing
 - Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
 - Only include factual information. Do not make up any details.
-${affiliateLinksInstruction}
+
+${post.description ? `Additional Context from User: ${post.description}
+Please incorporate this context into your writing and follow any specific instructions provided.
+` : ""}
 
 Write a detailed section (200-300 words) for the heading "${section.heading}" that's part of an article titled "${outlineResult.title}".
 Include rich details, examples, personal anecdotes, and naturally place affiliate links where relevant.
@@ -406,7 +423,7 @@ Format your response with proper markdown headings:
 ${section.subheadings.map(subheading => `### ${subheading}\n\n[Content for this subheading]`).join('\n\n')}`;
 
       const sectionResponse = await client.messages.create({
-        model: "claude-3-opus-20240229",
+        model: ANTHROPIC_MODEL,
         max_tokens: 4000,
         temperature: 0.7,
         messages: [
@@ -426,6 +443,10 @@ ${section.subheadings.map(subheading => `### ${subheading}\n\n[Content for this 
 - Use a casual, friendly tone like you're talking to a friend.
 - Only include factual information. Do not make up any details.
 
+${post.description ? `Additional Context from User: ${post.description}
+Please incorporate this context into your writing and follow any specific instructions provided.
+` : ""}
+
 Write a conclusion (150-200 words) for a blog post titled "${outlineResult.title}" about ${keywords.join(", ")}.
 The conclusion should:
 - Summarize the key points from the article
@@ -439,7 +460,7 @@ Use proper markdown:
 [Your conclusion here]`;
 
     const conclusionResponse = await client.messages.create({
-      model: "claude-3-opus-20240229",
+      model: ANTHROPIC_MODEL,
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
