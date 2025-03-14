@@ -2,23 +2,229 @@ import { Anthropic } from "@anthropic-ai/sdk";
 import { storage } from "./storage";
 import { BlogPost } from "@shared/schema";
 
-// Function to generate content (placeholder - replace with your actual function)
-async function generateContent(keywords: string[], description: string, post: any) {
-  // Placeholder implementation
-  return {
-    title: post.title || `Article about ${keywords.join(", ")}`,
-    content: post.content || `Generated content about ${keywords.join(", ")}. ${description}`,
-    description: description || `Article about ${keywords.join(", ")}`
-  };
-}
-
-// Create a scheduler that runs every 2 minutes
-const SCHEDULER_INTERVAL = 120 * 1000; // 120 seconds
-
 // Create an Anthropic client
 const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY // Make sure to add this to your environment variables
+  apiKey: process.env.ANTHROPIC_API_KEY
 });
+
+// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
+const ANTHROPIC_MODEL = "claude-3-7-sonnet-20250219";
+
+async function generateContent(keywords: string[], description: string = "", post: any = {}): Promise<{
+  content: string;
+  title: string;
+  description: string;
+}> {
+  try {
+    console.log("Step 1: Generating title and outline...");
+    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a blog post about: ${keywords.join(", ")}.
+
+Instructions:
+1. Write in grade 5-6 level Canadian English
+2. Create an engaging but SEO-friendly title (60-70 characters)
+3. Create a detailed outline with 4-6 main sections
+4. For each section, include:
+   - A clear H2 heading that's topically relevant
+   - 2-3 H3 subheadings under each main section
+   - If any of these affiliate products/resources fit naturally as section topics, use them:
+     ${Array.isArray(post.affiliateLinks) ? post.affiliateLinks.map(link => `- ${link.name}`).join('\n     ') : ''}
+
+Format your response as JSON:
+{
+  "title": "Your Blog Post Title",
+  "outline": [
+    { 
+      "heading": "First Main Section",
+      "subheadings": ["Subheading 1", "Subheading 2"],
+      "affiliate_connection": "Product name if section should feature it, or null"
+    }
+  ]
+}`;
+
+    const outlineResponse = await client.messages.create({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 4000,
+      temperature: 0.7,
+      messages: [
+        { role: "user", content: outlinePrompt }
+      ]
+    });
+
+    const outlineText = outlineResponse.content[0].text;
+    const outlineJson = outlineText.match(/```json\s*([\s\S]*?)\s*```/) || outlineText.match(/{[\s\S]*}/);
+    let outlineResult;
+
+    if (outlineJson) {
+      try {
+        outlineResult = JSON.parse(outlineJson[0].replace(/```json|```/g, '').trim());
+      } catch (e) {
+        console.error("Failed to parse outline JSON:", e);
+        outlineResult = { title: "Blog Post About " + keywords.join(", "), outline: [] };
+      }
+    } else {
+      console.error("Could not extract JSON from outline response");
+      outlineResult = { title: "Blog Post About " + keywords.join(", "), outline: [] };
+    }
+
+    // Prepare affiliate links section if available
+    let affiliateLinksMarkdown = "";
+    if (Array.isArray(post.affiliateLinks) && post.affiliateLinks.length > 0) {
+      const validAffiliateLinks = post.affiliateLinks.filter(link => link.name && link.url);
+      if (validAffiliateLinks.length > 0) {
+        const categoryName = keywords[0] || "Resources";
+        affiliateLinksMarkdown = `\n\n## Top ${validAffiliateLinks.length} ${categoryName} Recommendations\n\n`;
+        validAffiliateLinks.forEach(link => {
+          affiliateLinksMarkdown += `* [${link.name}](${link.url})\n`;
+        });
+        affiliateLinksMarkdown += "\n";
+      }
+    }
+
+    console.log("Step 2: Generating introduction...");
+    const introPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
+
+Instructions:
+1. Use grade 5-6 level Canadian English
+2. Write in a professional but friendly tone
+3. Keep emoji usage minimal - only if absolutely necessary
+4. Include keywords naturally
+5. Give a clear overview of what readers will learn
+
+Write an engaging introduction (150-200 words) for "${outlineResult.title}".
+Include:
+- A hook that grabs attention
+- Brief mention of key benefits readers will get
+- Natural transition to the first section: "${outlineResult.outline[0]?.heading || 'First Section'}"
+
+Format your response:
+# ${outlineResult.title}
+
+[Your introduction here]`;
+
+    const introResponse = await client.messages.create({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 4000,
+      temperature: 0.7,
+      messages: [{ role: "user", content: introPrompt }]
+    });
+
+    let fullContent = introResponse.content[0].text;
+
+    // Insert affiliate links right after the title
+    if (affiliateLinksMarkdown) {
+      const titleEndIndex = fullContent.indexOf('\n\n');
+      if (titleEndIndex !== -1) {
+        fullContent = fullContent.substring(0, titleEndIndex + 2) + 
+                     affiliateLinksMarkdown + 
+                     fullContent.substring(titleEndIndex + 2);
+      } else {
+        fullContent += affiliateLinksMarkdown;
+      }
+    }
+
+    fullContent += "\n\n";
+
+    // Track affiliate link usage
+    const affiliateLinkUsage = new Map<string, number>();
+
+    for (const section of outlineResult.outline) {
+      console.log("Generating content for section:", section.heading);
+
+      let affiliateInstructions = "";
+      if (section.affiliate_connection && Array.isArray(post.affiliateLinks)) {
+        const affiliateProduct = post.affiliateLinks.find(link => link.name === section.affiliate_connection);
+        if (affiliateProduct) {
+          affiliateInstructions = `
+This section should naturally highlight the benefits of ${affiliateProduct.name}.
+- Mention specific features or benefits that make it valuable
+- Keep the tone informative and helpful, not sales-focused
+- The link is already included at the top of the post`;
+        }
+      }
+
+      const sectionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
+
+Instructions:
+1. Use grade 5-6 level Canadian English
+2. Write naturally and conversationally
+3. Focus on providing valuable information
+4. Keep emoji usage minimal${affiliateInstructions}
+
+Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
+Include rich details and examples.
+
+Also create content for these subheadings:
+${section.subheadings.map(subheading => `- ## ${subheading}`).join('\n')}
+
+Each subheading section should be 100-150 words with specific, useful information.
+
+Format with proper markdown:
+
+## ${section.heading}
+
+[Main section content]
+
+${section.subheadings.map(subheading => `### ${subheading}\n\n[Subheading content]`).join('\n\n')}`;
+
+      const sectionResponse = await client.messages.create({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 4000,
+        temperature: 0.7,
+        messages: [{ role: "user", content: sectionPrompt }]
+      });
+
+      fullContent += sectionResponse.content[0].text + "\n\n";
+    }
+
+    console.log("Step 4: Generating conclusion...");
+    const conclusionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. 
+
+Instructions:
+1. Use grade 5-6 level Canadian English
+2. Keep the tone professional but warm
+3. Avoid emoji usage
+
+Write a conclusion (150-200 words) for "${outlineResult.title}" about ${keywords.join(", ")}.
+Include:
+- Summary of key points
+- Value provided to the reader
+- Call to action that encourages trying the recommendations
+
+Use proper markdown:
+
+## Final Thoughts
+
+[Your conclusion here]`;
+
+    const conclusionResponse = await client.messages.create({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 4000,
+      temperature: 0.7,
+      messages: [{ role: "user", content: conclusionPrompt }]
+    });
+
+    fullContent += conclusionResponse.content[0].text;
+
+    // Calculate word count
+    const wordCount = fullContent.split(/\s+/).length;
+    console.log(`Generated content with ${wordCount} words`);
+
+    // Extract description if not provided
+    let finalDescription = description;
+    if (!finalDescription) {
+      finalDescription = fullContent.split("\n").slice(2, 4).join(" ").slice(0, 155) + "...";
+    }
+
+    return {
+      content: fullContent,
+      title: outlineResult.title,
+      description: finalDescription
+    };
+  } catch (error) {
+    console.error("Error generating content:", error);
+    throw error;
+  }
+}
 
 async function generateContentOriginal(keywords: string[], description: string = "", post: any = {}): Promise<{
   content: string;
@@ -302,7 +508,7 @@ export async function checkScheduledPosts() {
 
       try {
         // Generate content using Anthropic
-        const generated = await generateContentOriginal(
+        const generated = await generateContent(
           post.keywords, 
           post.description || "",
           post
@@ -388,4 +594,4 @@ export async function checkScheduledPosts() {
 }
 
 // The scheduler will be initialized from routes.ts
-console.log("✅ Scheduler module loaded and ready"); 
+console.log("✅ Scheduler module loaded and ready");
