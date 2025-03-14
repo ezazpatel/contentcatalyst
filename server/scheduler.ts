@@ -19,9 +19,11 @@ async function generateContent(keywords: string[], description: string = "", pos
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a blog post about: ${keywords.join(", ")}.
 
-${post.description ? `Additional Context from User: ${post.description}
+${post.description ? `
+Additional Context from User:
+${post.description}
 
-Please incorporate this context into your writing and follow any specific instructions provided.` : ""}
+If the above context contains URLs (especially internal links), you MUST naturally include them as internal hyperlinks in relevant sections or subheadings within the article.` : ""}
 
 Instructions:
 1. Write in grade 5-6 level Canadian English
@@ -139,11 +141,17 @@ Format your response:
         const affiliateProduct = post.affiliateLinks.find(link => link.name === section.affiliate_connection);
         if (affiliateProduct) {
           affiliateInstructions = `
-This section should naturally highlight the benefits of ${affiliateProduct.name}.
-- Mention specific features or benefits that make it valuable
-- Keep the tone informative and helpful, not sales-focused
-- The link is already included at the top of the post`;
+This section MUST clearly and naturally feature "${affiliateProduct.name}" as an H2 or H3 heading.
+Mention specific features or benefits naturally within the content.
+You MUST NOT explicitly write the URL again, as it is already listed at the top of the blog post.`;
         }
+      } else if (post.affiliateLinks?.length) {
+        affiliateInstructions = `
+Clearly and naturally mention these affiliate products throughout this section if relevant:
+${post.affiliateLinks.map(link => `- "${link.name}"`).join("\n")}
+
+- Use them as H2 or H3 headings if naturally suitable.
+- Highlight their benefits clearly, but do not explicitly insert URLs (links already included at the top).`;
       }
 
       const sectionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
