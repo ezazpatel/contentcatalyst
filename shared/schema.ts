@@ -11,10 +11,10 @@ export const blogPosts = pgTable("blog_posts", {
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
   keywords: text("keywords").array().default([]).notNull(),
-  description: text("description"),
+  description: text("description"), // This field stores the keyword context
   scheduledDate: timestamp("scheduled_date"),
   publishedDate: timestamp("published_at"),
-  wordpressUrl: text("wordpress_url"), // Added wordpressUrl column
+  wordpressUrl: text("wordpress_url"),
   affiliateLinks: jsonb("affiliate_links").default({})
 });
 
@@ -30,10 +30,10 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts)
     metaTags: z.array(z.string()).optional(),
     excerpt: z.string().optional(),
     slug: z.string().optional(),
-    description: z.string().optional(),
-    wordCount: z.number().optional(), // Make wordCount optional
-    headings: z.array(z.string()).optional(), // Make headings optional
-    wordpressUrl: z.string().url().optional(), // Added wordpressUrl to schema
+    description: z.string().optional(), // Make description optional but ensure it's validated
+    wordCount: z.number().optional(),
+    headings: z.array(z.string()).optional(),
+    wordpressUrl: z.string().url().optional(),
   });
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;

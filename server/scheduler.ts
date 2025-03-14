@@ -19,6 +19,10 @@ async function generateContent(keywords: string[], description: string = "", pos
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a blog post about: ${keywords.join(", ")}.
 
+${post.description ? `Additional Context from User: ${post.description}
+
+Please incorporate this context into your writing and follow any specific instructions provided.` : ""}
+
 Instructions:
 1. Write in grade 5-6 level Canadian English
 2. Create an engaging but SEO-friendly title (60-70 characters)
