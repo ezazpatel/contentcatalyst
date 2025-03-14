@@ -11,10 +11,10 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={NewPost} />
+      <Route path="/view/:id" component={ViewPost} />
       <Route path="/blogs" component={BlogsList} />
       <Route path="/keywords" component={KeywordsList} />
-      <Route path="/view/:id" component={ViewPost} />
+      <Route path="/" component={NewPost} />
       <Route component={NotFound} />
     </Switch>
   );
