@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Link } from "wouter";
-import { Helmet } from "react-helmet";
 
 export default function ViewPost() {
   const [match, params] = useRoute<{ id: string }>("/view/:id");
@@ -62,68 +61,63 @@ export default function ViewPost() {
   }
 
   return (
-    <>
-      <Helmet>
-        <meta name="robots" content="noindex" />
-      </Helmet>
-      <div>
-        <Navbar />
-        <div className="container mx-auto py-8">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="text-sm text-muted-foreground mb-2">
-                    Keyword Phrases: {post.keywords.join(", ")}
-                  </div>
-                  <CardTitle className="text-3xl">{post.title}</CardTitle>
+    <div>
+      <Navbar />
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-sm text-muted-foreground mb-2">
+                  Keyword Phrases: {post.keywords.join(", ")}
                 </div>
-                <div className="flex gap-4">
-                  <Link href="/blogs">
-                    <Button variant="outline">Back to Posts</Button>
-                  </Link>
-                  <Button 
-                    variant="secondary"
-                    onClick={() => republishToWordPress.mutate()}
-                    disabled={republishToWordPress.isPending}
-                  >
-                    {republishToWordPress.isPending ? "Publishing..." : "Republish to WordPress"}
-                  </Button>
-                </div>
+                <CardTitle className="text-3xl">{post.title}</CardTitle>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="prose prose-sm max-w-none dark:prose-invert">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {post.content}
-                </ReactMarkdown>
+              <div className="flex gap-4">
+                <Link href="/blogs">
+                  <Button variant="outline">Back to Posts</Button>
+                </Link>
+                <Button 
+                  variant="secondary"
+                  onClick={() => republishToWordPress.mutate()}
+                  disabled={republishToWordPress.isPending}
+                >
+                  {republishToWordPress.isPending ? "Publishing..." : "Republish to WordPress"}
+                </Button>
               </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {post.content}
+              </ReactMarkdown>
+            </div>
 
-              {post.affiliateLinks && post.affiliateLinks.length > 0 && (
-                <div className="mt-8 border-t pt-4">
-                  <h3 className="text-lg font-medium mb-2">Related Links</h3>
-                  <ul className="list-disc pl-5">
-                    {post.affiliateLinks.map((link, index) => (
-                      <li key={index}>
-                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          {link.name}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            {post.affiliateLinks && post.affiliateLinks.length > 0 && (
+              <div className="mt-8 border-t pt-4">
+                <h3 className="text-lg font-medium mb-2">Related Links</h3>
+                <ul className="list-disc pl-5">
+                  {post.affiliateLinks.map((link, index) => (
+                    <li key={index}>
+                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {link.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="mt-8 text-sm text-muted-foreground">
+              <p>Status: {post.status}</p>
+              {post.scheduledDate && (
+                <p>Scheduled: {format(new Date(post.scheduledDate), "PPP")}</p>
               )}
-
-              <div className="mt-8 text-sm text-muted-foreground">
-                <p>Status: {post.status}</p>
-                {post.scheduledDate && (
-                  <p>Scheduled: {format(new Date(post.scheduledDate), "PPP")}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </>
+    </div>
   );
 }
