@@ -16,7 +16,8 @@ function convertMarkdownToHTML(markdown: string): string {
     .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
     .replace(/^\d+\.\s+(.*)/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>')
-    .replace(/^(?!<[uo]l|<li|<h[1-6])(.*$)/gm, '<p>$1</p>');
+    .replace(/^(?!<[uo]l|<li|<h[1-6])(.*$)/gm, '<p>$1</p>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 }
 
 export async function registerRoutes(app: Express) {
@@ -24,9 +25,32 @@ export async function registerRoutes(app: Express) {
   checkScheduledPosts();
   const httpServer = createServer(app);
 
+  // Serve robots.txt
+  app.get("/robots.txt", (_req, res) => {
+    res.type('text/plain');
+    res.send(`User-agent: *
+Disallow: /api/posts/*/content
+Disallow: /api/posts/content`);
+  });
+
   app.get("/api/posts", async (_req, res) => {
     const posts = await storage.getAllBlogPosts();
-    res.json(posts);
+    // Remove content from the response to prevent indexing
+    const postsWithoutContent = posts.map(post => {
+      const { content, ...postWithoutContent } = post;
+      return postWithoutContent;
+    });
+    res.json(postsWithoutContent);
+  });
+
+  // Separate endpoint for content
+  app.get("/api/posts/:id/content", async (req, res) => {
+    const post = await storage.getBlogPost(Number(req.params.id));
+    if (!post) {
+      res.status(404).json({ message: "Post not found" });
+      return;
+    }
+    res.json({ content: post.content });
   });
 
   app.get("/api/posts/:id", async (req, res) => {
@@ -35,7 +59,9 @@ export async function registerRoutes(app: Express) {
       res.status(404).json({ message: "Post not found" });
       return;
     }
-    res.json(post);
+    // Remove content from the main post response
+    const { content, ...postWithoutContent } = post;
+    res.json(postWithoutContent);
   });
 
   app.post("/api/posts", async (req, res) => {

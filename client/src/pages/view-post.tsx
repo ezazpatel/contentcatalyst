@@ -11,16 +11,33 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Link } from "wouter";
 import { Helmet } from "react-helmet";
+import { useEffect, useState } from "react";
 
 export default function ViewPost() {
   const [match, params] = useRoute<{ id: string }>("/view/:id");
   const postId = params?.id ? parseInt(params.id) : null;
+  const [content, setContent] = useState<string>("");
+  const { toast } = useToast();
 
   const { data: post, isLoading } = useQuery<BlogPost>({
     queryKey: [`/api/posts/${postId}`],
     enabled: postId !== null && !isNaN(postId)
   });
-  const { toast } = useToast();
+
+  useEffect(() => {
+    const loadContent = async () => {
+      if (post?.id) {
+        try {
+          const response = await fetch(`/api/posts/${post.id}/content`);
+          const data = await response.json();
+          setContent(data.content || "");
+        } catch (error) {
+          console.error("Failed to load content:", error);
+        }
+      }
+    };
+    loadContent();
+  }, [post?.id]);
 
   const republishToWordPress = useMutation({
     mutationFn: async () => {
@@ -95,7 +112,7 @@ export default function ViewPost() {
             <CardContent>
               <div className="prose prose-sm max-w-none dark:prose-invert">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {post.content}
+                  {content || "Loading content..."}
                 </ReactMarkdown>
               </div>
 
