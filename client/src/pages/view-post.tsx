@@ -121,3 +121,19 @@ export default function ViewPost() {
     </div>
   );
 }
+import { Helmet } from "react-helmet";
+
+// ... other imports
+
+export default function ViewPost() {
+  // ... existing component code
+
+  return (
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex" />
+      </Helmet>
+      {/* rest of your component JSX */}
+    </>
+  );
+}
