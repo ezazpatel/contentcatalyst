@@ -10,6 +10,28 @@ const client = new Anthropic({
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const ANTHROPIC_MODEL = "claude-3-7-sonnet-20250219";
 
+// Add a function to convert markdown to HTML
+function convertMarkdownToHTML(content: string): string {
+  // Convert headings
+  content = content.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  content = content.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  content = content.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+
+  // Convert links - matches [text](url) pattern
+  content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+  // Convert paragraphs - add proper spacing
+  content = content.split('\n\n').map(para => {
+    if (!para.trim()) return '';
+    if (para.startsWith('<h') || para.startsWith('<ul') || para.startsWith('<ol')) {
+      return para;
+    }
+    return `<p>${para}</p>`;
+  }).join('\n\n');
+
+  return content;
+}
+
 async function generateContent(keywords: string[], description: string = "", post: any = {}): Promise<{
   content: string;
   title: string;
@@ -18,11 +40,11 @@ async function generateContent(keywords: string[], description: string = "", pos
   try {
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a blog post about: ${keywords.join(", ")}.
-
+    
 ${post.description ? `
 Additional Context from User:
 ${post.description}` : ""}
-
+    
 ${Array.isArray(post.internalLinks) && post.internalLinks.length > 0 ? `
 Important: This article should reference these related articles from our blog:
 ${post.internalLinks.map(link => `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ''}`).join('\n')}
@@ -641,8 +663,8 @@ export async function checkScheduledPosts() {
             const postData = {
               title: { raw: updatedPost.title },
               content: { 
-                // Remove the title from the content since WordPress will handle the title display
-                raw: updatedPost.content.replace(new RegExp('^' + updatedPost.title + '\\s*\\n+'), '')
+                // Convert markdown to HTML and remove the title since WordPress handles it
+                raw: convertMarkdownToHTML(updatedPost.content.replace(new RegExp('^' + updatedPost.title + '\\s*\\n+'), ''))
               },
               status: 'publish',
               excerpt: { raw: updatedPost.description || '' },
