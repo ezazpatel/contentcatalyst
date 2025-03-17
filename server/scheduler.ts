@@ -21,9 +21,16 @@ async function generateContent(keywords: string[], description: string = "", pos
 
 ${post.description ? `
 Additional Context from User:
-${post.description}
+${post.description}` : ""}
 
-If the above context contains URLs (especially internal links), you MUST naturally include them as internal hyperlinks in relevant sections or subheadings within the article.` : ""}
+${Array.isArray(post.internalLinks) && post.internalLinks.length > 0 ? `
+Important: This article should reference these related articles from our blog:
+${post.internalLinks.map(link => `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ''}`).join('\n')}
+
+You MUST naturally incorporate these internal links into your content:
+- Use them in relevant sections where they add value
+- Present them as "related reading" or "learn more" references
+- Each internal link should only be used once in the content` : ""}
 
 Instructions:
 1. Write in grade 5-6 level Canadian English
@@ -150,6 +157,15 @@ ${outlineResult.title}
       affiliateLinkUsage[name] = 0;
     });
 
+    // Add internal links tracking similar to affiliate links
+    const internalLinksUsage = {};
+    if (Array.isArray(post.internalLinks)) {
+      post.internalLinks.forEach(link => {
+        internalLinksUsage[link.url] = 0;
+      });
+    }
+
+
     for (const section of outlineResult.outline) {
       console.log("Generating content for section:", section.heading);
 
@@ -190,6 +206,17 @@ ${post.description ? `
 Important: Review this context from the user and naturally incorporate any URLs or specific instructions:
 ${post.description}` : ""}
 
+${Array.isArray(post.internalLinks) && post.internalLinks.length > 0 ? `
+Important: Consider including these relevant internal links where appropriate:
+${post.internalLinks
+  .filter(link => !internalLinksUsage[link.url]) // Only show unused links
+  .map(link => `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ''}`)
+  .join('\n')}
+
+- Each internal link should only be used once
+- Place them naturally where they add value to the content
+- Present them as "related reading" or "learn more" references` : ""}
+
 Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
 Include rich details and examples.
 
@@ -221,6 +248,15 @@ ${section.subheadings.map(subheading => `### ${subheading}\n\n[Subheading conten
         const matches = sectionContent.match(regex);
         if (matches) {
           affiliateLinkUsage[name] = (affiliateLinkUsage[name] || 0) + matches.length;
+        }
+      });
+
+      // Track internal link usage similar to affiliate links
+      Object.keys(internalLinksUsage).forEach(url => {
+        const regex = new RegExp(`\\[.*?\\]\\(${url}\\)`, 'g');
+        const matches = sectionContent.match(regex);
+        if (matches) {
+          internalLinksUsage[url] = (internalLinksUsage[url] || 0) + matches.length;
         }
       });
 

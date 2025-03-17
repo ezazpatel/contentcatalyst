@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -12,6 +12,7 @@ export const blogPosts = pgTable("blog_posts", {
   seoDescription: text("seo_description"),
   keywords: text("keywords").array().default([]).notNull(),
   description: text("description"), // This field stores the keyword context
+  internalLinks: jsonb("internal_links").default([]), // New field for internal links
   scheduledDate: timestamp("scheduled_date"),
   publishedDate: timestamp("published_at"),
   wordpressUrl: text("wordpress_url"),
@@ -25,6 +26,11 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts)
     affiliateLinks: z.array(z.object({
       name: z.string(),
       url: z.string().url("Invalid URL").or(z.string().length(0))
+    })).default([]),
+    internalLinks: z.array(z.object({
+      title: z.string(),
+      url: z.string().url("Invalid URL"),
+      description: z.string().optional()
     })).default([]),
     scheduledDate: z.coerce.date(),
     metaTags: z.array(z.string()).optional(),
