@@ -9,56 +9,52 @@ import ViewPost from "@/pages/view-post";
 import NotFound from "@/pages/not-found";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage } from "@/components/ui/breadcrumb";
 
-import { Navbar } from "@/components/navbar";
-
 function Router() {
   const [location] = useLocation();
 
   return (
     <>
-      <Navbar />
-      <div className="container mx-auto mt-4">
-        <Breadcrumb className="mb-4 px-4 py-2">
-          <BreadcrumbList>
+      <Breadcrumb className="mb-4 px-4 py-2">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <Link href="/">
+              <BreadcrumbLink as="span">Home</BreadcrumbLink>
+            </Link>
+          </BreadcrumbItem>
+
+          {location === "/blogs" && (
             <BreadcrumbItem>
-              <Link href="/">
-                <BreadcrumbLink as="span">Home</BreadcrumbLink>
-              </Link>
+              <BreadcrumbPage>Blogs</BreadcrumbPage>
             </BreadcrumbItem>
+          )}
 
-            {location === "/blogs" && (
+          {location.startsWith("/view/") && (
+            <>
               <BreadcrumbItem>
-                <BreadcrumbPage>Blogs</BreadcrumbPage>
+                <Link href="/blogs">
+                  <BreadcrumbLink as="span">Blogs</BreadcrumbLink>
+                </Link>
               </BreadcrumbItem>
-            )}
-
-            {location.startsWith("/view/") && (
-              <>
-                <BreadcrumbItem>
-                  <Link href="/blogs">
-                    <BreadcrumbLink as="span">Blogs</BreadcrumbLink>
-                  </Link>
-                </BreadcrumbItem>
-                <BreadcrumbItem>
-                  <BreadcrumbPage>View Post</BreadcrumbPage>
-                </BreadcrumbItem>
-              </>
-            )}
-
-            {location === "/" && (
               <BreadcrumbItem>
-                <BreadcrumbPage>New Post</BreadcrumbPage>
+                <BreadcrumbPage>View Post</BreadcrumbPage>
               </BreadcrumbItem>
-            )}
+            </>
+          )}
 
-            {location === "/keywords" && (
-              <BreadcrumbItem>
-                <BreadcrumbPage>Keywords</BreadcrumbPage>
-              </BreadcrumbItem>
-            )}
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
+          {location === "/" && (
+            <BreadcrumbItem>
+              <BreadcrumbPage>New Post</BreadcrumbPage>
+            </BreadcrumbItem>
+          )}
+
+          {location === "/keywords" && (
+            <BreadcrumbItem>
+              <BreadcrumbPage>Keywords</BreadcrumbPage>
+            </BreadcrumbItem>
+          )}
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <Switch>
         <Route path="/blogs" component={BlogsList} />
         <Route path="/view/:id" component={ViewPost} />
