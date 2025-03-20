@@ -39,7 +39,9 @@ async function generateContent(keywords: string[], description: string = "", pos
 }> {
   try {
     console.log("Step 1: Generating title and outline...");
-    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a blog post about: ${keywords.join(", ")}.
+    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a comprehensive blog post that covers all of these related topics: ${keywords.join(", ")}.
+
+Important: Create a single cohesive article that naturally incorporates all these keywords/topics together. Do not treat them as separate articles.
     
 ${post.description ? `
 Additional Context from User:
