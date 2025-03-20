@@ -81,11 +81,15 @@ export default function KeywordsList() {
   const keywordMap = new Map<string, KeywordEntry>();
   posts?.forEach((post) => {
     post.keywords.forEach((keyword) => {
-      if (!keywordMap.has(keyword)) {
+      // Always update with the most recent post for this keyword
+      const existingEntry = keywordMap.get(keyword);
+      const newDate = new Date(post.scheduledDate || post.publishedDate || 0);
+      
+      if (!existingEntry || newDate > existingEntry.publishDate) {
         keywordMap.set(keyword, {
           keyword,
           status: post.status,
-          publishDate: new Date(post.scheduledDate || 0),
+          publishDate: newDate,
           blogTitle: post.title || "",
           blogId: post.id,
         });
