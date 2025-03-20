@@ -9,6 +9,8 @@ import ViewPost from "@/pages/view-post";
 import NotFound from "@/pages/not-found";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage } from "@/components/ui/breadcrumb";
 
+import { Navbar } from "@/components/navbar";
+
 function Router() {
   const [location] = useLocation();
 
