@@ -1,5 +1,7 @@
+
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
 
 export function Navbar() {
   return (
@@ -14,6 +16,12 @@ export function Navbar() {
           </Link>
           <Link href="/keywords">
             <Button variant="outline">Manage Keywords</Button>
+          </Link>
+          <Link href="/bulk-upload">
+            <Button variant="outline">
+              <Upload className="h-4 w-4 mr-2" />
+              Bulk Upload
+            </Button>
           </Link>
         </div>
       </div>
