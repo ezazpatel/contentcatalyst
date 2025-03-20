@@ -12,8 +12,10 @@ const ANTHROPIC_MODEL = "claude-3-7-sonnet-20250219";
 
 // Add a function to convert markdown to HTML
 function convertMarkdownToHTML(content: string): string {
+  // First remove any top-level title that might be present
+  content = content.replace(/^#\s.*?\n+/, '');
+
   // Convert headings
-  content = content.replace(/^# (.+)$/gm, '<h1>$1</h1>');
   content = content.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   content = content.replace(/^### (.+)$/gm, '<h3>$1</h3>');
 
@@ -39,14 +41,7 @@ async function generateContent(keywords: string[], description: string = "", pos
 }> {
   try {
     console.log("Step 1: Generating title and outline...");
-    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a comprehensive blog post that covers these related topics: ${keywords.join(", ")}.
-
-Important guidelines:
-- Create a single cohesive article that naturally weaves these topics together
-- Focus on providing genuine value to readers rather than keyword placement
-- Use keywords only where they fit naturally in the content
-- Prioritize readability and user experience over keyword density
-- Write in a conversational, authentic tone
+    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a blog post about: ${keywords.join(", ")}.
     
 ${post.description ? `
 Additional Context from User:
@@ -124,7 +119,6 @@ Format your response as JSON:
 
     console.log("Step 2: Generating introduction...");
     const introPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
-
 Instructions:
 1. Use grade 5-6 level Canadian English
 2. Write in a professional but friendly tone
@@ -154,24 +148,18 @@ ${outlineResult.title}
       messages: [{ role: "user", content: introPrompt }]
     });
 
-    let fullContent = introResponse.content[0].text;
+    let fullContent = "";
 
-    // Insert affiliate links right after the title
+    // Add affiliate links section right after intro if available
     if (affiliateLinksMarkdown) {
-      const titleEndIndex = fullContent.indexOf('\n\n');
-      if (titleEndIndex !== -1) {
-        fullContent = fullContent.substring(0, titleEndIndex + 2) + 
-                     affiliateLinksMarkdown + 
-                     fullContent.substring(titleEndIndex + 2);
-      } else {
-        fullContent += affiliateLinksMarkdown;
-      }
+      fullContent += affiliateLinksMarkdown;
     }
 
-    fullContent += "\n\n";
+    fullContent += introResponse.content[0].text + "\n\n";
+
 
     // Create a map of affiliate links for easier reference
-    const affiliateLinksMap = Array.isArray(post.affiliateLinks) 
+    const affiliateLinksMap = Array.isArray(post.affiliateLinks)
       ? post.affiliateLinks.reduce((acc, link) => {
           if (link.name && link.url) {
             acc[link.name] = link.url;
@@ -223,7 +211,6 @@ ${availableLinks.join("\n")}
       }
 
       const sectionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
-
 Instructions:
 1. Use grade 5-6 level Canadian English
 2. Write naturally and conversationally
@@ -337,13 +324,7 @@ Use proper markdown:
       finalDescription = fullContent.split("\n").slice(2, 4).join(" ").slice(0, 155) + "...";
     }
 
-    // Remove duplicate title (only keep the first one)
-    const titleMatch = fullContent.match(/^.+?\n/);
-    if (titleMatch) {
-      const firstTitle = titleMatch[0];
-      // Remove any subsequent occurrences of the same title
-      fullContent = firstTitle + fullContent.substring(firstTitle.length).replace(new RegExp('^' + firstTitle.trim(), 'gm'), '');
-    }
+    // Remove duplicate title (only keep the first one) - This part is not needed anymore as we are not including the title in the generated content.
 
     return {
       content: fullContent,
@@ -473,6 +454,7 @@ Format your response with proper markdown:
       }
     }
     
+
     fullContent += "\n\n";
 
     // Track the number of times each affiliate link has been used - we'll still reference them in the content
@@ -670,8 +652,8 @@ export async function checkScheduledPosts() {
             const postData = {
               title: { raw: updatedPost.title },
               content: { 
-                // Convert markdown to HTML and remove the title since WordPress handles it
-                raw: convertMarkdownToHTML(updatedPost.content.replace(new RegExp('^' + updatedPost.title + '\\s*\\n+'), ''))
+                // Remove any instances of the title from the content and convert to HTML
+                raw: convertMarkdownToHTML(updatedPost.content.replace(/^#\s.*?\n+/, '').trim())
               },
               status: 'publish',
               excerpt: { raw: updatedPost.description || '' },
