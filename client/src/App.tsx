@@ -14,13 +14,6 @@ function Router() {
 
   return (
     <>
-      <Switch>
-        <Route path="/blogs" component={BlogsList} />
-        <Route path="/view/:id" component={ViewPost} />
-        <Route path="/keywords" component={KeywordsList} />
-        <Route path="/" component={NewPost} />
-        <Route component={NotFound} />
-      </Switch>
       <Breadcrumb className="mb-4 px-4 py-2">
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -61,6 +54,14 @@ function Router() {
           )}
         </BreadcrumbList>
       </Breadcrumb>
+
+      <Switch>
+        <Route path="/blogs" component={BlogsList} />
+        <Route path="/view/:id" component={ViewPost} />
+        <Route path="/keywords" component={KeywordsList} />
+        <Route path="/" component={NewPost} />
+        <Route component={NotFound} />
+      </Switch>
     </>
   );
 }
@@ -68,10 +69,6 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Added Navbar placeholder -  replace with your actual Navbar component */}
-      <nav className="navbar">
-        <div className="navbar-brand">My Website</div>
-      </nav>
       <Router />
       <Toaster />
     </QueryClientProvider>
