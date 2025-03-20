@@ -17,14 +17,16 @@ function Router() {
   return (
     <>
       <Navbar />
-      <Switch>
-        <Route path="/blogs" component={BlogsList} />
-        <Route path="/view/:id" component={ViewPost} />
-        <Route path="/keywords" component={KeywordsList} />
-        <Route path="/bulk-upload" component={Dashboard} />
-        <Route path="/" component={NewPost} />
-        <Route component={NotFound} />
-      </Switch>
+      <div className="container mx-auto px-4">
+        <Switch>
+          <Route path="/blogs" component={BlogsList} />
+          <Route path="/view/:id" component={ViewPost} />
+          <Route path="/keywords" component={KeywordsList} />
+          <Route path="/bulk-upload" component={Dashboard} />
+          <Route path="/" component={NewPost} />
+          <Route component={NotFound} />
+        </Switch>
+      </div>
     </>
   );
 }
