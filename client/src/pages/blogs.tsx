@@ -1,6 +1,5 @@
-
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "wouter";
 import { apiRequest } from "../lib/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "../components/ui/button";
@@ -33,13 +32,13 @@ export default function BlogsPage() {
 
   // Calculate unpublished posts count (posts with content but not published to WordPress)
   const unpublishedPosts = posts?.filter(
-    (post) => 
-      post.status === "published" && 
-      post.content && 
-      post.content.length > 100 && 
+    (post) =>
+      post.status === "published" &&
+      post.content &&
+      post.content.length > 100 &&
       !post.wordpressUrl
   ) || [];
-  
+
   const hasUnpublishedPosts = unpublishedPosts.length > 0;
 
   // Delete post mutation
@@ -76,7 +75,7 @@ export default function BlogsPage() {
         description: data.message || "Started publishing posts to WordPress",
       });
       setIsPublishDialogOpen(false);
-      
+
       // Refetch after a delay to show updated status
       setTimeout(() => {
         refetch();
@@ -128,7 +127,7 @@ export default function BlogsPage() {
         <h1 className="text-2xl font-bold">Blog Posts</h1>
         <div className="flex gap-2">
           {hasUnpublishedPosts && (
-            <Button 
+            <Button
               onClick={() => setIsPublishDialogOpen(true)}
               variant="outline"
             >
@@ -148,7 +147,9 @@ export default function BlogsPage() {
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-xl font-semibold">{post.title || "Untitled Post"}</h2>
+                  <h2 className="text-xl font-semibold">
+                    {post.title || "Untitled Post"}
+                  </h2>
                   <p className="text-sm text-gray-500 mt-1">
                     Keywords: {post.keywords?.join(", ") || "None"}
                   </p>
@@ -168,9 +169,9 @@ export default function BlogsPage() {
                     )}
                     {post.wordpressUrl && (
                       <Badge variant="outline" className="bg-blue-100">
-                        <a 
-                          href={post.wordpressUrl} 
-                          target="_blank" 
+                        <a
+                          href={post.wordpressUrl}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center"
                         >
@@ -242,16 +243,20 @@ export default function BlogsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* WordPress Publish Confirmation Dialog */}
       <Dialog open={isPublishDialogOpen} onOpenChange={setIsPublishDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Publish to WordPress</DialogTitle>
             <DialogDescription>
-              This will publish {unpublishedPosts.length} post{unpublishedPosts.length !== 1 ? 's' : ''} to WordPress that have been processed but not yet published.
-              <br/><br/>
-              Posts will be published one at a time with a delay in between to avoid overloading your WordPress site.
+              This will publish {unpublishedPosts.length}{" "}
+              post{unpublishedPosts.length !== 1 ? "s" : ""} to WordPress that
+              have been processed but not yet published.
+              <br />
+              <br />
+              Posts will be published one at a time with a delay in between to
+              avoid overloading your WordPress site.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
