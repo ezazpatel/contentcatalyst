@@ -4,6 +4,7 @@ import { BlogForm } from "@/components/blog-form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertBlogPost } from "@shared/schema";
+import { CSVUpload } from "@/components/csv-upload";
 
 export default function NewPost() {
   const [, navigate] = useLocation();
@@ -55,7 +56,15 @@ export default function NewPost() {
 
   return (
     <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">Create New Post</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Create New Post</h1>
+        <CSVUpload 
+          onUpload={(data) => {
+            // Handle bulk uploads
+            data.forEach(post => createPost.mutate(post));
+          }} 
+        />
+      </div>
       <div className="grid gap-8">
         <BlogForm
           defaultValues={defaultValues}

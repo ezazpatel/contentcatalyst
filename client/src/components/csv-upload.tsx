@@ -107,7 +107,7 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
           onChange={handleFileUpload}
           className="hidden"
         />
-        <Button onClick={() => fileInputRef.current?.click()}>
+        <Button variant="secondary" className="bg-black text-white hover:bg-gray-900" onClick={() => fileInputRef.current?.click()}>
           Upload CSV
         </Button>
         <Button variant="outline" onClick={downloadTemplate}>

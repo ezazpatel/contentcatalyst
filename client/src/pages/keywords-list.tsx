@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { CSVUpload } from "@/components/csv-upload"; // Added import
 
 type KeywordEntry = {
   keyword: string;
@@ -84,7 +85,7 @@ export default function KeywordsList() {
       // Always update with the most recent post for this keyword
       const existingEntry = keywordMap.get(keyword);
       const newDate = new Date(post.scheduledDate || post.publishedDate || 0);
-      
+
       if (!existingEntry || newDate > existingEntry.publishDate) {
         keywordMap.set(keyword, {
           keyword,
@@ -126,12 +127,57 @@ export default function KeywordsList() {
     }
   };
 
+  // Added createPosts mutation -  needs to be defined elsewhere and likely uses a backend API.
+  const createPosts = useMutation({
+    mutationFn: async (posts: InsertBlogPost[]) => {
+      //Implementation to send posts to backend goes here.  Requires a backend API endpoint.
+      const res = await fetch('/api/posts/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(posts)
+      })
+      if (!res.ok) throw new Error("Failed to create posts");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      toast({
+        title: "Success",
+        description: "Posts created successfully",
+      });
+    },
+    onError: (err: Error) => {
+      toast({
+        title: "Error",
+        description: `Failed to create posts: ${err.message}`,
+        variant: "destructive",
+      });
+    }
+  })
+
+
+  type InsertBlogPost = {
+    title: string;
+    content: string;
+    keywords: string[];
+    scheduledDate?: string;
+  }
+
   return (
     <div>
       <div className="container mx-auto py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Manage Keywords</h1>
           <div className="flex space-x-4">
+            <CSVUpload
+              onUpload={(data) => {
+                // Handle bulk uploads
+                // This will go through the dashboard's create post mutation
+                const typedData = data as InsertBlogPost[];
+                createPosts.mutate(typedData);
+              }}
+            />
             <Link href="/new">
               <Button>New Post</Button>
             </Link>
