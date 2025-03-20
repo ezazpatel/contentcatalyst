@@ -9,8 +9,8 @@ export function Navbar() {
       <div className="container mx-auto py-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Canada Things to Do</p>
+            <h1 className="text-4xl font-bold mb-1">Dashboard</h1>
+            <p className="text-xl text-muted-foreground">Canada Things to Do</p>
           </div>
           <div className="flex gap-4">
             <Link href="/">
