@@ -22,12 +22,6 @@ export function Navbar() {
             <Link href="/keywords">
               <Button variant="outline">Manage Keywords</Button>
             </Link>
-            <Link href="/bulk-upload">
-              <Button variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
-                Bulk Upload
-              </Button>
-            </Link>
           </div>
         </div>
       </div>
