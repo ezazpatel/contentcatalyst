@@ -62,7 +62,10 @@ export default function NewPost() {
         <div className="grid gap-8">
           <BlogForm
             defaultValues={defaultValues}
-            onSubmit={(data) => createPost.mutate(data as InsertBlogPost)}
+            onSubmit={(data) => {
+              const updatedData = {...data, keywords: data.keywords.filter(k => k.trim())};
+              createPost.mutate(updatedData as InsertBlogPost);
+            }}
             isLoading={createPost.isPending}
           />
         </div>
