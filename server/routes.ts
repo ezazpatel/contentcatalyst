@@ -66,6 +66,23 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.delete("/api/keywords/:keyword", async (req, res) => {
+    try {
+      const posts = await storage.getAllBlogPosts();
+      const postsWithKeyword = posts.filter(post => 
+        post.keywords.includes(req.params.keyword) && post.status !== "published"
+      );
+
+      for (const post of postsWithKeyword) {
+        await storage.deleteBlogPost(post.id);
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   app.post("/api/wordpress/publish-all", async (_req, res) => {
     try {
       if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN) {

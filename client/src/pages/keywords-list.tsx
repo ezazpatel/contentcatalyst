@@ -13,7 +13,17 @@ import {
 import { format } from "date-fns";
 import { Navbar } from "@/components/navbar";
 import { useState } from "react";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Trash2 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
 
 type KeywordEntry = {
   keyword: string;
@@ -33,6 +43,36 @@ export default function KeywordsList() {
 
   const [sortField, setSortField] = useState<SortField>("publishDate");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedKeyword, setSelectedKeyword] = useState<string>("");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const deleteKeyword = useMutation({
+    mutationFn: async (keyword: string) => {
+      const response = await fetch(`/api/keywords/${encodeURIComponent(keyword)}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to delete keyword");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      toast({
+        title: "Success",
+        description: "Keyword deleted successfully",
+      });
+      setIsDeleteDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete keyword",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -136,21 +176,58 @@ export default function KeywordsList() {
                   </TableCell>
                   <TableCell>{entry.blogTitle || "Not created"}</TableCell>
                   <TableCell>
-                    {entry.blogId ? (
-                      <Link href={`/view/${entry.blogId}`}>
-                        <Button variant="outline" size="sm">View Post</Button>
-                      </Link>
-                    ) : (
-                      <Link href="/">
-                        <Button variant="outline" size="sm">Create Post</Button>
-                      </Link>
-                    )}
+                    <div className="flex gap-2">
+                      {entry.blogId ? (
+                        <Link href={`/view/${entry.blogId}`}>
+                          <Button variant="outline" size="sm">View Post</Button>
+                        </Link>
+                      ) : (
+                        <Link href="/">
+                          <Button variant="outline" size="sm">Create Post</Button>
+                        </Link>
+                      )}
+                      {entry.status !== "published" && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedKeyword(entry.keyword);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
+
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Keyword</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this keyword and all associated drafts? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => deleteKeyword.mutate(selectedKeyword)}
+                disabled={deleteKeyword.isPending}
+              >
+                {deleteKeyword.isPending ? "Deleting..." : "Delete"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
