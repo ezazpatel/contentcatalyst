@@ -7,6 +7,7 @@ import BlogsList from "@/pages/blogs-list";
 import KeywordsList from "@/pages/keywords-list";
 import ViewPost from "@/pages/view-post";
 import NotFound from "@/pages/not-found";
+import { Dashboard } from "@/pages/dashboard";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage } from "@/components/ui/breadcrumb";
 
 function Router() {
