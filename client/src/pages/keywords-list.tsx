@@ -11,7 +11,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import { Navbar } from "@/components/navbar";
 import { useState } from "react";
 import { ArrowUpDown, Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -125,7 +124,6 @@ export default function KeywordsList() {
 
   return (
     <div>
-      <Navbar />
       <div className="container mx-auto py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Manage Keywords</h1>
@@ -218,8 +216,8 @@ export default function KeywordsList() {
               <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => deleteKeyword.mutate(selectedKeyword)}
                 disabled={deleteKeyword.isPending}
               >

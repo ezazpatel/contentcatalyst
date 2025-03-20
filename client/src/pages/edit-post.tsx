@@ -1,5 +1,4 @@
 import { useRoute, useLocation } from "wouter";
-import { Navbar } from "@/components/navbar";
 import Editor from "./editor";
 
 export default function EditPost() {
@@ -12,10 +11,5 @@ export default function EditPost() {
     return null;
   }
 
-  return (
-    <div>
-      <Navbar />
-      <Editor />
-    </div>
-  );
+  return <Editor />;
 }
