@@ -12,10 +12,7 @@ const ANTHROPIC_MODEL = "claude-3-7-sonnet-20250219";
 
 // Add a function to convert markdown to HTML
 function convertMarkdownToHTML(content: string): string {
-  // First remove any top-level title that might be present
-  content = content.replace(/^#\s.*?\n+/, '');
-
-  // Convert headings
+  // Convert headings, but skip h1 as it's reserved for the title
   content = content.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   content = content.replace(/^### (.+)$/gm, '<h3>$1</h3>');
 
@@ -41,20 +38,15 @@ async function generateContent(keywords: string[], description: string = "", pos
 }> {
   try {
     console.log("Step 1: Generating title and outline...");
-    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a blog post about: ${keywords.join(", ")}.
-    
+    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a blog post about: ${keywords.join(", ")}.
+
 ${post.description ? `
 Additional Context from User:
 ${post.description}` : ""}
-    
+
 ${Array.isArray(post.internalLinks) && post.internalLinks.length > 0 ? `
 Important: This article should reference these related articles from our blog:
-${post.internalLinks.map(link => `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ''}`).join('\n')}
-
-You MUST naturally incorporate these internal links into your content:
-- Use them in relevant sections where they add value
-- Present them as "related reading" or "learn more" references
-- Each internal link should only be used once in the content` : ""}
+${post.internalLinks.map(link => `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ''}`).join('\n')}` : ""}
 
 Instructions:
 1. Write in grade 5-6 level Canadian English
@@ -82,9 +74,7 @@ Format your response as JSON:
       model: ANTHROPIC_MODEL,
       max_tokens: 4000,
       temperature: 0.7,
-      messages: [
-        { role: "user", content: outlinePrompt }
-      ]
+      messages: [{ role: "user", content: outlinePrompt }]
     });
 
     const outlineText = outlineResponse.content[0].text;
@@ -324,7 +314,6 @@ Use proper markdown:
       finalDescription = fullContent.split("\n").slice(2, 4).join(" ").slice(0, 155) + "...";
     }
 
-    // Remove duplicate title (only keep the first one) - This part is not needed anymore as we are not including the title in the generated content.
 
     return {
       content: fullContent,
@@ -652,8 +641,7 @@ export async function checkScheduledPosts() {
             const postData = {
               title: { raw: updatedPost.title },
               content: { 
-                // Remove any instances of the title from the content and convert to HTML
-                raw: convertMarkdownToHTML(updatedPost.content.replace(/^#\s.*?\n+/, '').trim())
+                raw: convertMarkdownToHTML(updatedPost.content)
               },
               status: 'publish',
               excerpt: { raw: updatedPost.description || '' },

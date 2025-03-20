@@ -86,7 +86,13 @@ export default function ViewPost() {
         </CardHeader>
         <CardContent>
           <div className="prose prose-sm max-w-none dark:prose-invert">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                // Override h1 rendering to prevent duplicate titles
+                h1: () => null
+              }}
+            >
               {post.content}
             </ReactMarkdown>
           </div>
