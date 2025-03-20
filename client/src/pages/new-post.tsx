@@ -4,7 +4,6 @@ import { BlogForm } from "@/components/blog-form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertBlogPost } from "@shared/schema";
-import { Navbar } from "@/components/navbar";
 
 export default function NewPost() {
   const [, navigate] = useLocation();
@@ -55,20 +54,17 @@ export default function NewPost() {
   };
 
   return (
-    <div>
-      <Navbar />
-      <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-8">Create New Post</h1>
-        <div className="grid gap-8">
-          <BlogForm
-            defaultValues={defaultValues}
-            onSubmit={(data) => {
-              const updatedData = {...data, keywords: data.keywords.filter(k => k.trim())};
-              createPost.mutate(updatedData as InsertBlogPost);
-            }}
-            isLoading={createPost.isPending}
-          />
-        </div>
+    <div className="container mx-auto py-8">
+      <h1 className="text-3xl font-bold mb-8">Create New Post</h1>
+      <div className="grid gap-8">
+        <BlogForm
+          defaultValues={defaultValues}
+          onSubmit={(data) => {
+            const updatedData = {...data, keywords: data.keywords.filter(k => k.trim())};
+            createPost.mutate(updatedData as InsertBlogPost);
+          }}
+          isLoading={createPost.isPending}
+        />
       </div>
     </div>
   );
