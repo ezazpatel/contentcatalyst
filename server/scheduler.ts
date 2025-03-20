@@ -39,9 +39,14 @@ async function generateContent(keywords: string[], description: string = "", pos
 }> {
   try {
     console.log("Step 1: Generating title and outline...");
-    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a comprehensive blog post that covers all of these related topics: ${keywords.join(", ")}.
+    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a comprehensive blog post that covers these related topics: ${keywords.join(", ")}.
 
-Important: Create a single cohesive article that naturally incorporates all these keywords/topics together. Do not treat them as separate articles.
+Important guidelines:
+- Create a single cohesive article that naturally weaves these topics together
+- Focus on providing genuine value to readers rather than keyword placement
+- Use keywords only where they fit naturally in the content
+- Prioritize readability and user experience over keyword density
+- Write in a conversational, authentic tone
     
 ${post.description ? `
 Additional Context from User:
@@ -242,7 +247,7 @@ ${post.internalLinks
 - Present them as "related reading" or "learn more" references` : ""}
 
 Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
-Include rich details and examples.
+Focus on providing valuable information and real experiences, using keywords only where they naturally fit into the narrative. Prioritize reader engagement over keyword placement.
 
 Also create content for these subheadings:
 ${section.subheadings.map(subheading => `- ## ${subheading}`).join('\n')}
