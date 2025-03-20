@@ -47,7 +47,13 @@ export type BlogPost = typeof blogPosts.$inferSelect;
 
 export const csvUploadSchema = z.object({
   keywords: z.string(),
-  affiliateName: z.string(),
-  affiliateUrl: z.string().url(),
+  affiliateName: z.string().optional(),
+  affiliateUrl: z.string().url().optional(),
   scheduledDate: z.string(),
+  description: z.string().optional(),
+  seoTitle: z.string().optional(),
+  seoDescription: z.string().optional(),
+  internalLinkTitle: z.string().optional(),
+  internalLinkUrl: z.string().url().optional(),
+  internalLinkDesc: z.string().optional(),
 });
