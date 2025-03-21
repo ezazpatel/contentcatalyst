@@ -85,7 +85,7 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
   };
 
   const downloadTemplate = () => {
-    const template = "keywords,affiliateName,affiliateUrl,scheduledDate,description,seoTitle,seoDescription,internalLinkTitle,internalLinkUrl,internalLinkDesc\n" +
+    const template = "Keywords,Affiliate Product Name,Affiliate Product URL,Scheduled Date,Blog Description,SEO Title,SEO Description,Internal Link Title,Internal Link URL,Internal Link Description\n" +
       "travel tips,Amazon Basics,https://amazon.com/basics,2024-12-31,Travel tips for beginners,Best Travel Tips 2024,Learn essential travel tips,Related Travel Guide,https://example.com/guide,Comprehensive guide";
 
     const blob = new Blob([template], { type: "text/csv" });
