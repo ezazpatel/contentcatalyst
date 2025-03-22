@@ -11,8 +11,8 @@ export const blogPosts = pgTable("blog_posts", {
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
   keywords: text("keywords").array().default([]).notNull(),
-  description: text("description"), // This field stores the keyword context
-  internalLinks: jsonb("internal_links").default([]), // New field for internal links
+  description: text("description"), // This field stores content instructions
+  internalLinks: jsonb("internal_links").default([]),
   scheduledDate: timestamp("scheduled_date"),
   publishedDate: timestamp("published_at"),
   wordpressUrl: text("wordpress_url"),
@@ -36,7 +36,7 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts)
     metaTags: z.array(z.string()).optional(),
     excerpt: z.string().optional(),
     slug: z.string().optional(),
-    description: z.string().optional(), // Make description optional but ensure it's validated
+    description: z.string().optional(), // Optional content instructions
     wordCount: z.number().optional(),
     headings: z.array(z.string()).optional(),
     wordpressUrl: z.string().url().optional(),
@@ -47,10 +47,12 @@ export type BlogPost = typeof blogPosts.$inferSelect;
 
 export const csvUploadSchema = z.object({
   keywords: z.string().min(1, "Keywords cannot be empty"),
-  affiliateName: z.string().optional(),
-  affiliateUrl: z.string().optional(), // Allow multiple URLs separated by commas
+  title: z.string().optional(),
   scheduledDate: z.string(),
-  description: z.string().optional(),
+  scheduledTime: z.string().optional(),
+  affiliateName: z.string().optional(),
+  affiliateUrl: z.string().optional(),
+  description: z.string().optional(), // Content instructions
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
   internalLinkTitle: z.string().optional(),
@@ -67,10 +69,22 @@ export const csvUploadSchema = z.object({
 
   // If both are provided, ensure they have the same number of items
   if (hasAffiliateNames && hasAffiliateUrls) {
-    const nameCount = data.affiliateName!.split(',').length;
-    const urlCount = data.affiliateUrl!.split(',').length;
+    const nameCount = data.affiliateName!.split('|').length;
+    const urlCount = data.affiliateUrl!.split('|').length;
     if (nameCount !== urlCount) {
       throw new Error("Number of affiliate product names must match number of URLs");
+    }
+  }
+
+  // Validate date and time format
+  if (data.scheduledTime) {
+    try {
+      const dateTime = new Date(`${data.scheduledDate} ${data.scheduledTime}`);
+      if (isNaN(dateTime.getTime())) {
+        throw new Error("Invalid date/time format");
+      }
+    } catch {
+      throw new Error("Invalid date/time format. Use YYYY-MM-DD for date and HH:MM for time");
     }
   }
 
