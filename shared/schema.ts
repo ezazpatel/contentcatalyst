@@ -46,9 +46,9 @@ export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type BlogPost = typeof blogPosts.$inferSelect;
 
 export const csvUploadSchema = z.object({
-  keywords: z.string(),
+  keywords: z.string().min(1, "Keywords cannot be empty"),
   affiliateName: z.string().optional(),
-  affiliateUrl: z.string().url().optional(),
+  affiliateUrl: z.string().optional(), // Allow multiple URLs separated by commas
   scheduledDate: z.string(),
   description: z.string().optional(),
   seoTitle: z.string().optional(),
@@ -56,4 +56,23 @@ export const csvUploadSchema = z.object({
   internalLinkTitle: z.string().optional(),
   internalLinkUrl: z.string().url().optional(),
   internalLinkDesc: z.string().optional(),
+}).refine((data) => {
+  // If affiliateName is provided, affiliateUrl must also be provided and vice versa
+  const hasAffiliateNames = !!data.affiliateName?.trim();
+  const hasAffiliateUrls = !!data.affiliateUrl?.trim();
+
+  if (hasAffiliateNames !== hasAffiliateUrls) {
+    throw new Error("Both affiliate product names and URLs must be provided together");
+  }
+
+  // If both are provided, ensure they have the same number of items
+  if (hasAffiliateNames && hasAffiliateUrls) {
+    const nameCount = data.affiliateName!.split(',').length;
+    const urlCount = data.affiliateUrl!.split(',').length;
+    if (nameCount !== urlCount) {
+      throw new Error("Number of affiliate product names must match number of URLs");
+    }
+  }
+
+  return true;
 });
