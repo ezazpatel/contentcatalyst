@@ -153,8 +153,34 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.get("/api/settings", async (_req, res) => {
+    try {
+      const settings = await storage.getSettings();
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to get settings" });
+    }
+  });
+
+  app.patch("/api/settings", async (req, res) => {
+    try {
+      const settings = await storage.updateSettings(req.body);
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to update settings" });
+    }
+  });
+
   app.post("/api/wordpress/publish", async (req, res) => {
     try {
+      const settings = await storage.getSettings();
+      if (settings.test_mode) {
+        return res.status(403).json({
+          message: "WordPress publishing is disabled in test mode",
+          test_mode: true
+        });
+      }
+
       if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN || !process.env.WORDPRESS_USERNAME) {
         throw new Error('WordPress credentials are not configured');
       }
@@ -201,13 +227,8 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error('Error publishing to WordPress:', error);
       res.status(500).json({
-        message: 'Failed to publish to WordPress',
-        error: error.message,
-        details: `Please verify:
-1. WORDPRESS_API_URL is correct and ends with /wp-json
-2. Application password is correctly formatted
-3. WordPress user has administrator privileges
-4. REST API is enabled in WordPress`
+        message: "Failed to publish to WordPress",
+        error: error instanceof Error ? error.message : "Unknown error"
       });
     }
   });

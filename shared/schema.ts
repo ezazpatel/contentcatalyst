@@ -1,6 +1,16 @@
-import { pgTable, text, serial, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+export const siteSettings = pgTable("site_settings", {
+  id: serial("id").primaryKey(),
+  test_mode: boolean("test_mode").default(true).notNull(),
+  last_modified: timestamp("last_modified").defaultNow(),
+});
+
+export const settingsSchema = createInsertSchema(siteSettings).omit({ id: true });
+export type SiteSettings = typeof siteSettings.$inferSelect;
+export type InsertSettings = z.infer<typeof settingsSchema>;
 
 export const blogPosts = pgTable("blog_posts", {
   id: serial("id").primaryKey(),
