@@ -1,7 +1,7 @@
 import { AffiliateImage } from '@shared/schema';
 
 // Viator API endpoints
-const VIATOR_BASE_URL = "https://api.sandbox.viator.com/v2";
+const VIATOR_BASE_URL = "https://api.sandbox.viator.com/partner";
 
 interface ViatorProduct {
   productCode: string;
@@ -32,7 +32,7 @@ async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | 
   try {
     const response = await fetch(`${VIATOR_BASE_URL}/products/${productCode}`, {
       headers: {
-        'Accept': 'application/json',
+        'Accept': 'application/json;version=2.0',
         'exp-api-key': process.env.VIATOR_API_KEY!,
         'Accept-Language': 'en-US',
         'content-type': 'application/json'
@@ -48,12 +48,14 @@ async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | 
     }
 
     const data = JSON.parse(responseText);
+
+    // Map the Viator API response structure to our interface
     return {
       productCode,
       title: data.title,
-      images: data.images?.map((img: any) => ({
-        url: img.url,
-        alt: img.caption || data.title
+      images: data.photos?.map((photo: any) => ({
+        url: photo.photoUrl,
+        alt: photo.caption || data.title
       })) || []
     };
   } catch (error) {
