@@ -143,32 +143,20 @@ export default function BlogsPage() {
           {posts.map((post) => (
             <div
               key={post.id}
-              className="border rounded-lg p-6 hover:shadow-md transition-shadow"
+              className="border rounded-lg p-4 bg-card"
             >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h2 className="text-xl font-semibold">
-                    {post.title || "Untitled Post"}
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Keywords: {post.keywords?.join(", ") || "None"}
-                  </p>
-                  <div className="flex gap-2 mt-2">
+              <div className="flex flex-col md:flex-row justify-between gap-4">
+                <div className="flex-grow">
+                  <h2 className="text-lg font-semibold mb-2">{post.title}</h2>
+                  <div className="flex flex-wrap gap-2 items-center text-sm text-gray-500">
+                    <span>
+                      Created: {formatDate(post.createdAt)}
+                    </span>
                     <Badge className={getStatusColor(post.status)}>
                       {post.status}
                     </Badge>
-                    {post.scheduledDate && (
-                      <Badge variant="outline">
-                        Scheduled: {formatDate(post.scheduledDate)}
-                      </Badge>
-                    )}
-                    {post.publishedDate && (
-                      <Badge variant="outline">
-                        Published: {formatDate(post.publishedDate)}
-                      </Badge>
-                    )}
                     {post.wordpressUrl && (
-                      <Badge variant="outline" className="bg-blue-100">
+                      <Badge variant="outline">
                         <a
                           href={post.wordpressUrl}
                           target="_blank"
