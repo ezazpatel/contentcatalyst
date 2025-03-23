@@ -17,7 +17,8 @@ interface ViatorProduct {
  * Example: https://www.viator.com/tours/Vancouver/vancouver-flyover-canada-experience/d616-123456 -> 123456
  */
 function extractProductCode(url: string): string | null {
-  const match = url.match(/[-/]([0-9]+)(?:\?|$)/);
+  // Look for the pattern d###-#####P# before any query parameters
+  const match = url.match(/d\d+-(\d+P\d+)/);
   return match ? match[1] : null;
 }
 
