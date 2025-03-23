@@ -333,6 +333,33 @@ Use proper markdown:
       finalDescription = fullContent.split("\n").slice(2, 4).join(" ").slice(0, 155) + "...";
     }
 
+    // If in test mode, truncate content to approximately 1000 tokens
+    // (assuming average of 1.3 words per token)
+    const settings = await storage.getSettings();
+    if (settings.test_mode) {
+      const maxWords = 750; // ~1000 tokens
+      if (wordCount > maxWords) {
+        console.log(`Test mode: Truncating content from ${wordCount} words to ${maxWords} words`);
+
+        // Split content into sections
+        const sections = fullContent.split(/^##\s/m);
+        const title = sections[0];
+        const body = sections.slice(1);
+
+        // Keep introduction and first two sections
+        let truncatedContent = title + "\n\n";
+        for (let i = 0; i < Math.min(2, body.length); i++) {
+          truncatedContent += "## " + body[i];
+        }
+
+        // Add a note about truncation
+        truncatedContent += "\n\n## Note\n\nThis content has been truncated for test mode. Full content will be generated in production mode.";
+
+        fullContent = truncatedContent;
+        console.log("Content truncated for test mode");
+      }
+    }
+
     return {
       content: fullContent,
       title: outlineResult.title,
