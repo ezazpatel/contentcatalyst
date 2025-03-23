@@ -1,4 +1,4 @@
-import { AffiliateImage } from "@shared/schema";
+import { AffiliateImage } from '@shared/schema';
 
 // Viator API endpoints
 const VIATOR_BASE_URL = "https://api.sandbox.viator.com/v2";
@@ -14,11 +14,13 @@ interface ViatorProduct {
 
 /**
  * Extract product code from Viator URL
- * Example: https://www.viator.com/tours/Vancouver/vancouver-flyover-canada-experience/d616-123456 -> 123456
+ * Example: https://www.viator.com/tours/Vancouver/vancouver-flyover-canada-experience/d616-123456P7 -> 123456P7
  */
 function extractProductCode(url: string): string | null {
-  // Look for the pattern d###-#####P# before any query parameters
-  const match = url.match(/d\d+-(\d+P\d+)/);
+  // Look for the pattern P\d+ at the end of the URL (before any query parameters)
+  const match = url.match(/[-/](\d+P\d+)(?:\?|$)/);
+  console.log(`Extracting product code from URL: ${url}`);
+  console.log(`Extracted product code: ${match ? match[1] : 'none'}`);
   return match ? match[1] : null;
 }
 
@@ -26,28 +28,33 @@ function extractProductCode(url: string): string | null {
  * Fetch product details from Viator API
  */
 async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | null> {
+  console.log(`Fetching Viator product with code: ${productCode}`);
   try {
     const response = await fetch(`${VIATOR_BASE_URL}/products/${productCode}`, {
       headers: {
         'Accept': 'application/json',
         'exp-api-key': process.env.VIATOR_API_KEY!,
-        'Accept-Language': 'en-US'
+        'Accept-Language': 'en-US',
+        'content-type': 'application/json'
       }
     });
 
+    const responseText = await response.text();
+    console.log(`Viator API Response for ${productCode}:`, responseText);
+
     if (!response.ok) {
-      console.error(`Error fetching Viator product ${productCode}:`, await response.text());
+      console.error(`Error fetching Viator product ${productCode}:`, responseText);
       return null;
     }
 
-    const data = await response.json();
+    const data = JSON.parse(responseText);
     return {
       productCode,
       title: data.title,
-      images: data.images.map((img: any) => ({
+      images: data.images?.map((img: any) => ({
         url: img.url,
         alt: img.caption || data.title
-      }))
+      })) || []
     };
   } catch (error) {
     console.error(`Error fetching Viator product ${productCode}:`, error);
@@ -67,6 +74,7 @@ export async function getViatorImages(url: string, heading: string): Promise<Aff
 
   const product = await fetchViatorProduct(productCode);
   if (!product || !product.images.length) {
+    console.warn(`No product data found for Viator product code: ${productCode}`);
     return [];
   }
 
@@ -84,5 +92,5 @@ export async function getViatorImages(url: string, heading: string): Promise<Aff
  * Check if a URL is a Viator affiliate link
  */
 export function isViatorLink(url: string): boolean {
-  return url.includes('viator.com') || url.includes('getyourguide.com');
+  return url.includes('viator.com');
 }
