@@ -69,14 +69,14 @@ export async function registerRoutes(app: Express) {
   app.delete("/api/keywords/:keyword", async (req, res) => {
     try {
       const posts = await storage.getAllBlogPosts();
-      const postsWithKeyword = posts.filter(post => 
+      const postsWithKeyword = posts.filter(post =>
         post.keywords.includes(req.params.keyword) && post.status !== "published"
       );
 
       for (const post of postsWithKeyword) {
         await storage.deleteBlogPost(post.id);
       }
-      
+
       res.status(204).send();
     } catch (error) {
       res.status(400).json({ message: error.message });
@@ -97,7 +97,7 @@ export async function registerRoutes(app: Express) {
       }
 
       console.log(`Starting to publish ${unpublishedPosts.length} posts...`);
-      res.json({ 
+      res.json({
         message: `Started publishing ${unpublishedPosts.length} posts. Check logs for progress.`,
         totalPosts: unpublishedPosts.length
       });
@@ -136,7 +136,7 @@ export async function registerRoutes(app: Express) {
           const result = await response.json();
           console.log(`Successfully published post ${post.id} to WordPress: ${result.link}`);
 
-          await storage.updateBlogPost(post.id, { 
+          await storage.updateBlogPost(post.id, {
             status: "published",
             wordpressUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
           });
@@ -200,8 +200,8 @@ export async function registerRoutes(app: Express) {
       });
     } catch (error) {
       console.error('Error publishing to WordPress:', error);
-      res.status(500).json({ 
-        message: 'Failed to publish to WordPress', 
+      res.status(500).json({
+        message: 'Failed to publish to WordPress',
         error: error.message,
         details: `Please verify:
 1. WORDPRESS_API_URL is correct and ends with /wp-json
@@ -252,8 +252,8 @@ export async function registerRoutes(app: Express) {
       });
     } catch (error) {
       console.error('Error testing WordPress connection:', error);
-      res.status(500).json({ 
-        message: 'Failed to connect to WordPress', 
+      res.status(500).json({
+        message: 'Failed to connect to WordPress',
         error: error.message,
         details: `Please verify:
 1. WORDPRESS_API_URL is correct and ends with /wp-json

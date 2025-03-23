@@ -633,7 +633,8 @@ export async function checkScheduledPosts() {
 
         console.log(`Successfully generated content for post ID ${post.id}`);
 
-        // Now publish to WordPress if credentials are available
+        // WordPress publishing temporarily disabled for testing
+        /* Commenting out WordPress publishing
         if (process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
           console.log(`Attempting to publish post ID ${post.id} to WordPress...`);
 
@@ -691,6 +692,7 @@ export async function checkScheduledPosts() {
         } else {
           console.log(`⚠️ WordPress credentials not configured. Post ID ${post.id} was generated but not published to WordPress.`);
         }
+        */
       } catch (error) {
         console.error(`Error processing post ID ${post.id}:`, error);
       }
