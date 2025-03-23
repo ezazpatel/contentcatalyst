@@ -46,22 +46,22 @@ export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type BlogPost = typeof blogPosts.$inferSelect;
 
 export const csvUploadSchema = z.object({
-  keywords: z.string().min(1, "Please enter at least one keyword"),
-  title: z.string().optional(),
-  scheduledDate: z.string().min(1, "Scheduled date is required"),
-  scheduledTime: z.string().optional(),
-  affiliateName: z.string().optional(),
-  affiliateUrl: z.string().optional(),
-  description: z.string().optional(), // Content instructions
-  seoTitle: z.string().optional(),
-  seoDescription: z.string().optional(),
-  internalLinkTitle: z.string().optional(),
-  internalLinkUrl: z.string().url().optional(),
-  internalLinkDesc: z.string().optional(),
+  Keywords: z.string().min(1, "Please enter at least one keyword"),
+  Title: z.string().optional(),
+  "Scheduled Date": z.string().min(1, "Scheduled date is required"),
+  "Scheduled Time": z.string().optional(),
+  "Affiliate Product Names": z.string().optional(),
+  "Affiliate Product URLs": z.string().optional(),
+  "Content Instructions": z.string().optional(),
+  "SEO Title": z.string().optional(),
+  "SEO Description": z.string().optional(),
+  "Internal Link Title": z.string().optional(),
+  "Internal Link URL": z.string().optional(),
+  "Internal Link Description": z.string().optional(),
 }).refine((data) => {
   // If affiliateName is provided, affiliateUrl must also be provided and vice versa
-  const hasAffiliateNames = !!data.affiliateName?.trim();
-  const hasAffiliateUrls = !!data.affiliateUrl?.trim();
+  const hasAffiliateNames = !!data["Affiliate Product Names"]?.trim();
+  const hasAffiliateUrls = !!data["Affiliate Product URLs"]?.trim();
 
   if (hasAffiliateNames !== hasAffiliateUrls) {
     throw new Error("Both affiliate product names and URLs must be provided together");
@@ -69,17 +69,17 @@ export const csvUploadSchema = z.object({
 
   // If both are provided, ensure they have the same number of items
   if (hasAffiliateNames && hasAffiliateUrls) {
-    const nameCount = data.affiliateName!.split('|').length;
-    const urlCount = data.affiliateUrl!.split('|').length;
+    const nameCount = data["Affiliate Product Names"]!.split('|').length;
+    const urlCount = data["Affiliate Product URLs"]!.split('|').length;
     if (nameCount !== urlCount) {
       throw new Error("Number of affiliate product names must match number of URLs");
     }
   }
 
   // Validate date and time format
-  if (data.scheduledTime) {
+  if (data["Scheduled Time"]) {
     try {
-      const dateTime = new Date(`${data.scheduledDate} ${data.scheduledTime}`);
+      const dateTime = new Date(`${data["Scheduled Date"]} ${data["Scheduled Time"]}`);
       if (isNaN(dateTime.getTime())) {
         throw new Error("Invalid date/time format");
       }
