@@ -14,14 +14,29 @@ interface ViatorProduct {
 
 /**
  * Extract product code from Viator URL
- * Example: https://www.viator.com/tours/Vancouver/vancouver-flyover-canada-experience/d616-123456P7 -> 123456P7
+ * Examples:
+ * - Standard format: .../d616-123456P7 -> 123456P7
+ * - Underscore format: .../3020_VAN7 -> 3020_VAN7
  */
 function extractProductCode(url: string): string | null {
-  // Look for the pattern P\d+ at the end of the URL (before any query parameters)
-  const match = url.match(/[-/](\d+P\d+)(?:\?|$)/);
-  console.log(`Extracting product code from URL: ${url}`);
-  console.log(`Extracted product code: ${match ? match[1] : 'none'}`);
-  return match ? match[1] : null;
+  // First try to match the standard format (numbers followed by P and more numbers)
+  const standardMatch = url.match(/[-/](\d+P\d+)(?:\?|$)/);
+  if (standardMatch) {
+    console.log(`Extracting product code from URL (standard format): ${url}`);
+    console.log(`Extracted product code: ${standardMatch[1]}`);
+    return standardMatch[1];
+  }
+
+  // Then try to match the underscore format (numbers_letters/numbers)
+  const underscoreMatch = url.match(/[-/](\d+_[A-Z]+\d+)(?:\?|$)/i);
+  if (underscoreMatch) {
+    console.log(`Extracting product code from URL (underscore format): ${url}`);
+    console.log(`Extracted product code: ${underscoreMatch[1]}`);
+    return underscoreMatch[1];
+  }
+
+  console.log(`Could not extract product code from Viator URL: ${url}`);
+  return null;
 }
 
 /**
