@@ -46,9 +46,9 @@ export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type BlogPost = typeof blogPosts.$inferSelect;
 
 export const csvUploadSchema = z.object({
-  keywords: z.string().min(1, "Keywords cannot be empty"),
+  keywords: z.string().min(1, "Please enter at least one keyword"),
   title: z.string().optional(),
-  scheduledDate: z.string(),
+  scheduledDate: z.string().min(1, "Scheduled date is required"),
   scheduledTime: z.string().optional(),
   affiliateName: z.string().optional(),
   affiliateUrl: z.string().optional(),
