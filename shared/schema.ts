@@ -16,7 +16,19 @@ export const blogPosts = pgTable("blog_posts", {
   scheduledDate: timestamp("scheduled_date"),
   publishedDate: timestamp("published_at"),
   wordpressUrl: text("wordpress_url"),
-  affiliateLinks: jsonb("affiliate_links").default({})
+  affiliateLinks: jsonb("affiliate_links").default({}),
+  // New fields for storing affiliate product images
+  affiliateImages: jsonb("affiliate_images").default([]).notNull(),
+});
+
+// Define the structure for affiliate images
+const affiliateImageSchema = z.object({
+  url: z.string().url("Invalid image URL"),
+  alt: z.string(),
+  affiliateUrl: z.string().url("Invalid affiliate URL"),
+  heading: z.string(), // The heading under which this image should appear
+  cached: z.boolean().default(false), // Whether we've cached this image
+  cachedUrl: z.string().optional(), // URL to our cached version if we implement it
 });
 
 export const insertBlogPostSchema = createInsertSchema(blogPosts)
@@ -40,10 +52,12 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts)
     wordCount: z.number().optional(),
     headings: z.array(z.string()).optional(),
     wordpressUrl: z.string().url().optional(),
+    affiliateImages: z.array(affiliateImageSchema).default([]),
   });
 
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type BlogPost = typeof blogPosts.$inferSelect;
+export type AffiliateImage = z.infer<typeof affiliateImageSchema>;
 
 export const csvUploadSchema = z.object({
   Keywords: z.string().min(1, "Please enter at least one keyword"),
