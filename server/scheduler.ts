@@ -594,6 +594,10 @@ export async function checkScheduledPosts() {
   const now = new Date();
 
   try {
+    // First check if we're in test mode
+    const settings = await storage.getSettings();
+    console.log(`Current test mode status: ${settings.test_mode}`);
+
     // Get all scheduled posts where the date is in the past and content hasn't been generated yet
     const posts = await storage.getAllBlogPosts();
 
@@ -626,17 +630,16 @@ export async function checkScheduledPosts() {
           title: generated.title,
           content: generated.content,
           description: generated.description,
-          status: "published", // Mark as published locally
-          publishedDate: new Date(),
+          status: settings.test_mode ? "draft" : "published", // Keep as draft in test mode
+          publishedDate: settings.test_mode ? null : new Date(), // Only set published date if not in test mode
           affiliateImages: generated.images, // Store the crawled images
         });
 
-        console.log(`Successfully generated content for post ID ${post.id}`);
+        console.log(`Successfully generated content for post ID ${post.id}. Status: ${settings.test_mode ? 'draft (test mode)' : 'published'}`);
 
-        // WordPress publishing temporarily disabled for testing
-        /* Commenting out WordPress publishing
-        if (process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
-          console.log(`Attempting to publish post ID ${post.id} to WordPress...`);
+        // WordPress publishing is disabled in test mode
+        if (!settings.test_mode && process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
+          console.log(`Test mode is OFF - attempting to publish post ID ${post.id} to WordPress...`);
 
           try {
             // Create Basic Auth token from username and application password
@@ -690,9 +693,8 @@ export async function checkScheduledPosts() {
             // We continue processing other posts even if WordPress publishing fails
           }
         } else {
-          console.log(`⚠️ WordPress credentials not configured. Post ID ${post.id} was generated but not published to WordPress.`);
+          console.log(`⚠️ Test mode is ON or WordPress credentials not configured. Post ID ${post.id} was generated but NOT published to WordPress.`);
         }
-        */
       } catch (error) {
         console.error(`Error processing post ID ${post.id}:`, error);
       }
