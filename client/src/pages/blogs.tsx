@@ -155,11 +155,32 @@ export default function BlogsPage() {
                     <Badge className={getStatusColor(post.status)}>
                       {post.status}
                     </Badge>
-                    {post.wordpressUrl && (
-                      <Badge variant="outline">
-                        <a
-                          href={post.wordpressUrl}
-                          target="_blank"
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/edit/${post.id}`)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedPostId(post.id);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+                {post.wordpressUrl && (
+                  <Badge variant="outline">
+                    <a
+                      href={post.wordpressUrl}
+                      target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center"
                         >
