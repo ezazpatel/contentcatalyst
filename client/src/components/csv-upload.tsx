@@ -1,9 +1,10 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { csvUploadSchema, InsertBlogPost } from "@shared/schema";
 import Papa from "papaparse";
+import { Upload, Download } from "lucide-react";
 
 interface CSVUploadProps {
   onUpload: (data: InsertBlogPost[]) => void;
@@ -12,10 +13,17 @@ interface CSVUploadProps {
 export function CSVUpload({ onUpload }: CSVUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    setIsProcessing(true);
+    toast({
+      title: "Processing CSV",
+      description: "Please wait while we process your file...",
+    });
 
     Papa.parse(file, {
       header: true,
@@ -84,6 +92,8 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
             description: error instanceof Error ? error.message : "Invalid CSV format",
             variant: "destructive",
           });
+        } finally {
+          setIsProcessing(false);
         }
       },
       error: (error) => {
@@ -92,6 +102,7 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
           description: "Failed to parse CSV: " + error.message,
           variant: "destructive",
         });
+        setIsProcessing(false);
       }
     });
   };
@@ -119,10 +130,17 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
           onChange={handleFileUpload}
           className="hidden"
         />
-        <Button variant="secondary" className="bg-black text-white hover:bg-gray-900" onClick={() => fileInputRef.current?.click()}>
-          Upload CSV
+        <Button 
+          variant="secondary" 
+          className="bg-black text-white hover:bg-gray-900" 
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isProcessing}
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          {isProcessing ? "Processing..." : "Upload CSV"}
         </Button>
         <Button variant="outline" onClick={downloadTemplate}>
+          <Download className="h-4 w-4 mr-2" />
           Download Template
         </Button>
       </div>
