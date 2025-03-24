@@ -85,6 +85,14 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/wordpress/publish-all", async (_req, res) => {
     try {
+      const settings = await storage.getSettings();
+      if (settings.test_mode) {
+        return res.status(403).json({
+          message: "WordPress publishing is disabled in test mode",
+          test_mode: true
+        });
+      }
+
       if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN) {
         throw new Error('WordPress credentials are not configured');
       }
