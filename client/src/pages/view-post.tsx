@@ -21,7 +21,8 @@ export default function ViewPost() {
 
   const republishToWordPress = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/wordpress/publish", post);
+      // Call our server endpoint instead of WordPress directly
+      const response = await apiRequest("POST", `/api/posts/${postId}/publish`, null);
       return response.json();
     },
     onSuccess: (data) => {
