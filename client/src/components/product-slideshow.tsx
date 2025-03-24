@@ -112,7 +112,7 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
           </div>
 
           {/* Caption in a separate div after the image container */}
-          <div className="p-4 mt-2 text-sm text-muted-foreground border-t">
+          <div className="p-6 mt-4 text-sm text-muted-foreground border-t">
             {images[currentIndex].alt}
           </div>
         </div>

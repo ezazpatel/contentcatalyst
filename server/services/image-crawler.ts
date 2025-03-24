@@ -131,6 +131,11 @@ export function insertImagesIntoContent(
       currentHeading = line.replace(/^##\s+/, '');
     }
 
+    // Skip any "View all photos" links
+    if (line.trim().startsWith('*[View all photos]')) {
+      continue;
+    }
+
     newLines.push(line);
 
     // Only process images if we're not in the affiliate links section
