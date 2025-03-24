@@ -144,7 +144,6 @@ export function insertImagesIntoContent(
             newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
           });
           newLines.push('</div>');
-          newLines.push(`*[View all photos](${url})*`);
           newLines.push(''); // Add blank line
         }
       }
