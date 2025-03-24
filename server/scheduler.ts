@@ -44,7 +44,7 @@ async function generateContent(keywords: string[], description: string = "", pos
   try {
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a blog post about: ${keywords.join(", ")}.
-
+    
 ${post.description ? `
 Additional Context from User:
 ${post.description}` : ""}
@@ -136,23 +136,12 @@ ${outlineResult.title}
 
 [Your introduction here]`;
 
-    let introText = '';
-    const introStream = await client.messages.stream({
+    const introResponse = await client.messages.create({
       model: ANTHROPIC_MODEL,
       max_tokens: 4000,
       temperature: 0.7,
       messages: [{ role: "user", content: introPrompt }]
     });
-
-    for await (const chunk of introStream) {
-      if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-        introText += chunk.delta.text;
-      }
-    }
-
-    const introResult = {
-      introduction: introText
-    };
 
     let fullContent = "";
 
@@ -161,7 +150,7 @@ ${outlineResult.title}
       fullContent += affiliateLinksMarkdown;
     }
 
-    fullContent += introResult.introduction + "\n\n";
+    fullContent += introResponse.content[0].text + "\n\n";
 
 
     // Create a map of affiliate links for easier reference
@@ -174,12 +163,10 @@ ${outlineResult.title}
         }, {})
       : {};
 
-    // Track affiliate link usage count across all sections
+    // Track affiliate link usage count
     const affiliateLinkUsage = {};
     Object.keys(affiliateLinksMap).forEach(name => {
-      // Count existing occurrences in the content so far
-      const regex = new RegExp(`\\[${name}\\]\\(${affiliateLinksMap[name]}\\)`, 'g');
-      affiliateLinkUsage[name] = (fullContent.match(regex) || []).length;
+      affiliateLinkUsage[name] = 0;
     });
 
     // Add internal links tracking similar to affiliate links
@@ -474,7 +461,7 @@ Format your response with proper markdown:
         fullContent += affiliateLinksMarkdown;
       }
     }
-
+    
 
     fullContent += "\n\n";
 
