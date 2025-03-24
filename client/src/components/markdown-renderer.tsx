@@ -96,8 +96,9 @@ export function MarkdownRenderer({ content }: { content: string }) {
     };
   }, [content]);
 
-  // First convert the markdown to HTML, then let the effect handle the slideshows
-  const htmlContent = marked(content, {
+  // Skip the first line (title) and convert the rest to HTML
+  const contentWithoutTitle = content.split('\n').slice(1).join('\n');
+  const htmlContent = marked(contentWithoutTitle, {
     breaks: true,
     mangle: false,
     headerIds: false,
