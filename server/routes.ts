@@ -192,7 +192,6 @@ export async function registerRoutes(app: Express) {
       // Convert the existing markdown content to HTML
       const htmlContent = convertMarkdownToHTML(req.body.content);
 
-      // Use the existing post content and metadata
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -221,7 +220,7 @@ export async function registerRoutes(app: Express) {
       const result = await response.json();
       console.log('Successfully published to WordPress:', result);
 
-      // Update the local post with WordPress URL
+      // Update the local post with WordPress URL and status
       if (req.body.id) {
         await storage.updateBlogPost(req.body.id, {
           status: "published",
