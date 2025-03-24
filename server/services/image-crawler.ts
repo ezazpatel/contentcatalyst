@@ -55,7 +55,7 @@ export async function crawlAffiliateLink(url: string, heading: string): Promise<
       const imageUrl = new URL(src, url).toString();
 
       // Only add if it looks like a product image
-      if (alt.toLowerCase().includes('product') || 
+      if (alt.toLowerCase().includes('product') ||
           src.toLowerCase().includes('product') ||
           alt.length > 20) {
         images.push({
@@ -79,22 +79,7 @@ export async function matchImagesWithHeadings(
   content: string,
   affiliateLinks: { name: string; url: string }[],
 ): Promise<AffiliateImage[]> {
-  const headings = content.match(/^##\s+(.+)$/gm) || [];
   const images: AffiliateImage[] = [];
-
-  for (const link of affiliateLinks) {
-    // Find the most relevant heading for this affiliate link
-    const relevantHeading = headings.find(h => 
-      h.toLowerCase().includes(link.name.toLowerCase())
-    ) || headings[0] || '## Product Recommendations';
-
-    const heading = relevantHeading.replace(/^##\s+/, '');
-
-    // Get images using the appropriate method (Viator API or web crawling)
-    const productImages = await crawlAffiliateLink(link.url, heading);
-    images.push(...productImages);
-  }
-
   return images;
 }
 
@@ -104,7 +89,6 @@ export function insertImagesIntoContent(
 ): string {
   const lines = content.split('\n');
   const newLines: string[] = [];
-  let currentHeading = '';
   let inAffiliateLinksSection = false;
 
   // Group images by affiliate URL
@@ -144,6 +128,7 @@ export function insertImagesIntoContent(
             newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
           });
           newLines.push('</div>');
+          newLines.push(`*[View all photos](${url})*`);
           newLines.push(''); // Add blank line
         }
       }
