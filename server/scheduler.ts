@@ -637,8 +637,9 @@ export async function checkScheduledPosts() {
 
         console.log(`Successfully generated content for post ID ${post.id}. Status: ${settings.test_mode ? 'draft (test mode)' : 'published'}`);
 
-        // WordPress publishing is disabled in test mode
-        if (!settings.test_mode) {
+        // Double check test mode status right before WordPress publishing
+        const currentSettings = await storage.getSettings();
+        if (!currentSettings.test_mode) {
           if (process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
             console.log(`Test mode is OFF - attempting to publish post ID ${post.id} to WordPress...`);
 
