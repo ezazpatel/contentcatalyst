@@ -2,6 +2,19 @@ import * as cheerio from 'cheerio';
 import type { AffiliateImage } from '@shared/schema';
 import { getViatorImages, isViatorLink } from './viator-api';
 
+async function fetchWithTimeout(url: string, timeout = 5000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    throw error;
+  }
+}
+
 export async function crawlAffiliateLink(url: string, heading: string): Promise<AffiliateImage[]> {
   // Check if it's a Viator link first
   if (isViatorLink(url)) {
@@ -10,7 +23,7 @@ export async function crawlAffiliateLink(url: string, heading: string): Promise<
 
   // Otherwise, fallback to web crawling
   try {
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url);
     if (!response.ok) {
       console.error(`Failed to fetch ${url}: ${response.statusText}`);
       return [];
@@ -42,7 +55,7 @@ export async function crawlAffiliateLink(url: string, heading: string): Promise<
       const imageUrl = new URL(src, url).toString();
 
       // Only add if it looks like a product image
-      if (alt.toLowerCase().includes('product') ||
+      if (alt.toLowerCase().includes('product') || 
           src.toLowerCase().includes('product') ||
           alt.length > 20) {
         images.push({
@@ -71,7 +84,7 @@ export async function matchImagesWithHeadings(
 
   for (const link of affiliateLinks) {
     // Find the most relevant heading for this affiliate link
-    const relevantHeading = headings.find(h =>
+    const relevantHeading = headings.find(h => 
       h.toLowerCase().includes(link.name.toLowerCase())
     ) || headings[0] || '## Product Recommendations';
 
@@ -94,13 +107,12 @@ export function insertImagesIntoContent(
   let currentHeading = '';
   let inAffiliateLinksSection = false;
 
-  // Group images by affiliate URL and heading
-  const imagesByUrlAndHeading = images.reduce((acc, img) => {
-    const key = `${img.affiliateUrl}|${img.heading}`;
-    if (!acc[key]) {
-      acc[key] = [];
+  // Group images by affiliate URL
+  const imagesByUrl = images.reduce((acc, img) => {
+    if (!acc[img.affiliateUrl]) {
+      acc[img.affiliateUrl] = [];
     }
-    acc[key].push(img);
+    acc[img.affiliateUrl].push(img);
     return acc;
   }, {} as Record<string, AffiliateImage[]>);
 
@@ -113,16 +125,6 @@ export function insertImagesIntoContent(
     else if (line.startsWith('## ') && inAffiliateLinksSection) {
       inAffiliateLinksSection = false;
     }
-    // Update current heading
-    else if (line.startsWith('## ')) {
-      currentHeading = line.replace(/^##\s+/, '');
-    }
-
-    // Skip any "View all photos" links and their variations
-    if (line.trim().toLowerCase().includes('view all photos') ||
-        line.includes('?pid=P00217628&mcid=42383')) {
-      continue;
-    }
 
     newLines.push(line);
 
@@ -130,19 +132,12 @@ export function insertImagesIntoContent(
     if (!inAffiliateLinksSection) {
       // Check if this line contains an affiliate link
       const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-      if (linkMatch) {
+      if (linkMatch && imagesByUrl[linkMatch[2]] && !line.startsWith('*[View all photos]')) {
         const [_, linkText, url] = linkMatch;
-        const key = `${url}|${currentHeading}`;
-        const productImages = imagesByUrlAndHeading[key];
+        const productImages = imagesByUrl[url];
 
-        // Only insert images if:
-        // 1. We have images for this URL and heading combination
-        // 2. We haven't already inserted a slideshow in this section
-        // 3. The link text or current heading contains some keywords from the image heading
-        if (productImages &&
-            !newLines.some(l => l.includes(`class="product-slideshow"`)) &&
-            (linkText.toLowerCase().includes(productImages[0].heading.toLowerCase()) ||
-             currentHeading.toLowerCase().includes(productImages[0].heading.toLowerCase()))) {
+        // Only insert images if we haven't already inserted them for this URL in this section
+        if (productImages && !newLines.some(l => l.includes(`*[View all photos](${url})*`))) {
           newLines.push(''); // Add blank line
           newLines.push('<div class="product-slideshow">');
           productImages.forEach((img, index) => {
