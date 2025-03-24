@@ -1,7 +1,7 @@
 import { AffiliateImage } from '@shared/schema';
 
 // Viator API endpoints
-const VIATOR_BASE_URL = "https://api.sandbox.viator.com/partner";
+const VIATOR_BASE_URL = "https://api.viator.com/partner";
 
 interface ViatorProduct {
   productCode: string;
@@ -13,30 +13,34 @@ interface ViatorProduct {
 }
 
 /**
- * Extract product code from Viator URL
+ * Extract product code from Viator URL using the last segment approach
+ * This will work with any URL format as long as the product code is the last segment
  * Examples:
- * - Standard format: .../d616-123456P7 -> 123456P7
- * - Underscore format: .../3020_VAN7 -> 3020_VAN7
+ * - /d616-123456P7 -> 123456P7
+ * - /3020_VAN7 -> 3020_VAN7
+ * - /d817-5518724P7 -> 5518724P7
  */
 function extractProductCode(url: string): string | null {
-  // First try to match the standard format (numbers followed by P and more numbers)
-  const standardMatch = url.match(/[-/](\d+P\d+)(?:\?|$)/);
-  if (standardMatch) {
-    console.log(`Extracting product code from URL (standard format): ${url}`);
-    console.log(`Extracted product code: ${standardMatch[1]}`);
-    return standardMatch[1];
-  }
+  console.log(`Extracting product code from URL: ${url}`);
+  try {
+    // Split the URL by forward slashes and get segments
+    const urlParts = new URL(url);
+    const pathSegments = urlParts.pathname.split('/').filter(Boolean);
 
-  // Then try to match the underscore format (numbers_letters/numbers)
-  const underscoreMatch = url.match(/[-/](\d+_[A-Z]+\d+)(?:\?|$)/i);
-  if (underscoreMatch) {
-    console.log(`Extracting product code from URL (underscore format): ${url}`);
-    console.log(`Extracted product code: ${underscoreMatch[1]}`);
-    return underscoreMatch[1];
-  }
+    // Get the last segment before any query parameters
+    const lastSegment = pathSegments[pathSegments.length - 1];
 
-  console.log(`Could not extract product code from Viator URL: ${url}`);
-  return null;
+    // Extract the product code from the last segment
+    // It could be after 'd###-' or just the code itself
+    const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
+    const productCode = codeMatch ? codeMatch[1] : null;
+
+    console.log(`Extracted product code: ${productCode}`);
+    return productCode;
+  } catch (error) {
+    console.error('Error parsing URL:', error);
+    return null;
+  }
 }
 
 /**
@@ -45,13 +49,19 @@ function extractProductCode(url: string): string | null {
 async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | null> {
   console.log(`Fetching Viator product with code: ${productCode}`);
   try {
-    const response = await fetch(`${VIATOR_BASE_URL}/products/${productCode}`, {
-      headers: {
-        'Accept': 'application/json;version=2.0',
-        'exp-api-key': process.env.VIATOR_API_KEY!,
-        'Accept-Language': 'en-US',
-        'content-type': 'application/json'
-      }
+    // According to Viator API docs, we need these specific headers
+    const headers = {
+      'Accept': 'application/json',
+      'api-key': process.env.VIATOR_API_KEY!, // Changed from exp-api-key to api-key
+      'Accept-Language': 'en-US',
+      'Cache-Control': 'no-cache',
+      'Content-Type': 'application/json'
+    };
+
+    console.log('Using headers:', JSON.stringify(headers, null, 2));
+
+    const response = await fetch(`${VIATOR_BASE_URL}/v1/products/${productCode}`, {
+      headers
     });
 
     const responseText = await response.text();
@@ -63,15 +73,13 @@ async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | 
     }
 
     const data = JSON.parse(responseText);
-
-    // Map the Viator API response structure to our interface
     return {
       productCode,
-      title: data.title,
-      images: data.photos?.map((photo: any) => ({
-        url: photo.photoUrl,
-        alt: photo.caption || data.title
-      })) || []
+      title: data.title || data.productTitle,
+      images: (data.photos || data.images || []).map((img: any) => ({
+        url: img.photoUrl || img.url,
+        alt: img.caption || img.alt || data.title || 'Product Image'
+      }))
     };
   } catch (error) {
     console.error(`Error fetching Viator product ${productCode}:`, error);
