@@ -110,7 +110,7 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
         </div>
 
         {/* Caption */}
-        <div className="p-4 text-sm text-muted-foreground z-10"> {/* Added z-index for better positioning */}
+        <div className="p-4 text-sm text-muted-foreground bg-white border-t z-10">
           {images[currentIndex].alt}
         </div>
       </Card>
