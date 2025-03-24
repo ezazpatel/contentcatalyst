@@ -189,7 +189,34 @@ export async function registerRoutes(app: Express) {
       const apiUrl = process.env.WORDPRESS_API_URL;
       const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
 
-      const htmlContent = convertMarkdownToHTML(req.body.content);
+      // Convert markdown to WonderBlocks format
+      const htmlContent = req.body.content
+        .split('\n')
+        .map(line => {
+          // Handle headings
+          if (line.startsWith('##')) {
+            return `<!-- wp:heading -->\n<h2>${line.replace(/^##\s+/, '')}</h2>\n<!-- /wp:heading -->`;
+          }
+          if (line.startsWith('#')) {
+            return `<!-- wp:heading {"level":1} -->\n<h1>${line.replace(/^#\s+/, '')}</h1>\n<!-- /wp:heading -->`;
+          }
+          
+          // Handle paragraphs
+          if (line.trim() && !line.includes('product-slideshow')) {
+            return `<!-- wp:paragraph -->\n<p>${line}</p>\n<!-- /wp:paragraph -->`;
+          }
+          
+          // Handle product slideshows
+          if (line.includes('product-slideshow')) {
+            const imgMatch = line.match(/<img[^>]+src="([^"]+)"[^>]*>/);
+            if (imgMatch) {
+              return `<!-- wp:image -->\n<figure class="wp-block-image"><img src="${imgMatch[1]}" alt="Product Image"/></figure>\n<!-- /wp:image -->`;
+            }
+          }
+          
+          return line;
+        })
+        .join('\n');
 
       // Get the post from storage to access affiliate images
       const post = await storage.getBlogPost(Number(req.body.id));
