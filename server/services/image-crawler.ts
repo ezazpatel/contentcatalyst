@@ -80,6 +80,27 @@ export async function matchImagesWithHeadings(
   affiliateLinks: { name: string; url: string }[],
 ): Promise<AffiliateImage[]> {
   const images: AffiliateImage[] = [];
+  const headings = content.match(/^##\s+(.+)$/gm) || [];
+
+  for (const link of affiliateLinks) {
+    if (!link.url || !link.name) continue;
+
+    // Find the most relevant heading for this affiliate link
+    const relevantHeading = headings.find(h => 
+      h.toLowerCase().includes(link.name.toLowerCase())
+    ) || headings[0] || 'Product Recommendations';
+
+    try {
+      // Get images using crawlAffiliateLink
+      const productImages = await crawlAffiliateLink(link.url, relevantHeading.replace(/^##\s+/, ''));
+      if (productImages.length > 0) {
+        images.push(...productImages);
+      }
+    } catch (error) {
+      console.error(`Error crawling images for ${link.url}:`, error);
+    }
+  }
+
   return images;
 }
 
