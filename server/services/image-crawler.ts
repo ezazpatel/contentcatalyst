@@ -106,6 +106,15 @@ export function insertImagesIntoContent(
   const newLines: string[] = [];
   let currentHeading = '';
 
+  // Group images by affiliate URL
+  const imagesByUrl = images.reduce((acc, img) => {
+    if (!acc[img.affiliateUrl]) {
+      acc[img.affiliateUrl] = [];
+    }
+    acc[img.affiliateUrl].push(img);
+    return acc;
+  }, {} as Record<string, AffiliateImage[]>);
+
   for (const line of lines) {
     newLines.push(line);
 
@@ -113,14 +122,38 @@ export function insertImagesIntoContent(
     if (line.startsWith('## ')) {
       currentHeading = line.replace(/^##\s+/, '');
 
-      // Insert relevant images after this heading
-      const relevantImages = images.filter(img => img.heading === currentHeading);
-      if (relevantImages.length > 0) {
+      // Find images that belong to affiliate links mentioned in this section
+      Object.entries(imagesByUrl).forEach(([url, productImages]) => {
+        const imagesForHeading = productImages.filter(img => img.heading === currentHeading);
+        if (imagesForHeading.length > 0) {
+          // Generate a slideshow component for this product's images
+          newLines.push(''); // Add blank line
+          newLines.push('<div class="product-slideshow">');
+          imagesForHeading.forEach((img, index) => {
+            newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${imagesForHeading.length}" />`);
+          });
+          newLines.push('</div>');
+          newLines.push(`*[View all photos](${url})*`);
+          newLines.push(''); // Add blank line
+        }
+      });
+    }
+
+    // Check if this line contains an affiliate link
+    const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
+    if (linkMatch && imagesByUrl[linkMatch[2]] && !line.startsWith('*[View all photos]')) {
+      const [_, linkText, url] = linkMatch;
+      const productImages = imagesByUrl[url];
+
+      // Only insert images if we haven't already inserted them for this URL in this section
+      if (productImages && !newLines.some(l => l.includes(`*[View all photos](${url})*`))) {
         newLines.push(''); // Add blank line
-        relevantImages.forEach(img => {
-          newLines.push(`![${img.alt}](${img.url})`);
-          newLines.push(`*[View product](${img.affiliateUrl})*`);
+        newLines.push('<div class="product-slideshow">');
+        productImages.forEach((img, index) => {
+          newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
         });
+        newLines.push('</div>');
+        newLines.push(`*[View all photos](${url})*`);
         newLines.push(''); // Add blank line
       }
     }
