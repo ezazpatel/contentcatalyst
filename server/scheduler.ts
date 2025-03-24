@@ -642,18 +642,17 @@ export async function checkScheduledPosts() {
           console.log(`Test mode is OFF - attempting to publish post ID ${post.id} to WordPress...`);
 
           try {
-            // Create Basic Auth token from username and application password
             const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
-
             const apiUrl = process.env.WORDPRESS_API_URL;
             const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
 
-            // Use the updatedPost data for WordPress
+            // Convert the existing markdown content to HTML
+            const htmlContent = convertMarkdownToHTML(updatedPost.content);
+
+            // Use the existing post content and metadata
             const postData = {
               title: { raw: updatedPost.title },
-              content: { 
-                raw: convertMarkdownToHTML(updatedPost.content)
-              },
+              content: { raw: htmlContent },
               status: 'publish',
               excerpt: { raw: updatedPost.description || '' },
               meta: {
@@ -685,7 +684,8 @@ export async function checkScheduledPosts() {
             // Update the post with WordPress URL
             if (result.link) {
               await storage.updateBlogPost(post.id, {
-                wordpressUrl: result.link
+                wordpressUrl: result.link,
+                status: "published"
               });
             }
           } catch (wpError) {

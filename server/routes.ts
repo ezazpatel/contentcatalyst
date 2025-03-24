@@ -189,8 +189,10 @@ export async function registerRoutes(app: Express) {
       const apiUrl = process.env.WORDPRESS_API_URL;
       const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
 
+      // Convert the existing markdown content to HTML
       const htmlContent = convertMarkdownToHTML(req.body.content);
 
+      // Use the existing post content and metadata
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -218,6 +220,14 @@ export async function registerRoutes(app: Express) {
 
       const result = await response.json();
       console.log('Successfully published to WordPress:', result);
+
+      // Update the local post with WordPress URL
+      if (req.body.id) {
+        await storage.updateBlogPost(req.body.id, {
+          status: "published",
+          wordpressUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
+        });
+      }
 
       res.json({
         ...result,
