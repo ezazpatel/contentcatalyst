@@ -1,7 +1,7 @@
 import { marked } from "marked";
 import { useEffect, useRef } from "react";
+import { createRoot } from 'react-dom/client';
 import { ProductSlideshow } from "./product-slideshow";
-import ReactDOM from 'react-dom';
 
 interface SlideshowData {
   images: {
@@ -33,18 +33,32 @@ export function MarkdownRenderer({ content }: { content: string }) {
 
       // Create a new wrapper for the slideshow
       const wrapper = document.createElement('div');
-      const root = document.createElement('div');
-      wrapper.appendChild(root);
 
       // Replace the original div with our wrapper
       div.parentNode?.replaceChild(wrapper, div);
 
-      // Render the ProductSlideshow component into the root
-      const props: SlideshowData = { images, productName };
-      const Component = ProductSlideshow;
-      // @ts-ignore - Need to handle React component rendering
-      ReactDOM.render(<Component {...props} />, root);
+      // Create a React root and render the ProductSlideshow
+      const root = createRoot(wrapper);
+      root.render(
+        <ProductSlideshow
+          images={images}
+          productName={productName}
+        />
+      );
     });
+
+    // Cleanup function to unmount React components
+    return () => {
+      if (containerRef.current) {
+        const wrappers = containerRef.current.querySelectorAll('.product-slideshow-wrapper');
+        wrappers.forEach(wrapper => {
+          const root = (wrapper as any)._reactRoot;
+          if (root) {
+            root.unmount();
+          }
+        });
+      }
+    };
   }, [content]);
 
   // Parse markdown with marked and convert it to HTML
