@@ -79,26 +79,20 @@ export async function matchImagesWithHeadings(
   content: string,
   affiliateLinks: { name: string; url: string }[],
 ): Promise<AffiliateImage[]> {
-  const images: AffiliateImage[] = [];
   const headings = content.match(/^##\s+(.+)$/gm) || [];
+  const images: AffiliateImage[] = [];
 
   for (const link of affiliateLinks) {
-    if (!link.url || !link.name) continue;
-
     // Find the most relevant heading for this affiliate link
-    const relevantHeading = headings.find(h => 
+    const relevantHeading = headings.find(h =>
       h.toLowerCase().includes(link.name.toLowerCase())
-    ) || headings[0] || 'Product Recommendations';
+    ) || headings[0] || '## Product Recommendations';
 
-    try {
-      // Get images using crawlAffiliateLink
-      const productImages = await crawlAffiliateLink(link.url, relevantHeading.replace(/^##\s+/, ''));
-      if (productImages.length > 0) {
-        images.push(...productImages);
-      }
-    } catch (error) {
-      console.error(`Error crawling images for ${link.url}:`, error);
-    }
+    const heading = relevantHeading.replace(/^##\s+/, '');
+
+    // Get images using the appropriate method (Viator API or web crawling)
+    const productImages = await crawlAffiliateLink(link.url, heading);
+    images.push(...productImages);
   }
 
   return images;
@@ -110,14 +104,16 @@ export function insertImagesIntoContent(
 ): string {
   const lines = content.split('\n');
   const newLines: string[] = [];
+  let currentHeading = '';
   let inAffiliateLinksSection = false;
 
-  // Group images by affiliate URL
-  const imagesByUrl = images.reduce((acc, img) => {
-    if (!acc[img.affiliateUrl]) {
-      acc[img.affiliateUrl] = [];
+  // Group images by affiliate URL and heading
+  const imagesByUrlAndHeading = images.reduce((acc, img) => {
+    const key = `${img.affiliateUrl}|${img.heading}`;
+    if (!acc[key]) {
+      acc[key] = [];
     }
-    acc[img.affiliateUrl].push(img);
+    acc[key].push(img);
     return acc;
   }, {} as Record<string, AffiliateImage[]>);
 
@@ -130,6 +126,10 @@ export function insertImagesIntoContent(
     else if (line.startsWith('## ') && inAffiliateLinksSection) {
       inAffiliateLinksSection = false;
     }
+    // Update current heading
+    else if (line.startsWith('## ')) {
+      currentHeading = line.replace(/^##\s+/, '');
+    }
 
     newLines.push(line);
 
@@ -137,19 +137,25 @@ export function insertImagesIntoContent(
     if (!inAffiliateLinksSection) {
       // Check if this line contains an affiliate link
       const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-      if (linkMatch && imagesByUrl[linkMatch[2]] && !line.startsWith('*[View all photos]')) {
+      if (linkMatch) {
         const [_, linkText, url] = linkMatch;
-        const productImages = imagesByUrl[url];
+        const key = `${url}|${currentHeading}`;
+        const productImages = imagesByUrlAndHeading[key];
 
-        // Only insert images if we haven't already inserted them for this URL in this section
-        if (productImages && !newLines.some(l => l.includes(`*[View all photos](${url})*`))) {
+        // Only insert images if:
+        // 1. We have images for this URL and heading combination
+        // 2. We haven't already inserted a slideshow in this section
+        // 3. The link text or current heading contains some keywords from the image heading
+        if (productImages &&
+            !newLines.some(l => l.includes(`class="product-slideshow"`)) &&
+            (linkText.toLowerCase().includes(productImages[0].heading.toLowerCase()) ||
+             currentHeading.toLowerCase().includes(productImages[0].heading.toLowerCase()))) {
           newLines.push(''); // Add blank line
           newLines.push('<div class="product-slideshow">');
           productImages.forEach((img, index) => {
             newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
           });
           newLines.push('</div>');
-          newLines.push(`*[View all photos](${url})*`);
           newLines.push(''); // Add blank line
         }
       }

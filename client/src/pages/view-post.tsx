@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
+import { Link } from "wouter";
 
 export default function ViewPost() {
   const [match, params] = useRoute<{ id: string }>("/view/:id");

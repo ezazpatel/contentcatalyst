@@ -44,7 +44,7 @@ async function generateContent(keywords: string[], description: string = "", pos
   try {
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a blog post about: ${keywords.join(", ")}.
-
+    
 ${post.description ? `
 Additional Context from User:
 ${post.description}` : ""}
@@ -373,7 +373,7 @@ Format your response as JSON with this structure:
 Ensure JSON is properly formatted with no trailing commas.`;
 
     const outlineResponse = await client.messages.create({
-      model: "claude-3-haiku@20240307",
+      model: "claude-3-opus-20240229",
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
@@ -433,7 +433,7 @@ Format your response with proper markdown:
 [Your introduction here]`;
 
     const introResponse = await client.messages.create({
-      model: "claude-3-haiku@20240307",
+      model: "claude-3-opus-20240229",
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
@@ -461,7 +461,7 @@ Format your response with proper markdown:
         fullContent += affiliateLinksMarkdown;
       }
     }
-
+    
 
     fullContent += "\n\n";
 
@@ -522,7 +522,7 @@ Format your response with proper markdown headings:
 ${section.subheadings.map(subheading => `### ${subheading}\n\n[Content for this subheading]`).join('\n\n')}`;
 
       const sectionResponse = await client.messages.create({
-        model: "claude-3-haiku@20240307",
+        model: "claude-3-opus-20240229",
         max_tokens: 4000,
         temperature: 0.7,
         messages: [
@@ -555,7 +555,7 @@ Use proper markdown:
 [Your conclusion here]`;
 
     const conclusionResponse = await client.messages.create({
-      model: "claude-3-haiku@20240307",
+      model: "claude-3-opus-20240229",
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
@@ -637,15 +637,13 @@ export async function checkScheduledPosts() {
 
         console.log(`Successfully generated content for post ID ${post.id}. Status: ${settings.test_mode ? 'draft (test mode)' : 'published'}`);
 
-        // Double check test mode status right before WordPress publishing
-        const currentSettings = await storage.getSettings();
-        if (!currentSettings.test_mode) {
-          if (process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
-            console.log(`Test mode is OFF - attempting to publish post ID ${post.id} to WordPress...`);
+        // WordPress publishing is disabled in test mode
+        if (!settings.test_mode && process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
+          console.log(`Test mode is OFF - attempting to publish post ID ${post.id} to WordPress...`);
 
-            try {
-              // Create Basic Auth token from username and application password
-              const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+          try {
+            // Create Basic Auth token from username and application password
+            const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
 
             const apiUrl = process.env.WORDPRESS_API_URL;
             const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
@@ -694,9 +692,8 @@ export async function checkScheduledPosts() {
             console.error(`❌ Error publishing post ID ${post.id} to WordPress:`, wpError);
             // We continue processing other posts even if WordPress publishing fails
           }
-          }
         } else {
-          console.log(`⚠️ Test mode is ON. Post ID ${post.id} was generated but NOT published to WordPress.`);
+          console.log(`⚠️ Test mode is ON or WordPress credentials not configured. Post ID ${post.id} was generated but NOT published to WordPress.`);
         }
       } catch (error) {
         console.error(`Error processing post ID ${post.id}:`, error);
