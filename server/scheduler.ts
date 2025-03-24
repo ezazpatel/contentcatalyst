@@ -174,10 +174,12 @@ ${outlineResult.title}
         }, {})
       : {};
 
-    // Track affiliate link usage count
+    // Track affiliate link usage count across all sections
     const affiliateLinkUsage = {};
     Object.keys(affiliateLinksMap).forEach(name => {
-      affiliateLinkUsage[name] = 0;
+      // Count existing occurrences in the content so far
+      const regex = new RegExp(`\\[${name}\\]\\(${affiliateLinksMap[name]}\\)`, 'g');
+      affiliateLinkUsage[name] = (fullContent.match(regex) || []).length;
     });
 
     // Add internal links tracking similar to affiliate links
