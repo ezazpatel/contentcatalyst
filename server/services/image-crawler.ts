@@ -120,10 +120,28 @@ export function insertImagesIntoContent(
     // Check if we're entering the affiliate links section
     if (line.includes('## Top') && line.includes('Recommendations')) {
       inAffiliateLinksSection = true;
+      // Add a styled container for affiliate links
+      newLines.push('<div class="affiliate-links-container bg-slate-50 rounded-lg p-6 my-8 shadow-sm border border-slate-200">');
+      newLines.push('<h2 class="text-xl font-semibold mb-4">Top Recommendations</h2>');
+      newLines.push('<ul class="space-y-3 list-disc pl-4">');
+      continue;
     }
     // Check if we're leaving the affiliate links section
     else if (line.startsWith('## ') && inAffiliateLinksSection) {
       inAffiliateLinksSection = false;
+      newLines.push('</ul>');
+      newLines.push('</div>'); // Close the affiliate links container
+    }
+
+    // Skip the duplicate title if it appears after the affiliate links section
+    if ((line.startsWith('# ') || line.startsWith('## ')) && inAffiliateLinksSection) {
+      continue;
+    }
+
+    // If we're in affiliate links section and this is a link, wrap it in a list item
+    if (inAffiliateLinksSection && line.trim().startsWith('*')) {
+      newLines.push(`<li class="text-sky-700 hover:text-sky-900">${line.trim().slice(1)}</li>`);
+      continue;
     }
 
     newLines.push(line);

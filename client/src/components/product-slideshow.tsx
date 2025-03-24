@@ -61,57 +61,59 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
   return (
     <div className="relative w-full my-6">
       <Card className="overflow-hidden shadow-lg">
-        <div
-          className="relative aspect-[16/9]"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          {images.map((image, index) => (
-            <div
-              key={index}
-              className={cn(
-                "absolute inset-0 transition-opacity duration-300",
-                index === currentIndex ? "opacity-100" : "opacity-0"
-              )}
-            >
-              <img
-                src={image.url}
-                alt={`${productName} - ${image.alt}`}
-                className="w-full h-full object-cover"
-              />
+        <div className="flex flex-col">
+          <div
+            className="relative aspect-[16/9]"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {images.map((image, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "absolute inset-0 transition-opacity duration-300",
+                  index === currentIndex ? "opacity-100" : "opacity-0"
+                )}
+              >
+                <img
+                  src={image.url}
+                  alt={`${productName} - ${image.alt}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+
+            {/* Navigation arrows */}
+            <div className="absolute inset-0 flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 text-white ml-2"
+                onClick={prevSlide}
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 text-white mr-2"
+                onClick={nextSlide}
+              >
+                <ChevronRight className="h-6 w-6" />
+              </Button>
             </div>
-          ))}
 
-          {/* Navigation arrows */}
-          <div className="absolute inset-0 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 text-white ml-2"
-              onClick={prevSlide}
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 text-white mr-2"
-              onClick={nextSlide}
-            >
-              <ChevronRight className="h-6 w-6" />
-            </Button>
+            {/* Image counter */}
+            <div className="absolute bottom-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-sm">
+              {currentIndex + 1} / {images.length}
+            </div>
           </div>
 
-          {/* Image counter */}
-          <div className="absolute bottom-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-sm">
-            {currentIndex + 1} / {images.length}
+          {/* Caption */}
+          <div className="p-4 text-sm text-muted-foreground bg-white border-t relative z-20">
+            {images[currentIndex].alt}
           </div>
-        </div>
-
-        {/* Caption */}
-        <div className="p-4 text-sm text-muted-foreground bg-white border-t z-10">
-          {images[currentIndex].alt}
         </div>
       </Card>
     </div>
