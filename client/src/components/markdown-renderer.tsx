@@ -26,6 +26,10 @@ export function MarkdownRenderer({ content }: { content: string }) {
         console.log('Found product slideshow HTML:', html);
         return html;
       }
+      // Filter out the "View all photos" links
+      if (html.includes('*[View all photos]')) {
+        return '';
+      }
       return html;
     };
 
@@ -95,8 +99,9 @@ export function MarkdownRenderer({ content }: { content: string }) {
     };
   }, [content]);
 
-  // First convert the markdown to HTML, then let the effect handle the slideshows
-  const htmlContent = marked(content);
+  // Skip the first line (title) and convert the rest to HTML
+  const contentWithoutTitle = content.split('\n').slice(1).join('\n');
+  const htmlContent = marked(contentWithoutTitle);
   console.log('Generated HTML content:', htmlContent);
 
   return (
