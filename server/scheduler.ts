@@ -589,7 +589,7 @@ Use proper markdown:
   }
 }
 
-export async function checkScheduledPosts() {
+async function checkScheduledPosts() {
   console.log("Checking for scheduled posts at " + new Date().toLocaleString());
   const now = new Date();
 
@@ -601,7 +601,7 @@ export async function checkScheduledPosts() {
     // Get all scheduled posts where the date is in the past and content hasn't been generated yet
     const posts = await storage.getAllBlogPosts();
 
-    // Filter for posts that need processing (scheduled or draft with scheduledDate in the past and content is empty)
+    // Filter for posts that need processing (scheduled or draft with scheduledDate in the past)
     const postsToProcess = posts.filter(post => {
       return (
         (post.status === "scheduled" || post.status === "draft") &&
@@ -618,82 +618,76 @@ export async function checkScheduledPosts() {
       console.log(`Processing post ID ${post.id}: ${post.keywords.join(", ")}`);
 
       try {
-        // Generate content using Anthropic
-        const generated = await generateContent(
-          post.keywords, 
-          post.description || "",
-          post
-        );
+        // Generate content only if it doesn't exist
+        if (!post.content || post.content.length < 100) {
+          console.log(`Generating content for post ID ${post.id}`);
+          const generated = await generateContent(
+            post.keywords, 
+            post.description || "",
+            post
+          );
 
-        // Update the post with generated content and images
-        const updatedPost = await storage.updateBlogPost(post.id, {
-          title: generated.title,
-          content: generated.content,
-          description: generated.description,
-          status: settings.test_mode ? "draft" : "published", // Keep as draft in test mode
-          publishedDate: settings.test_mode ? null : new Date(), // Only set published date if not in test mode
-          affiliateImages: generated.images, // Store the crawled images
-        });
+          // Update the post with generated content and images
+          await storage.updateBlogPost(post.id, {
+            title: generated.title,
+            content: generated.content,
+            description: generated.description,
+            status: settings.test_mode ? "draft" : "ready_to_publish", // Mark as ready instead of immediately publishing
+            affiliateImages: generated.images,
+          });
 
-        console.log(`Successfully generated content for post ID ${post.id}. Status: ${settings.test_mode ? 'draft (test mode)' : 'published'}`);
+          console.log(`Successfully generated content for post ID ${post.id}`);
+        }
 
-        // WordPress publishing is disabled in test mode
-        if (!settings.test_mode && process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
-          console.log(`Test mode is OFF - attempting to publish post ID ${post.id} to WordPress...`);
+        // Publish to WordPress if not in test mode and post is ready
+        if (!settings.test_mode && post.status === "ready_to_publish") {
+          console.log(`Publishing post ID ${post.id} to WordPress...`);
 
-          try {
-            const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
-            const apiUrl = process.env.WORDPRESS_API_URL;
-            const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
+          if (process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
+            try {
+              const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+              const apiUrl = process.env.WORDPRESS_API_URL;
+              const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
 
-            // Convert the existing markdown content to HTML
-            const htmlContent = convertMarkdownToHTML(updatedPost.content);
+              // Convert markdown to HTML
+              const htmlContent = convertMarkdownToHTML(post.content);
 
-            // Use the existing post content and metadata
-            const postData = {
-              title: { raw: updatedPost.title },
-              content: { raw: htmlContent },
-              status: 'publish',
-              excerpt: { raw: updatedPost.description || '' },
-              meta: {
-                _yoast_wpseo_metadesc: updatedPost.seoDescription || '',
-                _yoast_wpseo_title: updatedPost.seoTitle || '',
-              }
-            };
-
-            console.log(`Publishing to WordPress endpoint: ${endpoint}`);
-
-            const response = await fetch(endpoint, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${authToken}`,
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify(postData)
-            });
-
-            if (!response.ok) {
-              const errorText = await response.text();
-              throw new Error(`WordPress API error: ${response.statusText} - ${errorText}`);
-            }
-
-            const result = await response.json();
-            console.log(`✅ Successfully published post ID ${post.id} to WordPress: ${result.link}`);
-
-            // Update the post with WordPress URL
-            if (result.link) {
-              await storage.updateBlogPost(post.id, {
-                wordpressUrl: result.link,
-                status: "published"
+              const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Basic ${authToken}`,
+                  'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                  title: { raw: post.title },
+                  content: { raw: htmlContent },
+                  status: 'publish',
+                  excerpt: { raw: post.excerpt || '' },
+                  meta: {
+                    _yoast_wpseo_metadesc: post.seoDescription || '',
+                    _yoast_wpseo_title: post.seoTitle || '',
+                  }
+                })
               });
+
+              if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`WordPress API error: ${response.statusText} - ${errorText}`);
+              }
+
+              const result = await response.json();
+              console.log(`Successfully published post ID ${post.id} to WordPress: ${result.link}`);
+
+              // Update the post with WordPress URL
+              await storage.updateBlogPost(post.id, {
+                status: "published",
+                wordpressUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
+              });
+            } catch (wpError) {
+              console.error(`Error publishing post ID ${post.id} to WordPress:`, wpError);
             }
-          } catch (wpError) {
-            console.error(`❌ Error publishing post ID ${post.id} to WordPress:`, wpError);
-            // We continue processing other posts even if WordPress publishing fails
           }
-        } else {
-          console.log(`⚠️ Test mode is ON or WordPress credentials not configured. Post ID ${post.id} was generated but NOT published to WordPress.`);
         }
       } catch (error) {
         console.error(`Error processing post ID ${post.id}:`, error);
