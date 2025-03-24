@@ -44,7 +44,7 @@ async function generateContent(keywords: string[], description: string = "", pos
   try {
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a blog post about: ${keywords.join(", ")}.
-    
+
 ${post.description ? `
 Additional Context from User:
 ${post.description}` : ""}
@@ -136,12 +136,23 @@ ${outlineResult.title}
 
 [Your introduction here]`;
 
-    const introResponse = await client.messages.create({
+    let introText = '';
+    const introStream = await client.messages.stream({
       model: ANTHROPIC_MODEL,
       max_tokens: 4000,
       temperature: 0.7,
       messages: [{ role: "user", content: introPrompt }]
     });
+
+    for await (const chunk of introStream) {
+      if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+        introText += chunk.delta.text;
+      }
+    }
+
+    const introResult = {
+      introduction: introText
+    };
 
     let fullContent = "";
 
@@ -150,7 +161,7 @@ ${outlineResult.title}
       fullContent += affiliateLinksMarkdown;
     }
 
-    fullContent += introResponse.content[0].text + "\n\n";
+    fullContent += introResult.introduction + "\n\n";
 
 
     // Create a map of affiliate links for easier reference
@@ -461,7 +472,7 @@ Format your response with proper markdown:
         fullContent += affiliateLinksMarkdown;
       }
     }
-    
+
 
     fullContent += "\n\n";
 
