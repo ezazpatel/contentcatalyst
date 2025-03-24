@@ -44,7 +44,7 @@ async function generateContent(keywords: string[], description: string = "", pos
   try {
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a blog post about: ${keywords.join(", ")}.
-    
+
 ${post.description ? `
 Additional Context from User:
 ${post.description}` : ""}
@@ -373,7 +373,7 @@ Format your response as JSON with this structure:
 Ensure JSON is properly formatted with no trailing commas.`;
 
     const outlineResponse = await client.messages.create({
-      model: "claude-3-opus-20240229",
+      model: "claude-3-haiku@20240307",
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
@@ -433,7 +433,7 @@ Format your response with proper markdown:
 [Your introduction here]`;
 
     const introResponse = await client.messages.create({
-      model: "claude-3-opus-20240229",
+      model: "claude-3-haiku@20240307",
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
@@ -461,7 +461,7 @@ Format your response with proper markdown:
         fullContent += affiliateLinksMarkdown;
       }
     }
-    
+
 
     fullContent += "\n\n";
 
@@ -522,7 +522,7 @@ Format your response with proper markdown headings:
 ${section.subheadings.map(subheading => `### ${subheading}\n\n[Content for this subheading]`).join('\n\n')}`;
 
       const sectionResponse = await client.messages.create({
-        model: "claude-3-opus-20240229",
+        model: "claude-3-haiku@20240307",
         max_tokens: 4000,
         temperature: 0.7,
         messages: [
@@ -555,7 +555,7 @@ Use proper markdown:
 [Your conclusion here]`;
 
     const conclusionResponse = await client.messages.create({
-      model: "claude-3-opus-20240229",
+      model: "claude-3-haiku@20240307",
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
