@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
 import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
+import { createHash } from "crypto";
 
 function convertMarkdownToHTML(markdown: string): string {
   return markdown
@@ -17,6 +18,10 @@ function convertMarkdownToHTML(markdown: string): string {
     .replace(/^\d+\.\s+(.*)/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>')
     .replace(/^(?!<[uo]l|<li|<h[1-6])(.*$)/gm, '<p>$1</p>');
+}
+
+function getContentHash(content: string): string {
+  return createHash('sha256').update(content).digest('hex').substring(0, 8);
 }
 
 export async function registerRoutes(app: Express) {
@@ -186,10 +191,14 @@ export async function registerRoutes(app: Express) {
       }
 
       // Get the existing post from storage
-      const post = await storage.getBlogPost(req.body.id);
+      const post = await storage.getBlogPost(Number(req.body.id));
       if (!post) {
         throw new Error('Post not found');
       }
+
+      // Log the content hash to track content through the flow
+      const contentHash = getContentHash(post.content);
+      console.log(`[WordPress Publish] Using stored content for post ${post.id}, content hash: ${contentHash}`);
 
       const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
       const apiUrl = process.env.WORDPRESS_API_URL;
@@ -197,6 +206,7 @@ export async function registerRoutes(app: Express) {
 
       // Only convert the existing content to HTML, no regeneration
       const htmlContent = convertMarkdownToHTML(post.content);
+      console.log(`[WordPress Publish] Generated HTML content from markdown, original hash: ${contentHash}`);
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -219,12 +229,12 @@ export async function registerRoutes(app: Express) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('WordPress API response:', errorText);
+        console.error('[WordPress Publish] API error response:', errorText);
         throw new Error(`WordPress API error: ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('Successfully published to WordPress:', result);
+      console.log(`[WordPress Publish] Successfully published post ${post.id} to WordPress: ${result.link}`);
 
       // Update the local post status and WordPress URL
       await storage.updateBlogPost(post.id, {
@@ -237,7 +247,7 @@ export async function registerRoutes(app: Express) {
         postUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
       });
     } catch (error) {
-      console.error('Error publishing to WordPress:', error);
+      console.error('[WordPress Publish] Error:', error);
       res.status(500).json({
         message: "Failed to publish to WordPress",
         error: error instanceof Error ? error.message : "Unknown error"
