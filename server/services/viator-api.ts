@@ -51,16 +51,14 @@ async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | 
   try {
     // According to Viator API docs, we need these specific headers
     const headers = {
-      'Accept': 'application/json',
-      'api-key': process.env.VIATOR_API_KEY!, // Changed from exp-api-key to api-key
-      'Accept-Language': 'en-US',
+      'exp-api-key': process.env.VIATOR_API_KEY!,
       'Cache-Control': 'no-cache',
       'Content-Type': 'application/json'
     };
 
     console.log('Using headers:', JSON.stringify(headers, null, 2));
 
-    const response = await fetch(`${VIATOR_BASE_URL}/v1/products/${productCode}`, {
+    const response = await fetch(`${VIATOR_BASE_URL}/v1/product/photos/${productCode}`, {
       headers
     });
 
