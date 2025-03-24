@@ -1,5 +1,4 @@
-import * as cheerio from 'cheerio';
-import type { AffiliateImage } from '@shared/schema';
+import { AffiliateImage } from '@shared/schema';
 import { getViatorImages, isViatorLink } from './viator-api';
 
 async function fetchWithTimeout(url: string, timeout = 5000) {
@@ -105,6 +104,8 @@ export function insertImagesIntoContent(
   const lines = content.split('\n');
   const newLines: string[] = [];
   let inAffiliateLinksSection = false;
+  let currentSection = '';
+  const processedUrlsInSection = new Map<string, Set<string>>();
 
   // Group images by affiliate URL
   const imagesByUrl = images.reduce((acc, img) => {
@@ -116,6 +117,12 @@ export function insertImagesIntoContent(
   }, {} as Record<string, AffiliateImage[]>);
 
   for (const line of lines) {
+    // Track sections for per-section URL tracking
+    if (line.startsWith('## ')) {
+      currentSection = line;
+      processedUrlsInSection.set(currentSection, new Set());
+    }
+
     // Check if we're entering the affiliate links section
     if (line.includes('## Top') && line.includes('Recommendations')) {
       inAffiliateLinksSection = true;
@@ -128,15 +135,16 @@ export function insertImagesIntoContent(
     newLines.push(line);
 
     // Only process images if we're not in the affiliate links section
-    if (!inAffiliateLinksSection) {
+    if (!inAffiliateLinksSection && currentSection) {
       // Check if this line contains an affiliate link
       const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-      if (linkMatch && imagesByUrl[linkMatch[2]]) {
+      if (linkMatch) {
         const [_, linkText, url] = linkMatch;
         const productImages = imagesByUrl[url];
+        const sectionProcessedUrls = processedUrlsInSection.get(currentSection) || new Set();
 
-        // Only insert images if we haven't already inserted them for this URL in this section
-        if (productImages && !newLines.some(l => l.includes('product-slideshow'))) {
+        // Only insert images if we have them and haven't used them in this section
+        if (productImages && productImages.length > 0 && !sectionProcessedUrls.has(url)) {
           newLines.push(''); // Add blank line
           newLines.push('<div class="product-slideshow">');
           productImages.forEach((img, index) => {
@@ -144,6 +152,8 @@ export function insertImagesIntoContent(
           });
           newLines.push('</div>');
           newLines.push(''); // Add blank line
+          sectionProcessedUrls.add(url);
+          processedUrlsInSection.set(currentSection, sectionProcessedUrls);
         }
       }
     }
