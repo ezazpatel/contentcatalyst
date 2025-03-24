@@ -1,4 +1,5 @@
-import { AffiliateImage } from '@shared/schema';
+import * as cheerio from 'cheerio';
+import type { AffiliateImage } from '@shared/schema';
 import { getViatorImages, isViatorLink } from './viator-api';
 
 async function fetchWithTimeout(url: string, timeout = 5000) {
@@ -54,7 +55,7 @@ export async function crawlAffiliateLink(url: string, heading: string): Promise<
       const imageUrl = new URL(src, url).toString();
 
       // Only add if it looks like a product image
-      if (alt.toLowerCase().includes('product') ||
+      if (alt.toLowerCase().includes('product') || 
           src.toLowerCase().includes('product') ||
           alt.length > 20) {
         images.push({
@@ -83,7 +84,7 @@ export async function matchImagesWithHeadings(
 
   for (const link of affiliateLinks) {
     // Find the most relevant heading for this affiliate link
-    const relevantHeading = headings.find(h =>
+    const relevantHeading = headings.find(h => 
       h.toLowerCase().includes(link.name.toLowerCase())
     ) || headings[0] || '## Product Recommendations';
 
@@ -103,9 +104,8 @@ export function insertImagesIntoContent(
 ): string {
   const lines = content.split('\n');
   const newLines: string[] = [];
+  let currentHeading = '';
   let inAffiliateLinksSection = false;
-  let currentSection = '';
-  const processedUrlsInSection = new Map<string, Set<string>>();
 
   // Group images by affiliate URL
   const imagesByUrl = images.reduce((acc, img) => {
@@ -117,12 +117,6 @@ export function insertImagesIntoContent(
   }, {} as Record<string, AffiliateImage[]>);
 
   for (const line of lines) {
-    // Track sections for per-section URL tracking
-    if (line.startsWith('## ')) {
-      currentSection = line;
-      processedUrlsInSection.set(currentSection, new Set());
-    }
-
     // Check if we're entering the affiliate links section
     if (line.includes('## Top') && line.includes('Recommendations')) {
       inAffiliateLinksSection = true;
@@ -135,25 +129,23 @@ export function insertImagesIntoContent(
     newLines.push(line);
 
     // Only process images if we're not in the affiliate links section
-    if (!inAffiliateLinksSection && currentSection) {
+    if (!inAffiliateLinksSection) {
       // Check if this line contains an affiliate link
       const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-      if (linkMatch) {
+      if (linkMatch && imagesByUrl[linkMatch[2]] && !line.startsWith('*[View all photos]')) {
         const [_, linkText, url] = linkMatch;
         const productImages = imagesByUrl[url];
-        const sectionProcessedUrls = processedUrlsInSection.get(currentSection) || new Set();
 
-        // Only insert images if we have them and haven't used them in this section
-        if (productImages && productImages.length > 0 && !sectionProcessedUrls.has(url)) {
+        // Only insert images if we haven't already inserted them for this URL in this section
+        if (productImages && !newLines.some(l => l.includes(`*[View all photos](${url})*`))) {
           newLines.push(''); // Add blank line
           newLines.push('<div class="product-slideshow">');
           productImages.forEach((img, index) => {
             newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
           });
           newLines.push('</div>');
+          newLines.push(`*[View all photos](${url})*`);
           newLines.push(''); // Add blank line
-          sectionProcessedUrls.add(url);
-          processedUrlsInSection.set(currentSection, sectionProcessedUrls);
         }
       }
     }

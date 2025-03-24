@@ -17,28 +17,24 @@ export function MarkdownRenderer({ content }: { content: string }) {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Create and configure a new marked renderer
-    const renderer = new marked.Renderer();
-
-    // Preserve HTML for product slideshows
-    const origHtml = renderer.html.bind(renderer);
-    renderer.html = function(html: string) {
-      if (html.includes('product-slideshow')) {
-        console.log('Found product slideshow HTML:', html);
-        return html;
-      }
-      return origHtml(html);
-    };
-
-    // Configure marked
+    // Configure marked to preserve our custom HTML
     marked.setOptions({
-      renderer: renderer,
       headerIds: false,
       mangle: false,
       headerPrefix: '',
       xhtml: true,
       gfm: true,
-      breaks: true
+      breaks: true,
+      renderer: {
+        html(html: string) {
+          // Preserve our product slideshow divs
+          if (html.includes('product-slideshow')) {
+            console.log('Found product slideshow HTML:', html);
+            return html;
+          }
+          return html;
+        }
+      }
     });
 
     // Find all product slideshow divs
