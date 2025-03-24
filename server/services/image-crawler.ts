@@ -121,7 +121,9 @@ export function insertImagesIntoContent(
     // Skip any "View all photos" links
     if (line.trim().match(/^\*?\[View all photos\]/) || 
         line.includes('View all photos') ||
-        line.includes('?pid=P00217628&mcid=42383')) {
+        line.includes('?pid=P00217628&mcid=42383') ||
+        line.trim().match(/^\*View all photos\*$/) ||
+        line.trim().match(/^View all photos$/)) {
       continue;
     }
 
