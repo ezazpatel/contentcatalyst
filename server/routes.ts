@@ -191,36 +191,6 @@ export async function registerRoutes(app: Express) {
 
       const htmlContent = convertMarkdownToHTML(req.body.content);
 
-      // Get the post from storage to access affiliate images
-      const post = await storage.getBlogPost(Number(req.body.id));
-      
-      // Find the best image (first product image)
-      const featuredImageUrl = post?.affiliateImages?.[0]?.url;
-      
-      // If we have a featured image, fetch it first
-      let featuredImageId;
-      if (featuredImageUrl) {
-        // Upload the image to WordPress
-        const imageResponse = await fetch(featuredImageUrl);
-        const imageBlob = await imageResponse.blob();
-        
-        const mediaEndpoint = `${process.env.WORDPRESS_API_URL}/wp/v2/media`;
-        const uploadResponse = await fetch(mediaEndpoint, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${authToken}`,
-            'Content-Type': imageBlob.type,
-            'Content-Disposition': 'attachment; filename=featured-image.jpg'
-          },
-          body: imageBlob
-        });
-        
-        if (uploadResponse.ok) {
-          const mediaData = await uploadResponse.json();
-          featuredImageId = mediaData.id;
-        }
-      }
-
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -232,7 +202,6 @@ export async function registerRoutes(app: Express) {
           title: { raw: req.body.title },
           content: { raw: htmlContent },
           status: 'publish',
-          featured_media: featuredImageId,
           excerpt: { raw: req.body.excerpt || '' },
           meta: {
             _yoast_wpseo_metadesc: req.body.seoDescription || '',
