@@ -61,14 +61,11 @@ export function MarkdownRenderer({ content }: { content: string }) {
     };
   }, [content]);
 
-  // Parse markdown with marked and convert it to HTML
-  const htmlContent = marked(content);
-
   return (
     <div
       ref={containerRef}
       className="blog-content prose max-w-none"
-      dangerouslySetInnerHTML={{ __html: htmlContent }}
+      dangerouslySetInnerHTML={{ __html: marked(content) }}
     />
   );
 }
