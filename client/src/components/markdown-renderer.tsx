@@ -26,10 +26,6 @@ export function MarkdownRenderer({ content }: { content: string }) {
         console.log('Found product slideshow HTML:', html);
         return html;
       }
-      // Filter out the "View all photos" links
-      if (html.includes('*[View all photos]')) {
-        return '';
-      }
       return html;
     };
 

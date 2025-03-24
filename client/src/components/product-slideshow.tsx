@@ -18,13 +18,13 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const nextSlide = () => {
-    setCurrentIndex((prevIndex) =>
+    setCurrentIndex((prevIndex) => 
       prevIndex === images.length - 1 ? 0 : prevIndex + 1
     );
   };
 
   const prevSlide = () => {
-    setCurrentIndex((prevIndex) =>
+    setCurrentIndex((prevIndex) => 
       prevIndex === 0 ? images.length - 1 : prevIndex - 1
     );
   };
@@ -43,7 +43,7 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
 
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-
+    
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > 50;
     const isRightSwipe = distance < -50;
@@ -61,7 +61,7 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
   return (
     <div className="relative w-full my-6">
       <Card className="overflow-hidden shadow-lg">
-        <div
+        <div 
           className="relative aspect-[16/9]"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -82,7 +82,7 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
               />
             </div>
           ))}
-
+          
           {/* Navigation arrows */}
           <div className="absolute inset-0 flex items-center justify-between">
             <Button
@@ -95,22 +95,22 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
             </Button>
             <Button
               variant="ghost"
-              size="icon"
+              size="icon" 
               className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 text-white mr-2"
               onClick={nextSlide}
             >
               <ChevronRight className="h-6 w-6" />
             </Button>
           </div>
-
+          
           {/* Image counter */}
           <div className="absolute bottom-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-sm">
             {currentIndex + 1} / {images.length}
           </div>
         </div>
-
+        
         {/* Caption */}
-        <div className="p-4 text-sm text-muted-foreground bg-white border-t z-10">
+        <div className="p-4 text-sm text-muted-foreground">
           {images[currentIndex].alt}
         </div>
       </Card>
