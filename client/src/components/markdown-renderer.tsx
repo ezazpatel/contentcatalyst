@@ -17,31 +17,24 @@ export function MarkdownRenderer({ content }: { content: string }) {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Create and configure a new marked renderer
-    const renderer = new marked.Renderer();
-    
-    // Preserve HTML for product slideshows
-    renderer.html = (html: string) => {
-      if (html.includes('product-slideshow')) {
-        console.log('Found product slideshow HTML:', html);
-        return html;
-      }
-      // Filter out the "View all photos" links
-      if (html.includes('*[View all photos]')) {
-        return '';
-      }
-      return html;
-    };
-
-    // Configure marked
+    // Configure marked to preserve our custom HTML
     marked.setOptions({
-      renderer: renderer,
       headerIds: false,
       mangle: false,
       headerPrefix: '',
       xhtml: true,
       gfm: true,
-      breaks: true
+      breaks: true,
+      renderer: {
+        html(html: string) {
+          // Preserve our product slideshow divs
+          if (html.includes('product-slideshow')) {
+            console.log('Found product slideshow HTML:', html);
+            return html;
+          }
+          return html;
+        }
+      }
     });
 
     // Find all product slideshow divs
