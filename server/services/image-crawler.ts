@@ -55,7 +55,7 @@ export async function crawlAffiliateLink(url: string, heading: string): Promise<
       const imageUrl = new URL(src, url).toString();
 
       // Only add if it looks like a product image
-      if (alt.toLowerCase().includes('product') || 
+      if (alt.toLowerCase().includes('product') ||
           src.toLowerCase().includes('product') ||
           alt.length > 20) {
         images.push({
@@ -84,7 +84,7 @@ export async function matchImagesWithHeadings(
 
   for (const link of affiliateLinks) {
     // Find the most relevant heading for this affiliate link
-    const relevantHeading = headings.find(h => 
+    const relevantHeading = headings.find(h =>
       h.toLowerCase().includes(link.name.toLowerCase())
     ) || headings[0] || '## Product Recommendations';
 
@@ -142,9 +142,14 @@ export function insertImagesIntoContent(
         const key = `${url}|${currentHeading}`;
         const productImages = imagesByUrlAndHeading[key];
 
-        // Only insert images if we haven't already inserted them for this URL in this section
-        // and we have matching images for the current heading
-        if (productImages && !newLines.some(l => l.includes(`class="product-slideshow"`))) {
+        // Only insert images if:
+        // 1. We have images for this URL and heading combination
+        // 2. We haven't already inserted a slideshow in this section
+        // 3. The link text or current heading contains some keywords from the image heading
+        if (productImages &&
+            !newLines.some(l => l.includes(`class="product-slideshow"`)) &&
+            (linkText.toLowerCase().includes(productImages[0].heading.toLowerCase()) ||
+             currentHeading.toLowerCase().includes(productImages[0].heading.toLowerCase()))) {
           newLines.push(''); // Add blank line
           newLines.push('<div class="product-slideshow">');
           productImages.forEach((img, index) => {
