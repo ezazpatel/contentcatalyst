@@ -6,7 +6,15 @@ import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
 
 function convertMarkdownToHTML(markdown: string): string {
-  return markdown
+  // First preserve product slideshow blocks
+  const blocks: string[] = [];
+  markdown = markdown.replace(/<div class="product-slideshow">[\s\S]*?<\/div>/g, (match) => {
+    blocks.push(match);
+    return `__PRODUCT_SLIDESHOW_${blocks.length - 1}__`;
+  });
+
+  // Convert markdown to HTML
+  let html = markdown
     .replace(/^### (.*$)/gm, '<h3>$1</h3>')
     .replace(/^## (.*$)/gm, '<h2>$1</h2>')
     .replace(/^# (.*$)/gm, '<h1>$1</h1>')
@@ -17,6 +25,13 @@ function convertMarkdownToHTML(markdown: string): string {
     .replace(/^\d+\.\s+(.*)/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>')
     .replace(/^(?!<[uo]l|<li|<h[1-6])(.*$)/gm, '<p>$1</p>');
+
+  // Restore product slideshow blocks
+  blocks.forEach((block, i) => {
+    html = html.replace(`__PRODUCT_SLIDESHOW_${i}__`, block);
+  });
+
+  return html;
 }
 
 export async function registerRoutes(app: Express) {
