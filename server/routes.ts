@@ -185,12 +185,18 @@ export async function registerRoutes(app: Express) {
         throw new Error('WordPress credentials are not configured');
       }
 
+      // Get the existing post from storage
+      const post = await storage.getBlogPost(req.body.id);
+      if (!post) {
+        throw new Error('Post not found');
+      }
+
       const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
       const apiUrl = process.env.WORDPRESS_API_URL;
       const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
 
-      // Convert the existing markdown content to HTML
-      const htmlContent = convertMarkdownToHTML(req.body.content);
+      // Only convert the existing content to HTML, no regeneration
+      const htmlContent = convertMarkdownToHTML(post.content);
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -200,13 +206,13 @@ export async function registerRoutes(app: Express) {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          title: { raw: req.body.title },
+          title: { raw: post.title },
           content: { raw: htmlContent },
           status: 'publish',
-          excerpt: { raw: req.body.excerpt || '' },
+          excerpt: { raw: post.excerpt || '' },
           meta: {
-            _yoast_wpseo_metadesc: req.body.seoDescription || '',
-            _yoast_wpseo_title: req.body.seoTitle || '',
+            _yoast_wpseo_metadesc: post.seoDescription || '',
+            _yoast_wpseo_title: post.seoTitle || '',
           },
         })
       });
@@ -220,18 +226,15 @@ export async function registerRoutes(app: Express) {
       const result = await response.json();
       console.log('Successfully published to WordPress:', result);
 
-      // Update the local post with WordPress URL and status
-      if (req.body.id) {
-        await storage.updateBlogPost(req.body.id, {
-          status: "published",
-          wordpressUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
-        });
-      }
+      // Update the local post status and WordPress URL
+      await storage.updateBlogPost(post.id, {
+        status: "published",
+        wordpressUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
+      });
 
       res.json({
-        ...result,
-        postUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`,
-        message: 'Post published successfully to WordPress'
+        message: 'Post published successfully to WordPress',
+        postUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
       });
     } catch (error) {
       console.error('Error publishing to WordPress:', error);
