@@ -68,24 +68,28 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
-            {images.map((image, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "absolute inset-0 transition-opacity duration-300",
-                  index === currentIndex ? "opacity-100" : "opacity-0"
-                )}
-              >
-                <img
-                  src={image.url}
-                  alt={`${productName} - ${image.alt}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
+            {/* Image container */}
+            <div className="absolute inset-0">
+              {images.map((image, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "absolute inset-0 transition-opacity duration-300",
+                    index === currentIndex ? "opacity-100" : "opacity-0"
+                  )}
+                  style={{ zIndex: index === currentIndex ? 1 : 0 }}
+                >
+                  <img
+                    src={image.url}
+                    alt={`${productName} - ${image.alt}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
 
-            {/* Navigation arrows */}
-            <div className="absolute inset-0 flex items-center justify-between">
+            {/* Navigation arrows - above images */}
+            <div className="absolute inset-0 flex items-center justify-between" style={{ zIndex: 2 }}>
               <Button
                 variant="ghost"
                 size="icon"
@@ -104,14 +108,14 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
               </Button>
             </div>
 
-            {/* Image counter */}
-            <div className="absolute bottom-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-sm">
+            {/* Image counter - above images */}
+            <div className="absolute bottom-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-sm" style={{ zIndex: 2 }}>
               {currentIndex + 1} / {images.length}
             </div>
           </div>
 
-          {/* Caption */}
-          <div className="p-4 text-sm text-muted-foreground bg-white border-t relative z-20">
+          {/* Caption - separate from image container */}
+          <div className="mt-0 p-4 text-sm text-muted-foreground bg-white border-t">
             {images[currentIndex].alt}
           </div>
         </div>

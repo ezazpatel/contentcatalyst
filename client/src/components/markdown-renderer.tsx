@@ -19,9 +19,9 @@ export function MarkdownRenderer({ content }: { content: string }) {
 
     // Create and configure a new marked renderer
     const renderer = new marked.Renderer();
-    
+
     // Preserve HTML for product slideshows
-    renderer.html = (html: string) => {
+    renderer.html = function(html) {
       if (html.includes('product-slideshow')) {
         console.log('Found product slideshow HTML:', html);
         return html;
