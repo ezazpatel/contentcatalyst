@@ -12,7 +12,6 @@ const client = new Anthropic({
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const ANTHROPIC_MODEL = "claude-3-7-sonnet-20250219";
 
-// Add a function to convert markdown to HTML
 function convertMarkdownToHTML(content: string): string {
   // Convert headings, but skip h1 as it's reserved for the title
   content = content.replace(/^## (.+)$/gm, '<h2>$1</h2>');
@@ -47,7 +46,7 @@ async function generateContent(keywords: string[], description: string = "", pos
 
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a blog post about: ${keywords.join(", ")}.
-    
+
 ${post.description ? `
 Additional Context from User:
 ${post.description}` : ""}
@@ -155,7 +154,6 @@ ${outlineResult.title}
 
     fullContent += introResponse.content[0].text + "\n\n";
 
-
     // Create a map of affiliate links for easier reference
     const affiliateLinksMap = Array.isArray(post.affiliateLinks)
       ? post.affiliateLinks.reduce((acc, link) => {
@@ -179,7 +177,6 @@ ${outlineResult.title}
         internalLinksUsage[link.url] = 0;
       });
     }
-
 
     for (const section of outlineResult.outline) {
       console.log("Generating content for section:", section.heading);
