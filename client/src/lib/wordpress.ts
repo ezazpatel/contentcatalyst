@@ -1,7 +1,6 @@
-import apiFetch from '@wordpress/api-fetch';
+
 import type { BlogPost } from '@shared/schema';
 
-// WordPress publishing is now handled entirely through server endpoints
 export async function publishToWordPress(post: BlogPost) {
   const response = await fetch('/api/wordpress/publish', {
     method: 'POST',
