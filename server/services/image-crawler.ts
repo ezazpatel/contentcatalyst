@@ -107,15 +107,9 @@ export function insertImagesIntoContent(
   let currentHeading = '';
   let inAffiliateLinksSection = false;
 
-  // Group images by affiliate URL and heading
-  const imagesByUrlAndHeading = images.reduce((acc, img) => {
-    const key = `${img.affiliateUrl}|${img.heading}`;
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-    acc[key].push(img);
-    return acc;
-  }, {} as Record<string, AffiliateImage[]>);
+  // First process the content to identify sections and their content
+  const sections: { heading: string; content: string }[] = [];
+  let currentSection = { heading: '', content: '' };
 
   for (const line of lines) {
     // Check if we're entering the affiliate links section
@@ -126,41 +120,67 @@ export function insertImagesIntoContent(
     else if (line.startsWith('## ') && inAffiliateLinksSection) {
       inAffiliateLinksSection = false;
     }
-    // Update current heading
-    else if (line.startsWith('## ')) {
-      currentHeading = line.replace(/^##\s+/, '');
-    }
 
-    newLines.push(line);
-
-    // Only process images if we're not in the affiliate links section
-    if (!inAffiliateLinksSection) {
-      // Check if this line contains an affiliate link
-      const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-      if (linkMatch) {
-        const [_, linkText, url] = linkMatch;
-        const key = `${url}|${currentHeading}`;
-        const productImages = imagesByUrlAndHeading[key];
-
-        // Only insert images if:
-        // 1. We have images for this URL and heading combination
-        // 2. We haven't already inserted a slideshow in this section
-        // 3. The link text or current heading contains some keywords from the image heading
-        if (productImages &&
-            !newLines.some(l => l.includes(`class="product-slideshow"`)) &&
-            (linkText.toLowerCase().includes(productImages[0].heading.toLowerCase()) ||
-             currentHeading.toLowerCase().includes(productImages[0].heading.toLowerCase()))) {
-          newLines.push(''); // Add blank line
-          newLines.push('<div class="product-slideshow">');
-          productImages.forEach((img, index) => {
-            newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
-          });
-          newLines.push('</div>');
-          newLines.push(''); // Add blank line
-        }
+    // If we hit a new heading
+    if (line.startsWith('## ') && !inAffiliateLinksSection) {
+      if (currentSection.heading) {
+        sections.push({ ...currentSection });
       }
+      currentSection = {
+        heading: line.replace(/^##\s+/, ''),
+        content: line + '\n'
+      };
+    } else {
+      currentSection.content += line + '\n';
     }
   }
+  // Add the last section
+  if (currentSection.heading) {
+    sections.push(currentSection);
+  }
 
-  return newLines.join('\n');
+  // Group images by heading
+  const imagesByHeading = images.reduce((acc, img) => {
+    if (!acc[img.heading]) {
+      acc[img.heading] = [];
+    }
+    acc[img.heading].push(img);
+    return acc;
+  }, {} as Record<string, AffiliateImage[]>);
+
+  // Process each section and insert images where appropriate
+  let finalContent = '';
+  sections.forEach(section => {
+    const sectionImages = imagesByHeading[section.heading] || [];
+    const lines = section.content.split('\n');
+    const processedLines: string[] = [];
+
+    let hasInsertedSlideshow = false;
+
+    lines.forEach(line => {
+      processedLines.push(line);
+
+      // If we find an affiliate link and haven't inserted a slideshow yet
+      const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
+      if (linkMatch && !hasInsertedSlideshow && sectionImages.length > 0) {
+        const [_, linkText, url] = linkMatch;
+        const productImages = sectionImages.filter(img => img.affiliateUrl === url);
+
+        if (productImages.length > 0) {
+          processedLines.push(''); // Add blank line
+          processedLines.push('<div class="product-slideshow">');
+          productImages.forEach((img, index) => {
+            processedLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
+          });
+          processedLines.push('</div>');
+          processedLines.push(''); // Add blank line
+          hasInsertedSlideshow = true;
+        }
+      }
+    });
+
+    finalContent += processedLines.join('\n');
+  });
+
+  return finalContent;
 }
