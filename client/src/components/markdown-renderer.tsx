@@ -21,12 +21,13 @@ export function MarkdownRenderer({ content }: { content: string }) {
     const renderer = new marked.Renderer();
 
     // Preserve HTML for product slideshows
-    renderer.html = function(html) {
+    const origHtml = renderer.html.bind(renderer);
+    renderer.html = function(html: string) {
       if (html.includes('product-slideshow')) {
         console.log('Found product slideshow HTML:', html);
         return html;
       }
-      return html;
+      return origHtml(html);
     };
 
     // Configure marked
