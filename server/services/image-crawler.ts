@@ -2,19 +2,6 @@ import * as cheerio from 'cheerio';
 import type { AffiliateImage } from '@shared/schema';
 import { getViatorImages, isViatorLink } from './viator-api';
 
-async function fetchWithTimeout(url: string, timeout = 5000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(id);
-    return response;
-  } catch (error) {
-    clearTimeout(id);
-    throw error;
-  }
-}
-
 export async function crawlAffiliateLink(url: string, heading: string): Promise<AffiliateImage[]> {
   // Check if it's a Viator link first
   if (isViatorLink(url)) {
@@ -23,7 +10,7 @@ export async function crawlAffiliateLink(url: string, heading: string): Promise<
 
   // Otherwise, fallback to web crawling
   try {
-    const response = await fetchWithTimeout(url);
+    const response = await fetch(url);
     if (!response.ok) {
       console.error(`Failed to fetch ${url}: ${response.statusText}`);
       return [];
@@ -132,7 +119,9 @@ export function insertImagesIntoContent(
     }
 
     // Skip any "View all photos" links
-    if (line.trim().startsWith('*[View all photos]')) {
+    if (line.trim().match(/^\*?\[View all photos\]/) || 
+        line.includes('View all photos') ||
+        line.includes('?pid=P00217628&mcid=42383')) {
       continue;
     }
 

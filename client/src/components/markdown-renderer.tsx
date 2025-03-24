@@ -93,7 +93,14 @@ export function MarkdownRenderer({ content }: { content: string }) {
   }, [content]);
 
   // First convert the markdown to HTML, then let the effect handle the slideshows
-  const htmlContent = marked(content);
+  const htmlContent = marked(content, {
+    breaks: true,
+    mangle: false,
+    headerIds: false,
+    headerPrefix: '',
+    gfm: true,
+    renderer: new marked.Renderer()
+  });
   console.log('Generated HTML content:', htmlContent);
 
   return (
