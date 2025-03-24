@@ -33,6 +33,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
 
       // Create a new wrapper for the slideshow
       const wrapper = document.createElement('div');
+      wrapper.className = 'product-slideshow-wrapper';
 
       // Replace the original div with our wrapper
       div.parentNode?.replaceChild(wrapper, div);
@@ -45,6 +46,9 @@ export function MarkdownRenderer({ content }: { content: string }) {
           productName={productName}
         />
       );
+
+      // Store the root for cleanup
+      (wrapper as any)._reactRoot = root;
     });
 
     // Cleanup function to unmount React components
