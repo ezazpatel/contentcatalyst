@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { Link } from "wouter";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 
 export default function ViewPost() {
   const [match, params] = useRoute<{ id: string }>("/view/:id");
@@ -21,8 +21,7 @@ export default function ViewPost() {
 
   const republishToWordPress = useMutation({
     mutationFn: async () => {
-      // Call our server endpoint instead of WordPress directly
-      const response = await apiRequest("POST", `/api/posts/${postId}/publish`, null);
+      const response = await apiRequest("POST", "/api/wordpress/publish", post);
       return response.json();
     },
     onSuccess: (data) => {

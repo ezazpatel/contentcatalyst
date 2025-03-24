@@ -6,15 +6,7 @@ import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
 
 function convertMarkdownToHTML(markdown: string): string {
-  // First preserve product slideshow blocks
-  const blocks: string[] = [];
-  markdown = markdown.replace(/<div class="product-slideshow">[\s\S]*?<\/div>/g, (match) => {
-    blocks.push(match);
-    return `__PRODUCT_SLIDESHOW_${blocks.length - 1}__`;
-  });
-
-  // Convert markdown to HTML
-  let html = markdown
+  return markdown
     .replace(/^### (.*$)/gm, '<h3>$1</h3>')
     .replace(/^## (.*$)/gm, '<h2>$1</h2>')
     .replace(/^# (.*$)/gm, '<h1>$1</h1>')
@@ -25,13 +17,6 @@ function convertMarkdownToHTML(markdown: string): string {
     .replace(/^\d+\.\s+(.*)/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>')
     .replace(/^(?!<[uo]l|<li|<h[1-6])(.*$)/gm, '<p>$1</p>');
-
-  // Restore product slideshow blocks
-  blocks.forEach((block, i) => {
-    html = html.replace(`__PRODUCT_SLIDESHOW_${i}__`, block);
-  });
-
-  return html;
 }
 
 export async function registerRoutes(app: Express) {
@@ -296,135 +281,6 @@ export async function registerRoutes(app: Express) {
 2. Application password is correctly formatted
 3. WordPress user has administrator privileges
 4. REST API is enabled in WordPress`
-      });
-    }
-  });
-
-  app.post("/api/posts/:id/publish", async (req, res) => {
-    try {
-      const postId = parseInt(req.params.id);
-      const post = await storage.getBlogPost(postId);
-
-      if (!post) {
-        return res.status(404).json({ message: "Post not found" });
-      }
-
-      const settings = await storage.getSettings();
-      if (settings.test_mode) {
-        return res.status(403).json({
-          message: "WordPress publishing is disabled in test mode",
-          test_mode: true
-        });
-      }
-
-      if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN) {
-        throw new Error('WordPress credentials are not configured');
-      }
-
-      // Get the best image for featured image
-      let featuredImageId = null;
-      if (post.affiliateImages && post.affiliateImages.length > 0) {
-        // Sort images by size (preferring larger images)
-        const sortedImages = [...post.affiliateImages].sort((a, b) => {
-          const aSize = (a.width || 0) * (a.height || 0);
-          const bSize = (b.width || 0) * (b.height || 0);
-          return bSize - aSize;
-        });
-
-        // Upload the best image as featured image
-        const bestImage = sortedImages[0];
-        const imageResponse = await fetch(bestImage.url);
-        const imageBuffer = await imageResponse.buffer();
-
-        const formData = new FormData();
-        formData.append('file', new Blob([imageBuffer]), 'featured-image.jpg');
-
-        const imageUploadResponse = await fetch(`${process.env.WORDPRESS_API_URL}/wp/v2/media`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${Buffer.from(`admin:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64')}`,
-          },
-          body: formData
-        });
-
-        if (imageUploadResponse.ok) {
-          const imageData = await imageUploadResponse.json();
-          featuredImageId = imageData.id;
-        }
-      }
-
-      // Convert content to WonderBlocks format
-      let content = post.content;
-
-      // Remove "View all photos" links
-      content = content.replace(/\*\[View all photos\]\([^)]+\)\*/g, '');
-
-      // Convert to WonderBlocks format
-      content = content.replace(/^## (.*$)/gm, '<!-- wp:heading -->\n<h2>$1</h2>\n<!-- /wp:heading -->');
-      content = content.replace(/^# (.*$)/gm, '<!-- wp:heading {"level":1} -->\n<h1>$1</h1>\n<!-- /wp:heading -->');
-
-      // Convert paragraphs
-      content = content.replace(/^(?!<!-- wp:)([^<].+)$/gm, '<!-- wp:paragraph -->\n<p>$1</p>\n<!-- /wp:paragraph -->');
-
-      // Convert product slideshows to WonderBlocks gallery
-      content = content.replace(/<div class="product-slideshow">([\s\S]*?)<\/div>/g, (match, images) => {
-        const imgTags = images.match(/<img[^>]+>/g) || [];
-        return `<!-- wp:gallery {"linkTo":"none","className":"product-gallery"} -->
-<figure class="wp-block-gallery has-nested-images columns-default is-cropped product-gallery">
-${imgTags.map(img => {
-  const src = img.match(/src="([^"]+)"/)?.[1] || '';
-  const alt = img.match(/alt="([^"]+)"/)?.[1] || '';
-  return `<!-- wp:image {"sizeSlug":"large"} -->
-<figure class="wp-block-image size-large"><img src="${src}" alt="${alt}"/></figure>
-<!-- /wp:image -->`;
-}).join('\n')}
-</figure>
-<!-- /wp:gallery -->`;
-      });
-
-      // Make the WordPress API request
-      const response = await fetch(`${process.env.WORDPRESS_API_URL}/wp/v2/posts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${Buffer.from(`admin:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64')}`,
-        },
-        body: JSON.stringify({
-          title: { raw: post.title },
-          content: { raw: content },
-          status: 'publish',
-          featured_media: featuredImageId,
-          meta: {
-            _yoast_wpseo_metadesc: post.seoDescription || '',
-            _yoast_wpseo_title: post.seoTitle || '',
-          },
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`WordPress API error: ${response.statusText} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log('Successfully published to WordPress:', result);
-
-      // Update the post status in our database
-      await storage.updateBlogPost(postId, {
-        status: "published",
-        wordpressUrl: result.link
-      });
-
-      res.json({
-        ...result,
-        postUrl: result.link,
-        message: 'Post published successfully to WordPress'
-      });
-    } catch (error) {
-      console.error('Error publishing to WordPress:', error);
-      res.status(500).json({
-        message: "Failed to publish to WordPress",
-        error: error instanceof Error ? error.message : "Unknown error"
       });
     }
   });

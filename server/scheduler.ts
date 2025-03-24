@@ -8,7 +8,8 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
 });
 
-const ANTHROPIC_MODEL = "claude-3-haiku@20240307";
+// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
+const ANTHROPIC_MODEL = "claude-3-7-sonnet-20250219";
 
 // Add a function to convert markdown to HTML
 function convertMarkdownToHTML(content: string): string {
@@ -372,7 +373,7 @@ Format your response as JSON with this structure:
 Ensure JSON is properly formatted with no trailing commas.`;
 
     const outlineResponse = await client.messages.create({
-      model: "claude-3-haiku@20240307",
+      model: "claude-3-opus-20240229",
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
@@ -432,7 +433,7 @@ Format your response with proper markdown:
 [Your introduction here]`;
 
     const introResponse = await client.messages.create({
-      model: "claude-3-haiku@20240307",
+      model: "claude-3-opus-20240229",
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
@@ -521,7 +522,7 @@ Format your response with proper markdown headings:
 ${section.subheadings.map(subheading => `### ${subheading}\n\n[Content for this subheading]`).join('\n\n')}`;
 
       const sectionResponse = await client.messages.create({
-        model: "claude-3-haiku@20240307",
+        model: "claude-3-opus-20240229",
         max_tokens: 4000,
         temperature: 0.7,
         messages: [
@@ -554,7 +555,7 @@ Use proper markdown:
 [Your conclusion here]`;
 
     const conclusionResponse = await client.messages.create({
-      model: "claude-3-haiku@20240307",
+      model: "claude-3-opus-20240229",
       max_tokens: 4000,
       temperature: 0.7,
       messages: [

@@ -107,9 +107,14 @@ export function insertImagesIntoContent(
   let currentHeading = '';
   let inAffiliateLinksSection = false;
 
-  // First process the content to identify sections and their content
-  const sections: { heading: string; content: string }[] = [];
-  let currentSection = { heading: '', content: '' };
+  // Group images by affiliate URL
+  const imagesByUrl = images.reduce((acc, img) => {
+    if (!acc[img.affiliateUrl]) {
+      acc[img.affiliateUrl] = [];
+    }
+    acc[img.affiliateUrl].push(img);
+    return acc;
+  }, {} as Record<string, AffiliateImage[]>);
 
   for (const line of lines) {
     // Check if we're entering the affiliate links section
@@ -121,66 +126,29 @@ export function insertImagesIntoContent(
       inAffiliateLinksSection = false;
     }
 
-    // If we hit a new heading
-    if (line.startsWith('## ') && !inAffiliateLinksSection) {
-      if (currentSection.heading) {
-        sections.push({ ...currentSection });
-      }
-      currentSection = {
-        heading: line.replace(/^##\s+/, ''),
-        content: line + '\n'
-      };
-    } else {
-      currentSection.content += line + '\n';
-    }
-  }
-  // Add the last section
-  if (currentSection.heading) {
-    sections.push(currentSection);
-  }
+    newLines.push(line);
 
-  // Group images by heading
-  const imagesByHeading = images.reduce((acc, img) => {
-    if (!acc[img.heading]) {
-      acc[img.heading] = [];
-    }
-    acc[img.heading].push(img);
-    return acc;
-  }, {} as Record<string, AffiliateImage[]>);
-
-  // Process each section and insert images where appropriate
-  let finalContent = '';
-  sections.forEach(section => {
-    const sectionImages = imagesByHeading[section.heading] || [];
-    const lines = section.content.split('\n');
-    const processedLines: string[] = [];
-
-    let hasInsertedSlideshow = false;
-
-    lines.forEach(line => {
-      processedLines.push(line);
-
-      // If we find an affiliate link and haven't inserted a slideshow yet
+    // Only process images if we're not in the affiliate links section
+    if (!inAffiliateLinksSection) {
+      // Check if this line contains an affiliate link
       const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-      if (linkMatch && !hasInsertedSlideshow && sectionImages.length > 0) {
+      if (linkMatch && imagesByUrl[linkMatch[2]] && !line.includes('View all photos')) {
         const [_, linkText, url] = linkMatch;
-        const productImages = sectionImages.filter(img => img.affiliateUrl === url);
+        const productImages = imagesByUrl[url];
 
-        if (productImages.length > 0) {
-          processedLines.push(''); // Add blank line
-          processedLines.push('<div class="product-slideshow">');
+        // Only insert images if we haven't already inserted them for this URL in this section
+        if (productImages && !newLines.some(l => l.includes('product-slideshow'))) {
+          newLines.push(''); // Add blank line
+          newLines.push('<div class="product-slideshow">');
           productImages.forEach((img, index) => {
-            processedLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
+            newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
           });
-          processedLines.push('</div>');
-          processedLines.push(''); // Add blank line
-          hasInsertedSlideshow = true;
+          newLines.push('</div>');
+          newLines.push(''); // Add blank line
         }
       }
-    });
+    }
+  }
 
-    finalContent += processedLines.join('\n');
-  });
-
-  return finalContent;
+  return newLines.join('\n');
 }

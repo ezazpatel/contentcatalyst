@@ -48,8 +48,7 @@ export default function Editor() {
 
   const publishToWordPress = useMutation({
     mutationFn: async () => {
-      // Use server endpoint instead of direct WordPress API call
-      const response = await apiRequest("POST", `/api/posts/${postId}/publish`, null);
+      const response = await apiRequest("POST", "/api/wordpress/publish", post);
       return response.json();
     },
     onSuccess: () => {
