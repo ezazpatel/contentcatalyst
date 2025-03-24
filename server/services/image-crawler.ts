@@ -118,12 +118,9 @@ export function insertImagesIntoContent(
       currentHeading = line.replace(/^##\s+/, '');
     }
 
-    // Skip any "View all photos" links
-    if (line.trim().match(/^\*?\[View all photos\]/) || 
-        line.includes('View all photos') ||
-        line.includes('?pid=P00217628&mcid=42383') ||
-        line.trim().match(/^\*View all photos\*$/) ||
-        line.trim().match(/^View all photos$/)) {
+    // Skip any "View all photos" links and their variations
+    if (line.trim().toLowerCase().includes('view all photos') ||
+        line.includes('?pid=P00217628&mcid=42383')) {
       continue;
     }
 

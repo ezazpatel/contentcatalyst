@@ -32,6 +32,10 @@ export function MarkdownRenderer({ content }: { content: string }) {
             console.log('Found product slideshow HTML:', html);
             return html;
           }
+          // Filter out view all photos links
+          if (html.includes('View all photos') || html.includes('*View all photos*')) {
+            return '';
+          }
           return html;
         }
       }
