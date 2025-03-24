@@ -52,13 +52,14 @@ async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | 
     // According to Viator API docs, we need these specific headers
     const headers = {
       'exp-api-key': process.env.VIATOR_API_KEY!,
+      'Accept': 'application/json;version=2.0',
+      'Accept-Language': 'en-US',
       'Cache-Control': 'no-cache',
-      'Content-Type': 'application/json'
     };
 
     console.log('Using headers:', JSON.stringify(headers, null, 2));
 
-    const response = await fetch(`${VIATOR_BASE_URL}/v1/product/photos/${productCode}`, {
+    const response = await fetch(`${VIATOR_BASE_URL}/products/${productCode}`, {
       headers
     });
 
@@ -71,13 +72,32 @@ async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | 
     }
 
     const data = JSON.parse(responseText);
+
+    // Ensure product is available for sale
+    if (data.status !== 'ACTIVE') {
+      console.warn(`Product ${productCode} is not active:`, data.status);
+      return null;
+    }
+
+    // Extract high quality image variants
+    const productImages = data.images?.map(img => {
+      const bestVariant = img.variants?.reduce((best, current) => {
+        if (!best || (current.width * current.height) > (best.width * best.height)) {
+          return current;
+        }
+        return best;
+      }, null);
+
+      return {
+        url: bestVariant?.url || img.url,
+        alt: img.caption || data.title || 'Product Image'
+      };
+    }) || [];
+
     return {
       productCode,
-      title: data.title || data.productTitle,
-      images: (data.photos || data.images || []).map((img: any) => ({
-        url: img.photoUrl || img.url,
-        alt: img.caption || img.alt || data.title || 'Product Image'
-      }))
+      title: data.title,
+      images: productImages
     };
   } catch (error) {
     console.error(`Error fetching Viator product ${productCode}:`, error);
