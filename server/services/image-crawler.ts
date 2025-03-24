@@ -107,12 +107,13 @@ export function insertImagesIntoContent(
   let currentHeading = '';
   let inAffiliateLinksSection = false;
 
-  // Group images by affiliate URL
-  const imagesByUrl = images.reduce((acc, img) => {
-    if (!acc[img.affiliateUrl]) {
-      acc[img.affiliateUrl] = [];
+  // Group images by affiliate URL and heading
+  const imagesByUrlAndHeading = images.reduce((acc, img) => {
+    const key = `${img.affiliateUrl}|${img.heading}`;
+    if (!acc[key]) {
+      acc[key] = [];
     }
-    acc[img.affiliateUrl].push(img);
+    acc[key].push(img);
     return acc;
   }, {} as Record<string, AffiliateImage[]>);
 
@@ -125,6 +126,10 @@ export function insertImagesIntoContent(
     else if (line.startsWith('## ') && inAffiliateLinksSection) {
       inAffiliateLinksSection = false;
     }
+    // Update current heading
+    else if (line.startsWith('## ')) {
+      currentHeading = line.replace(/^##\s+/, '');
+    }
 
     newLines.push(line);
 
@@ -132,19 +137,20 @@ export function insertImagesIntoContent(
     if (!inAffiliateLinksSection) {
       // Check if this line contains an affiliate link
       const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-      if (linkMatch && imagesByUrl[linkMatch[2]] && !line.startsWith('*[View all photos]')) {
+      if (linkMatch) {
         const [_, linkText, url] = linkMatch;
-        const productImages = imagesByUrl[url];
+        const key = `${url}|${currentHeading}`;
+        const productImages = imagesByUrlAndHeading[key];
 
         // Only insert images if we haven't already inserted them for this URL in this section
-        if (productImages && !newLines.some(l => l.includes(`*[View all photos](${url})*`))) {
+        // and we have matching images for the current heading
+        if (productImages && !newLines.some(l => l.includes(`class="product-slideshow"`))) {
           newLines.push(''); // Add blank line
           newLines.push('<div class="product-slideshow">');
           productImages.forEach((img, index) => {
             newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
           });
           newLines.push('</div>');
-          newLines.push(`*[View all photos](${url})*`);
           newLines.push(''); // Add blank line
         }
       }

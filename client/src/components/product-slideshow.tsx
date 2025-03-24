@@ -43,7 +43,7 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
 
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-    
+
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > 50;
     const isRightSwipe = distance < -50;
@@ -59,10 +59,10 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
   };
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto my-6">
+    <div className="w-full mx-auto my-6">
       <Card className="overflow-hidden">
         <div 
-          className="relative aspect-video"
+          className="relative aspect-[16/9]"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -82,13 +82,13 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
               />
             </div>
           ))}
-          
+
           {/* Navigation arrows - only show on desktop */}
-          <div className="absolute inset-0 flex items-center justify-between p-4 md:block hidden">
+          <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 pointer-events-none">
             <Button
               variant="outline"
               size="icon"
-              className="rounded-full bg-white/80 hover:bg-white"
+              className="rounded-full bg-white/80 hover:bg-white pointer-events-auto"
               onClick={prevSlide}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -96,20 +96,20 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
             <Button
               variant="outline"
               size="icon"
-              className="rounded-full bg-white/80 hover:bg-white"
+              className="rounded-full bg-white/80 hover:bg-white pointer-events-auto"
               onClick={nextSlide}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          
+
           {/* Image counter */}
           <div className="absolute bottom-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-sm">
             {currentIndex + 1} / {images.length}
           </div>
         </div>
-        
-        {/* Caption */}
+
+        {/* Caption - positioned below the image */}
         <div className="p-4 text-sm text-muted-foreground">
           {images[currentIndex].alt}
         </div>
