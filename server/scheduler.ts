@@ -638,12 +638,13 @@ export async function checkScheduledPosts() {
         console.log(`Successfully generated content for post ID ${post.id}. Status: ${settings.test_mode ? 'draft (test mode)' : 'published'}`);
 
         // WordPress publishing is disabled in test mode
-        if (!settings.test_mode && process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
-          console.log(`Test mode is OFF - attempting to publish post ID ${post.id} to WordPress...`);
+        if (!settings.test_mode) {
+          if (process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
+            console.log(`Test mode is OFF - attempting to publish post ID ${post.id} to WordPress...`);
 
-          try {
-            // Create Basic Auth token from username and application password
-            const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+            try {
+              // Create Basic Auth token from username and application password
+              const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
 
             const apiUrl = process.env.WORDPRESS_API_URL;
             const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
@@ -692,8 +693,9 @@ export async function checkScheduledPosts() {
             console.error(`❌ Error publishing post ID ${post.id} to WordPress:`, wpError);
             // We continue processing other posts even if WordPress publishing fails
           }
+          }
         } else {
-          console.log(`⚠️ Test mode is ON or WordPress credentials not configured. Post ID ${post.id} was generated but NOT published to WordPress.`);
+          console.log(`⚠️ Test mode is ON. Post ID ${post.id} was generated but NOT published to WordPress.`);
         }
       } catch (error) {
         console.error(`Error processing post ID ${post.id}:`, error);
