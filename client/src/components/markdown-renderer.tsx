@@ -17,25 +17,34 @@ export function MarkdownRenderer({ content }: { content: string }) {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Configure marked to preserve our custom HTML
+    // Configure marked with a proper renderer
+    const renderer = new marked.Renderer();
+
+    // Preserve the default HTML rendering
+    renderer.html = (html: string) => {
+      if (html.includes('product-slideshow')) {
+        console.log('Found product slideshow HTML:', html);
+        return html;
+      }
+      return html;
+    };
+
     marked.setOptions({
+      renderer: renderer,
       headerIds: false,
       mangle: false,
       headerPrefix: '',
       xhtml: true,
       gfm: true,
-      breaks: true,
-      renderer: {
-        html(html: string) {
-          // Preserve our product slideshow divs
-          if (html.includes('product-slideshow')) {
-            console.log('Found product slideshow HTML:', html);
-            return html;
-          }
-          return html;
-        }
-      }
+      breaks: true
     });
+
+    // Convert markdown to HTML
+    const htmlContent = marked.parse(content);
+    console.log('Generated HTML content:', htmlContent);
+
+    // Set the HTML content
+    containerRef.current.innerHTML = htmlContent;
 
     // Find all product slideshow divs
     const slideshowDivs = containerRef.current.querySelectorAll('.product-slideshow');
@@ -58,49 +67,16 @@ export function MarkdownRenderer({ content }: { content: string }) {
       // Get product name from first image alt text
       const productName = images[0].alt.split(' - ')[0] || 'Product';
 
-      // Create a new wrapper for the slideshow
-      const wrapper = document.createElement('div');
-      wrapper.className = 'product-slideshow-wrapper';
-
-      // Replace the original div with our wrapper
-      div.parentNode?.replaceChild(wrapper, div);
-
-      // Create a React root and render the ProductSlideshow
-      const root = createRoot(wrapper);
+      // Create a new root for the slideshow
+      const root = createRoot(div);
       root.render(
         <ProductSlideshow
           images={images}
           productName={productName}
         />
       );
-
-      // Store the root for cleanup
-      (wrapper as any)._reactRoot = root;
     });
-
-    // Cleanup function to unmount React components
-    return () => {
-      if (containerRef.current) {
-        const wrappers = containerRef.current.querySelectorAll('.product-slideshow-wrapper');
-        wrappers.forEach(wrapper => {
-          const root = (wrapper as any)._reactRoot;
-          if (root) {
-            root.unmount();
-          }
-        });
-      }
-    };
   }, [content]);
 
-  // First convert the markdown to HTML, then let the effect handle the slideshows
-  const htmlContent = marked(content);
-  console.log('Generated HTML content:', htmlContent);
-
-  return (
-    <div
-      ref={containerRef}
-      className="blog-content prose max-w-none"
-      dangerouslySetInnerHTML={{ __html: htmlContent }}
-    />
-  );
+  return <div ref={containerRef} className="prose max-w-none" />;
 }
