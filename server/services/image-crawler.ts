@@ -138,35 +138,24 @@ export function insertImagesIntoContent(
 
     // Only process images if we're not in the affiliate links section
     if (!inAffiliateLinksSection) {
-      // Check if this line contains an affiliate link
-      const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-      if (linkMatch) {
-        const [_, linkText, url] = linkMatch;
+      // Process any line that has a URL in our images collection
+      const urlMatch = line.match(/\(([^)]+)\)/);
+      if (urlMatch) {
+        const [_, url] = urlMatch;
+        const key = `${url}|${currentHeading}`;
+        const productImages = imagesByUrlAndHeading[key];
 
-        // Skip lines that start with "*[View all photos]"
-        if (!line.startsWith('*[View all photos]')) {
-          const key = `${url}|${currentHeading}`;
-          const productImages = imagesByUrlAndHeading[key];
-
-          // Insert a slideshow if:
-          // 1. We have images for this URL+heading
-          // 2. We haven't already inserted a slideshow in this section
-          // (We've removed the heading-text match condition)
-          if (
-            productImages &&
-            !newLines.some((l) => l.includes('class="product-slideshow"'))
-          ) {
-            newLines.push('');
-            newLines.push('<div class="product-slideshow">');
-            productImages.forEach((img, index) => {
-              newLines.push(
-                `  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`
-              );
-            });
-            newLines.push('</div>');
-            newLines.push('');
-            // Not inserting "*[View all photos](${url})*"
-          }
+        // Insert images for this URL
+        if (productImages) {
+          newLines.push('');
+          newLines.push('<div class="product-slideshow">');
+          productImages.forEach((img, index) => {
+            newLines.push(
+              `  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`
+            );
+          });
+          newLines.push('</div>');
+          newLines.push('');
         }
       }
     }
