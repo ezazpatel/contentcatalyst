@@ -5,6 +5,12 @@ import { ProductSlideshow } from "./product-slideshow";
 interface ProductImage {
   url: string;
   alt: string;
+  affiliateUrl: string;
+}
+
+interface SlideShowData {
+  images: ProductImage[];
+  productName: string;
 }
 
 interface SlideshowData {
@@ -60,11 +66,31 @@ export function MarkdownRenderer({ content }: { content: string }) {
       }
     });
 
+    // Find product slideshow divs and extract their data
+    const slideshowDivs = tempDiv.getElementsByClassName('product-slideshow');
+    const newSlideshows: SlideShowData[] = [];
+
+    Array.from(slideshowDivs).forEach((div) => {
+      const images = Array.from(div.getElementsByTagName('img')).map((img) => ({
+        url: img.getAttribute('src') || '',
+        alt: img.getAttribute('alt') || '',
+        affiliateUrl: img.getAttribute('data-affiliate-url') || img.getAttribute('src') || '',
+      }));
+      
+      if (images.length > 0) {
+        newSlideshows.push({
+          images,
+          productName: images[0].alt,
+        });
+        // Replace the slideshow div with a placeholder
+        div.outerHTML = '<!-- slideshow-placeholder -->';
+      }
+    });
+
     setHtmlContent(tempDiv.innerHTML);
     setSlideshows(newSlideshows);
   }, [content]);
 
-  // Split content by slideshow placeholders and intersperse with slideshows
   const contentParts = htmlContent.split('<!-- slideshow-placeholder -->');
 
   return (
@@ -72,7 +98,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
       {contentParts.map((part, index) => (
         <div key={index}>
           <div dangerouslySetInnerHTML={{ __html: part }} />
-          {index < slideshows.length && (
+          {index < slideshows.length && slideshows[index].images.length > 0 && (
             <div className="my-8">
               <ProductSlideshow
                 images={slideshows[index].images}

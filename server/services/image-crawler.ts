@@ -153,7 +153,7 @@ export function insertImagesIntoContent(
           newLines.push(''); // Add blank line
           newLines.push('<div class="product-slideshow">');
           productImages.forEach((img, index) => {
-            newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
+            newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" data-affiliate-url="${img.affiliateUrl || img.url}" />`);
           });
           newLines.push('</div>');
           newLines.push(''); // Add blank line
