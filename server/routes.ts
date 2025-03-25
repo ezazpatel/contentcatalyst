@@ -4,7 +4,6 @@ import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
 import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
-import { createHash } from "crypto";
 
 function convertMarkdownToHTML(markdown: string): string {
   return markdown
@@ -18,10 +17,6 @@ function convertMarkdownToHTML(markdown: string): string {
     .replace(/^\d+\.\s+(.*)/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>')
     .replace(/^(?!<[uo]l|<li|<h[1-6])(.*$)/gm, '<p>$1</p>');
-}
-
-function getContentHash(content: string): string {
-  return createHash('sha256').update(content).digest('hex').substring(0, 8);
 }
 
 export async function registerRoutes(app: Express) {
@@ -74,14 +69,14 @@ export async function registerRoutes(app: Express) {
   app.delete("/api/keywords/:keyword", async (req, res) => {
     try {
       const posts = await storage.getAllBlogPosts();
-      const postsWithKeyword = posts.filter(post =>
+      const postsWithKeyword = posts.filter(post => 
         post.keywords.includes(req.params.keyword) && post.status !== "published"
       );
 
       for (const post of postsWithKeyword) {
         await storage.deleteBlogPost(post.id);
       }
-
+      
       res.status(204).send();
     } catch (error) {
       res.status(400).json({ message: error.message });
@@ -102,7 +97,7 @@ export async function registerRoutes(app: Express) {
       }
 
       console.log(`Starting to publish ${unpublishedPosts.length} posts...`);
-      res.json({
+      res.json({ 
         message: `Started publishing ${unpublishedPosts.length} posts. Check logs for progress.`,
         totalPosts: unpublishedPosts.length
       });
@@ -141,7 +136,7 @@ export async function registerRoutes(app: Express) {
           const result = await response.json();
           console.log(`Successfully published post ${post.id} to WordPress: ${result.link}`);
 
-          await storage.updateBlogPost(post.id, {
+          await storage.updateBlogPost(post.id, { 
             status: "published",
             wordpressUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
           });
@@ -158,55 +153,17 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.get("/api/settings", async (_req, res) => {
-    try {
-      const settings = await storage.getSettings();
-      res.json(settings);
-    } catch (error) {
-      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to get settings" });
-    }
-  });
-
-  app.patch("/api/settings", async (req, res) => {
-    try {
-      const settings = await storage.updateSettings(req.body);
-      res.json(settings);
-    } catch (error) {
-      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to update settings" });
-    }
-  });
-
   app.post("/api/wordpress/publish", async (req, res) => {
     try {
-      const settings = await storage.getSettings();
-      if (settings.test_mode) {
-        return res.status(403).json({
-          message: "WordPress publishing is disabled in test mode",
-          test_mode: true
-        });
-      }
-
       if (!process.env.WORDPRESS_API_URL || !process.env.WORDPRESS_AUTH_TOKEN || !process.env.WORDPRESS_USERNAME) {
         throw new Error('WordPress credentials are not configured');
       }
-
-      // Get the existing post from storage
-      const post = await storage.getBlogPost(Number(req.body.id));
-      if (!post) {
-        throw new Error('Post not found');
-      }
-
-      // Log the content hash to track content through the flow
-      const contentHash = getContentHash(post.content);
-      console.log(`[WordPress Publish] Using stored content for post ${post.id}, content hash: ${contentHash}`);
 
       const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
       const apiUrl = process.env.WORDPRESS_API_URL;
       const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
 
-      // Only convert the existing content to HTML, no regeneration
-      const htmlContent = convertMarkdownToHTML(post.content);
-      console.log(`[WordPress Publish] Generated HTML content from markdown, original hash: ${contentHash}`);
+      const htmlContent = convertMarkdownToHTML(req.body.content);
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -216,41 +173,41 @@ export async function registerRoutes(app: Express) {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          title: { raw: post.title },
+          title: { raw: req.body.title },
           content: { raw: htmlContent },
           status: 'publish',
-          excerpt: { raw: post.excerpt || '' },
+          excerpt: { raw: req.body.excerpt || '' },
           meta: {
-            _yoast_wpseo_metadesc: post.seoDescription || '',
-            _yoast_wpseo_title: post.seoTitle || '',
+            _yoast_wpseo_metadesc: req.body.seoDescription || '',
+            _yoast_wpseo_title: req.body.seoTitle || '',
           },
         })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[WordPress Publish] API error response:', errorText);
+        console.error('WordPress API response:', errorText);
         throw new Error(`WordPress API error: ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log(`[WordPress Publish] Successfully published post ${post.id} to WordPress: ${result.link}`);
-
-      // Update the local post status and WordPress URL
-      await storage.updateBlogPost(post.id, {
-        status: "published",
-        wordpressUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
-      });
+      console.log('Successfully published to WordPress:', result);
 
       res.json({
-        message: 'Post published successfully to WordPress',
-        postUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`
+        ...result,
+        postUrl: result.link || `${apiUrl.replace('/wp-json', '')}/?p=${result.id}`,
+        message: 'Post published successfully to WordPress'
       });
     } catch (error) {
-      console.error('[WordPress Publish] Error:', error);
-      res.status(500).json({
-        message: "Failed to publish to WordPress",
-        error: error instanceof Error ? error.message : "Unknown error"
+      console.error('Error publishing to WordPress:', error);
+      res.status(500).json({ 
+        message: 'Failed to publish to WordPress', 
+        error: error.message,
+        details: `Please verify:
+1. WORDPRESS_API_URL is correct and ends with /wp-json
+2. Application password is correctly formatted
+3. WordPress user has administrator privileges
+4. REST API is enabled in WordPress`
       });
     }
   });
@@ -295,8 +252,8 @@ export async function registerRoutes(app: Express) {
       });
     } catch (error) {
       console.error('Error testing WordPress connection:', error);
-      res.status(500).json({
-        message: 'Failed to connect to WordPress',
+      res.status(500).json({ 
+        message: 'Failed to connect to WordPress', 
         error: error.message,
         details: `Please verify:
 1. WORDPRESS_API_URL is correct and ends with /wp-json

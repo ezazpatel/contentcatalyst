@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "wouter";
 import { apiRequest } from "../lib/api";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "../components/ui/button";
-import { useToast } from "../hooks/use-toast";
+import { toast } from "../components/ui/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -14,19 +14,20 @@ import {
 } from "../components/ui/dialog";
 import { Badge } from "../components/ui/badge";
 import type { BlogPost } from "@shared/schema";
-import { Trash2, Edit, ExternalLink } from "lucide-react";
 
 export default function BlogsPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
 
   // Fetch all blog posts
-  const { data: posts, isLoading } = useQuery<BlogPost[]>({
-    queryKey: ["/api/posts"],
+  const { data: posts, isLoading, refetch } = useQuery<BlogPost[]>({
+    queryKey: ["blog-posts"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/posts");
+      return response.json();
+    },
   });
 
   // Calculate unpublished posts count (posts with content but not published to WordPress)
@@ -46,11 +47,11 @@ export default function BlogsPage() {
       await apiRequest("DELETE", `/api/posts/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       toast({
         title: "Success",
         description: "Post deleted successfully",
       });
+      refetch();
       setIsDeleteDialogOpen(false);
     },
     onError: (error: Error) => {
@@ -59,6 +60,34 @@ export default function BlogsPage() {
         description: error.message || "Failed to delete post",
         variant: "destructive",
       });
+    },
+  });
+
+  // Publish all unpublished posts to WordPress
+  const publishToWordPress = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/wordpress/publish-all");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "WordPress Publishing",
+        description: data.message || "Started publishing posts to WordPress",
+      });
+      setIsPublishDialogOpen(false);
+
+      // Refetch after a delay to show updated status
+      setTimeout(() => {
+        refetch();
+      }, 3000);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to publish to WordPress",
+        variant: "destructive",
+      });
+      setIsPublishDialogOpen(false);
     },
   });
 
@@ -96,7 +125,17 @@ export default function BlogsPage() {
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Blog Posts</h1>
-        <Button onClick={() => navigate("/blogs/new")}>Create New Post</Button>
+        <div className="flex gap-2">
+          {hasUnpublishedPosts && (
+            <Button
+              onClick={() => setIsPublishDialogOpen(true)}
+              variant="outline"
+            >
+              Publish to WordPress ({unpublishedPosts.length})
+            </Button>
+          )}
+          <Button onClick={() => navigate("/blogs/new")}>Create New Post</Button>
+        </div>
       </div>
 
       {posts && posts.length > 0 ? (
@@ -104,39 +143,50 @@ export default function BlogsPage() {
           {posts.map((post) => (
             <div
               key={post.id}
-              className="border rounded-lg p-4 bg-card"
+              className="border rounded-lg p-6 hover:shadow-md transition-shadow"
             >
-              <div className="flex flex-col md:flex-row justify-between gap-4">
-                <div className="flex-grow">
-                  <h2 className="text-lg font-semibold mb-2">{post.title}</h2>
-                  <div className="flex flex-wrap gap-2 items-center text-sm text-gray-500">
-                    <span>
-                      Created: {formatDate(post.createdAt)}
-                    </span>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-xl font-semibold">
+                    {post.title || "Untitled Post"}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Keywords: {post.keywords?.join(", ") || "None"}
+                  </p>
+                  <div className="flex gap-2 mt-2">
                     <Badge className={getStatusColor(post.status)}>
                       {post.status}
                     </Badge>
-                    {post.wordpressUrl && (
+                    {post.scheduledDate && (
                       <Badge variant="outline">
+                        Scheduled: {formatDate(post.scheduledDate)}
+                      </Badge>
+                    )}
+                    {post.publishedDate && (
+                      <Badge variant="outline">
+                        Published: {formatDate(post.publishedDate)}
+                      </Badge>
+                    )}
+                    {post.wordpressUrl && (
+                      <Badge variant="outline" className="bg-blue-100">
                         <a
                           href={post.wordpressUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1"
+                          className="flex items-center"
                         >
-                          WordPress <ExternalLink className="h-3 w-3" />
+                          WordPress ↗
                         </a>
                       </Badge>
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2 items-start">
+                <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => navigate(`/blogs/${post.id}`)}
                   >
-                    <Edit className="h-4 w-4 mr-1" />
                     Edit
                   </Button>
                   <Button
@@ -147,7 +197,6 @@ export default function BlogsPage() {
                       setIsDeleteDialogOpen(true);
                     }}
                   >
-                    <Trash2 className="h-4 w-4 mr-1" />
                     Delete
                   </Button>
                 </div>
@@ -190,6 +239,40 @@ export default function BlogsPage() {
               }}
             >
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* WordPress Publish Confirmation Dialog */}
+      <Dialog open={isPublishDialogOpen} onOpenChange={setIsPublishDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Publish to WordPress</DialogTitle>
+            <DialogDescription>
+              This will publish {unpublishedPosts.length}{" "}
+              post{unpublishedPosts.length !== 1 ? "s" : ""} to WordPress that
+              have been processed but not yet published.
+              <br />
+              <br />
+              Posts will be published one at a time with a delay in between to
+              avoid overloading your WordPress site.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsPublishDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => {
+                publishToWordPress.mutate();
+              }}
+            >
+              Publish All
             </Button>
           </DialogFooter>
         </DialogContent>
