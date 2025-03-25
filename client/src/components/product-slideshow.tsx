@@ -18,13 +18,13 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const nextSlide = () => {
-    setCurrentIndex((prevIndex) => 
+    setCurrentIndex((prevIndex) =>
       prevIndex === images.length - 1 ? 0 : prevIndex + 1
     );
   };
 
   const prevSlide = () => {
-    setCurrentIndex((prevIndex) => 
+    setCurrentIndex((prevIndex) =>
       prevIndex === 0 ? images.length - 1 : prevIndex - 1
     );
   };
@@ -43,7 +43,7 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
 
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-    
+
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > 50;
     const isRightSwipe = distance < -50;
@@ -59,10 +59,10 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
   };
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto my-6">
-      <Card className="overflow-hidden">
-        <div 
-          className="relative aspect-video"
+    <div className="relative w-full my-6">
+      <Card className="overflow-hidden shadow-lg">
+        <div
+          className="relative aspect-[16/9]"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -82,35 +82,35 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
               />
             </div>
           ))}
-          
-          {/* Navigation arrows - only show on desktop */}
-          <div className="absolute inset-0 flex items-center justify-between p-4 md:block hidden">
+
+          {/* Navigation arrows */}
+          <div className="absolute inset-0 flex items-center justify-between">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              className="rounded-full bg-white/80 hover:bg-white"
+              className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 text-white ml-2"
               onClick={prevSlide}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-6 w-6" />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              className="rounded-full bg-white/80 hover:bg-white"
+              className="h-12 w-12 rounded-full bg-black/20 hover:bg-black/40 text-white mr-2"
               onClick={nextSlide}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-6 w-6" />
             </Button>
           </div>
-          
+
           {/* Image counter */}
           <div className="absolute bottom-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-sm">
             {currentIndex + 1} / {images.length}
           </div>
         </div>
-        
+
         {/* Caption */}
-        <div className="p-4 text-sm text-muted-foreground">
+        <div className="p-4 text-sm text-muted-foreground bg-white border-t z-10">
           {images[currentIndex].alt}
         </div>
       </Card>
