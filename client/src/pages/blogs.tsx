@@ -4,6 +4,7 @@ import { apiRequest } from "../lib/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "../components/ui/button";
 import { toast } from "../components/ui/use-toast";
+import { useLocalStorage } from "@/lib/hooks";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,8 @@ export default function BlogsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+  const [testMode, setTestMode] = useLocalStorage("testMode", false);
+
 
   // Fetch all blog posts
   const { data: posts, isLoading, refetch } = useQuery<BlogPost[]>({
@@ -66,6 +69,8 @@ export default function BlogsPage() {
   // Publish all unpublished posts to WordPress
   const publishToWordPress = useMutation({
     mutationFn: async () => {
+      if (testMode) return; // Prevent publishing in test mode
+
       const response = await apiRequest("POST", "/api/wordpress/publish-all");
       return response.json();
     },
@@ -126,14 +131,22 @@ export default function BlogsPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Blog Posts</h1>
         <div className="flex gap-2">
-          {hasUnpublishedPosts && (
-            <Button
-              onClick={() => setIsPublishDialogOpen(true)}
-              variant="outline"
-            >
-              Publish to WordPress ({unpublishedPosts.length})
-            </Button>
-          )}
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={testMode}
+                onChange={(e) => setTestMode(e.target.checked)}
+                className="h-4 w-4"
+              />
+              Test Mode
+            </label>
+            {!testMode && (
+              <Button onClick={() => setIsPublishDialogOpen(true)}>
+                Publish to WordPress ({unpublishedPosts.length})
+              </Button>
+            )}
+          </div>
           <Button onClick={() => navigate("/blogs/new")}>Create New Post</Button>
         </div>
       </div>
@@ -167,7 +180,7 @@ export default function BlogsPage() {
                         Published: {formatDate(post.publishedDate)}
                       </Badge>
                     )}
-                    {post.wordpressUrl && (
+                    {!testMode && post.wordpressUrl && (
                       <Badge variant="outline" className="bg-blue-100">
                         <a
                           href={post.wordpressUrl}
