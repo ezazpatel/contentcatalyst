@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { Link } from "wouter";
 
 export default function ViewPost() {
@@ -86,15 +85,7 @@ export default function ViewPost() {
         </CardHeader>
         <CardContent>
           <div className="prose prose-sm max-w-none dark:prose-invert">
-            <ReactMarkdown 
-              remarkPlugins={[remarkGfm]}
-              components={{
-                // Override h1 rendering to prevent duplicate titles
-                h1: () => null
-              }}
-            >
-              {post.content}
-            </ReactMarkdown>
+            <MarkdownRenderer content={post.content} />
           </div>
 
           {post.affiliateLinks && Object.keys(post.affiliateLinks).length > 0 && (
