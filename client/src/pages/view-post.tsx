@@ -84,7 +84,7 @@ export default function ViewPost() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="prose prose-sm max-w-none dark:prose-invert">
+          <div className="prose prose-sm max-w-none dark:prose-invert overflow-x-hidden">
             <MarkdownRenderer content={post.content} />
           </div>
 
