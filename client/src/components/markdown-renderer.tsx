@@ -71,10 +71,27 @@ export function MarkdownRenderer({ content }: { content: string }) {
 
   return (
     <div className="prose max-w-none overflow-x-hidden">
-      {htmlContent.split('<div class="product-slideshow-placeholder"').map((part, index) => {
+      {htmlContent.split('<div class="product-slideshow"').map((part, index) => {
         if (index === 0) return <div key="start" dangerouslySetInnerHTML={{ __html: part }} />;
 
-        const [dataIndex, ...rest] = part.split('>');
+        // Extract images from the content
+        const closingDivIndex = part.indexOf('</div>');
+        const slideshowContent = part.substring(0, closingDivIndex);
+        const remainingContent = part.substring(closingDivIndex + 6);
+        
+        // Parse images from the slideshow content
+        const images = Array.from(slideshowContent.matchAll(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g))
+          .map(match => ({
+            url: match[1],
+            alt: match[2]
+          }));
+
+        return (
+          <>
+            <ProductSlideshow key={`slideshow-${index}`} images={images} productName="" />
+            <div dangerouslySetInnerHTML={{ __html: remainingContent }} />
+          </>
+        );
         const slideshowIndex = parseInt(dataIndex.match(/data-index="(\d+)"/)?.[1] || "0");
 
         return (
