@@ -1,99 +1,87 @@
 import { marked } from "marked";
-import { useEffect, useRef } from "react";
-import { createRoot } from 'react-dom/client';
+import { useEffect, useRef, useState } from "react";
 import { ProductSlideshow } from "./product-slideshow";
 
-// Custom renderer for handling product slideshows
-const renderer = new marked.Renderer();
-renderer.html = (html: string) => {
-  if (html.includes('product-slideshow')) {
-    return html; // Preserve product slideshow HTML blocks
-  }
-  return html;
-};
-
-marked.setOptions({
-  renderer,
-  headerIds: false,
-  mangle: false,
-  gfm: true,
-  breaks: true
-});
+interface ProductImage {
+  url: string;
+  alt: string;
+}
 
 interface SlideshowData {
-  images: {
-    url: string;
-    alt: string;
-  }[];
+  images: ProductImage[];
   productName: string;
 }
 
 export function MarkdownRenderer({ content }: { content: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [slideshows, setSlideshows] = useState<SlideshowData[]>([]);
+  const [htmlContent, setHtmlContent] = useState("");
 
   useEffect(() => {
-    if (!containerRef.current) return;
-
-    // Configure marked with a proper renderer
+    // Configure marked renderer
     const renderer = new marked.Renderer();
 
-    // Preserve the default HTML rendering
     renderer.html = (html: string) => {
       if (html.includes('product-slideshow')) {
-        console.log('Found product slideshow HTML:', html);
         return html;
       }
       return html;
     };
 
     marked.setOptions({
-      renderer: renderer,
+      renderer,
       headerIds: false,
       mangle: false,
-      headerPrefix: '',
-      xhtml: true,
       gfm: true,
       breaks: true
     });
 
     // Convert markdown to HTML
-    const htmlContent = marked.parse(content);
-    console.log('Generated HTML content:', htmlContent);
+    const parsedHtml = marked.parse(content);
 
-    // Set the HTML content
-    containerRef.current.innerHTML = htmlContent;
+    // Create a temporary div to parse the HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = parsedHtml;
 
-    // Find all product slideshow divs
-    const slideshowDivs = containerRef.current.querySelectorAll('.product-slideshow');
-    console.log('Found slideshow divs:', slideshowDivs.length);
+    // Find all slideshows
+    const slideshowDivs = tempDiv.querySelectorAll('.product-slideshow');
+    const newSlideshows: SlideshowData[] = [];
 
     slideshowDivs.forEach(div => {
-      // Get all images in this slideshow
       const images = Array.from(div.querySelectorAll('img')).map(img => ({
         url: img.src,
         alt: img.alt
       }));
 
-      if (images.length === 0) {
-        console.log('No images found in slideshow div');
-        return;
+      if (images.length > 0) {
+        const productName = images[0].alt.split(' - ')[0] || 'Product';
+        newSlideshows.push({ images, productName });
+        // Replace slideshow div with placeholder
+        div.innerHTML = '<!-- slideshow-placeholder -->';
       }
-
-      console.log('Processing images:', images);
-
-      // Get product name from first image alt text
-      const productName = images[0].alt.split(' - ')[0] || 'Product';
-
-      // Create a new root for the slideshow
-      const root = createRoot(div);
-      root.render(
-        <ProductSlideshow
-          images={images}
-          productName={productName}
-        />
-      );
     });
+
+    setHtmlContent(tempDiv.innerHTML);
+    setSlideshows(newSlideshows);
   }, [content]);
 
-  return <div ref={containerRef} className="prose max-w-none" />;
+  // Split content by slideshow placeholders and intersperse with slideshows
+  const contentParts = htmlContent.split('<!-- slideshow-placeholder -->');
+
+  return (
+    <div className="prose max-w-none">
+      {contentParts.map((part, index) => (
+        <div key={index}>
+          <div dangerouslySetInnerHTML={{ __html: part }} />
+          {index < slideshows.length && (
+            <div className="my-8">
+              <ProductSlideshow
+                images={slideshows[index].images}
+                productName={slideshows[index].productName}
+              />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
