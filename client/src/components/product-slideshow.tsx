@@ -1,5 +1,3 @@
-// ProductSlideshow.tsx
-
 import React, { useState, useEffect } from 'react';
 
 interface AffiliateImage {
@@ -30,7 +28,6 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
     );
   };
 
-  // Optional: handle swiping on mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
   };
@@ -40,13 +37,12 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
   };
 
   const handleTouchEnd = () => {
-    if (touchStart === null || touchEnd === null) return;
-    if (touchStart - touchEnd > 50) {
-      // Swiped left
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    if (distance > 50) {
       nextSlide();
     }
-    if (touchStart - touchEnd < -50) {
-      // Swiped right
+    if (distance < -50) {
       prevSlide();
     }
     setTouchStart(null);
@@ -54,34 +50,25 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
   };
 
   useEffect(() => {
-    // Automatically move to the next slide every 5 seconds
     const timer = setInterval(nextSlide, 5000);
     return () => clearInterval(timer);
   }, []);
 
-  // Don’t render anything if there are no images
-  if (!images || images.length === 0) {
-    return null;
-  }
+  if (!images?.length) return null;
 
-  // This is the important part: returning actual JSX for the slideshow
   return (
-    <div
-      className="slideshow-container"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      <h3>{productName}</h3>
-      <div className="slide">
+    <div className="slideshow-container" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+      <h3 className="text-xl font-bold mb-4">{productName}</h3>
+      <div className="slide relative w-full h-64 overflow-hidden rounded-lg">
         <img
           src={images[currentIndex].url}
           alt={images[currentIndex].alt}
+          className="w-full h-full object-cover"
         />
       </div>
-      <div className="slideshow-controls">
-        <button onClick={prevSlide}>Prev</button>
-        <button onClick={nextSlide}>Next</button>
+      <div className="slideshow-controls flex justify-center gap-4 mt-4">
+        <button onClick={prevSlide} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Prev</button>
+        <button onClick={nextSlide} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Next</button>
       </div>
     </div>
   );
