@@ -3,6 +3,12 @@ import { useEffect, useRef } from "react";
 import { createRoot } from 'react-dom/client';
 import { ProductSlideshow } from "./product-slideshow";
 
+// Configure marked
+marked.use({
+  mangle: false,
+  headerIds: false
+});
+
 interface SlideshowData {
   images: {
     url: string;
