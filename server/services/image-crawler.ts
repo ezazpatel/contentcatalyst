@@ -110,7 +110,7 @@ export function insertImagesIntoContent(
   let currentHeading = '';
   let inAffiliateLinksSection = false;
 
-  // Group images by affiliate URL and heading
+  // Group images by affiliate URL + heading
   const imagesByUrlAndHeading = images.reduce((acc, img) => {
     const key = `${img.affiliateUrl}|${img.heading}`;
     if (!acc[key]) {
@@ -134,7 +134,6 @@ export function insertImagesIntoContent(
       currentHeading = line.replace(/^##\s+/, '');
     }
 
-    // Push the current line to newLines
     newLines.push(line);
 
     // Only process images if we're not in the affiliate links section
@@ -144,22 +143,18 @@ export function insertImagesIntoContent(
       if (linkMatch) {
         const [_, linkText, url] = linkMatch;
 
-        // Skip lines that start with *[View all photos] (from your snippet)
+        // Skip lines that start with "*[View all photos]"
         if (!line.startsWith('*[View all photos]')) {
           const key = `${url}|${currentHeading}`;
           const productImages = imagesByUrlAndHeading[key];
 
-          // Only insert images if:
+          // Insert a slideshow if:
           // 1. We have images for this URL+heading
           // 2. We haven't already inserted a slideshow in this section
-          // 3. The link text or heading includes the product heading
+          // (We've removed the heading-text match condition)
           if (
             productImages &&
-            !newLines.some((l) => l.includes('class="product-slideshow"')) &&
-            (
-              linkText.toLowerCase().includes(productImages[0].heading.toLowerCase()) ||
-              currentHeading.toLowerCase().includes(productImages[0].heading.toLowerCase())
-            )
+            !newLines.some((l) => l.includes('class="product-slideshow"'))
           ) {
             newLines.push('');
             newLines.push('<div class="product-slideshow">');
@@ -170,7 +165,7 @@ export function insertImagesIntoContent(
             });
             newLines.push('</div>');
             newLines.push('');
-            // IMPORTANT: We do NOT insert "*[View all photos](${url})*" here
+            // Not inserting "*[View all photos](${url})*"
           }
         }
       }
