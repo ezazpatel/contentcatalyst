@@ -18,13 +18,13 @@ export function MarkdownRenderer({ content }: { content: string }) {
   const [htmlContent, setHtmlContent] = useState("");
 
   useEffect(() => {
-    // Configure marked renderer
+    // Configure marked renderer to preserve our slideshow HTML
     const renderer = new marked.Renderer();
 
+    // Override the HTML rendering to preserve our slideshow divs
     renderer.html = (html: string) => {
-      // Special handling for slideshow divs to ensure they're preserved
       if (html.includes('product-slideshow')) {
-        return `\n<div class="slideshow-wrapper">${html}</div>\n`;
+        return html;
       }
       return html;
     };
@@ -44,22 +44,33 @@ export function MarkdownRenderer({ content }: { content: string }) {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = parsedHtml;
 
-    // Find all slideshows
-    const slideshowDivs = tempDiv.querySelectorAll('div.product-slideshow');
+    // Find all slideshow sections
+    const slideshowSections = tempDiv.innerHTML.split('<!-- slideshow-start -->');
     const newSlideshows: SlideshowData[] = [];
 
-    slideshowDivs.forEach(div => {
-      const images = Array.from(div.querySelectorAll('img')).map(img => ({
+    // Process each section after the first one (which is before any slideshow)
+    slideshowSections.slice(1).forEach(section => {
+      const [slideshowHtml, ...rest] = section.split('<!-- slideshow-end -->');
+
+      // Extract images from the slideshow HTML
+      const tempSlideshow = document.createElement('div');
+      tempSlideshow.innerHTML = slideshowHtml;
+
+      const images = Array.from(tempSlideshow.querySelectorAll('img')).map(img => ({
         url: img.src,
         alt: img.alt,
-        affiliateUrl: img.getAttribute('data-affiliate-url') || undefined
+        affiliateUrl: img.dataset.affiliateUrl
       }));
 
       if (images.length > 0) {
         const productName = images[0].alt.split(' - ')[0] || 'Product';
         newSlideshows.push({ images, productName });
-        // Replace slideshow div with placeholder
-        div.innerHTML = '<!-- slideshow-placeholder -->';
+
+        // Replace slideshow HTML with placeholder
+        tempDiv.innerHTML = tempDiv.innerHTML.replace(
+          slideshowHtml,
+          '<!-- slideshow-placeholder -->'
+        );
       }
     });
 
@@ -67,6 +78,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
     setSlideshows(newSlideshows);
   }, [content]);
 
+  // Split content by slideshow placeholders
   const contentParts = htmlContent.split('<!-- slideshow-placeholder -->');
 
   return (
@@ -74,7 +86,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
       {contentParts.map((part, index) => (
         <div key={index}>
           <div dangerouslySetInnerHTML={{ __html: part }} />
-          {index < slideshows.length && slideshows[index].images.length > 0 && (
+          {index < slideshows.length && (
             <div className="my-8">
               <ProductSlideshow
                 images={slideshows[index].images}
