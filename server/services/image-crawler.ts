@@ -55,11 +55,9 @@ export async function crawlAffiliateLink(url: string, heading: string): Promise<
       const imageUrl = new URL(src, url).toString();
 
       // Only add if it looks like a product image
-      if (
-        alt.toLowerCase().includes('product') ||
-        src.toLowerCase().includes('product') ||
-        alt.length > 20
-      ) {
+      if (alt.toLowerCase().includes('product') || 
+          src.toLowerCase().includes('product') ||
+          alt.length > 20) {
         images.push({
           url: imageUrl,
           alt,
@@ -79,17 +77,16 @@ export async function crawlAffiliateLink(url: string, heading: string): Promise<
 
 export async function matchImagesWithHeadings(
   content: string,
-  affiliateLinks: { name: string; url: string }[]
+  affiliateLinks: { name: string; url: string }[],
 ): Promise<AffiliateImage[]> {
   const headings = content.match(/^##\s+(.+)$/gm) || [];
   const images: AffiliateImage[] = [];
 
   for (const link of affiliateLinks) {
     // Find the most relevant heading for this affiliate link
-    const relevantHeading =
-      headings.find((h) => h.toLowerCase().includes(link.name.toLowerCase())) ||
-      headings[0] ||
-      '## Product Recommendations';
+    const relevantHeading = headings.find(h => 
+      h.toLowerCase().includes(link.name.toLowerCase())
+    ) || headings[0] || '## Product Recommendations';
 
     const heading = relevantHeading.replace(/^##\s+/, '');
 
@@ -108,55 +105,56 @@ export function insertImagesIntoContent(
   const lines = content.split('\n');
   const newLines: string[] = [];
   let currentHeading = '';
-  let inAffiliateLinksSection = false;
 
-  // Group images by affiliate URL + heading
-  const imagesByUrlAndHeading = images.reduce((acc, img) => {
-    const key = `${img.affiliateUrl}|${img.heading}`;
-    if (!acc[key]) {
-      acc[key] = [];
+  // Group images by affiliate URL
+  const imagesByUrl = images.reduce((acc, img) => {
+    if (!acc[img.affiliateUrl]) {
+      acc[img.affiliateUrl] = [];
     }
-    acc[key].push(img);
+    acc[img.affiliateUrl].push(img);
     return acc;
   }, {} as Record<string, AffiliateImage[]>);
 
   for (const line of lines) {
-    // Check if we're entering the affiliate links section
-    if (line.includes('## Top') && line.includes('Recommendations')) {
-      inAffiliateLinksSection = true;
-    }
-    // Check if we're leaving the affiliate links section
-    else if (line.startsWith('## ') && inAffiliateLinksSection) {
-      inAffiliateLinksSection = false;
-    }
-    // Update current heading
-    else if (line.startsWith('## ')) {
-      currentHeading = line.replace(/^##\s+/, '');
-    }
-
     newLines.push(line);
 
-    // Only process images if we're not in the affiliate links section
-    if (!inAffiliateLinksSection) {
-      // Process any line that has a URL in our images collection
-      const urlMatch = line.match(/\(([^)]+)\)/);
-      if (urlMatch) {
-        const [_, url] = urlMatch;
-        const key = `${url}|${currentHeading}`;
-        const productImages = imagesByUrlAndHeading[key];
+    // Check if this is a heading
+    if (line.startsWith('## ')) {
+      currentHeading = line.replace(/^##\s+/, '');
 
-        // Insert images for this URL
-        if (productImages) {
-          newLines.push('');
+      // Find images that belong to affiliate links mentioned in this section
+      Object.entries(imagesByUrl).forEach(([url, productImages]) => {
+        const imagesForHeading = productImages.filter(img => img.heading === currentHeading);
+        if (imagesForHeading.length > 0) {
+          // Generate a slideshow component for this product's images
+          newLines.push(''); // Add blank line
           newLines.push('<div class="product-slideshow">');
-          productImages.forEach((img, index) => {
-            newLines.push(
-              `  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`
-            );
+          imagesForHeading.forEach((img, index) => {
+            newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${imagesForHeading.length}" />`);
           });
           newLines.push('</div>');
-          newLines.push('');
+          newLines.push(`*[View all photos](${url})*`);
+          newLines.push(''); // Add blank line
         }
+      });
+    }
+
+    // Check if this line contains an affiliate link
+    const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
+    if (linkMatch && imagesByUrl[linkMatch[2]] && !line.startsWith('*[View all photos]')) {
+      const [_, linkText, url] = linkMatch;
+      const productImages = imagesByUrl[url];
+
+      // Only insert images if we haven't already inserted them for this URL in this section
+      if (productImages && !newLines.some(l => l.includes(`*[View all photos](${url})*`))) {
+        newLines.push(''); // Add blank line
+        newLines.push('<div class="product-slideshow">');
+        productImages.forEach((img, index) => {
+          newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
+        });
+        newLines.push('</div>');
+        newLines.push(`*[View all photos](${url})*`);
+        newLines.push(''); // Add blank line
       }
     }
   }
