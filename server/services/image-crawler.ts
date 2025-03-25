@@ -55,9 +55,11 @@ export async function crawlAffiliateLink(url: string, heading: string): Promise<
       const imageUrl = new URL(src, url).toString();
 
       // Only add if it looks like a product image
-      if (alt.toLowerCase().includes('product') ||
-          src.toLowerCase().includes('product') ||
-          alt.length > 20) {
+      if (
+        alt.toLowerCase().includes('product') ||
+        src.toLowerCase().includes('product') ||
+        alt.length > 20
+      ) {
         images.push({
           url: imageUrl,
           alt,
@@ -77,16 +79,17 @@ export async function crawlAffiliateLink(url: string, heading: string): Promise<
 
 export async function matchImagesWithHeadings(
   content: string,
-  affiliateLinks: { name: string; url: string }[],
+  affiliateLinks: { name: string; url: string }[]
 ): Promise<AffiliateImage[]> {
   const headings = content.match(/^##\s+(.+)$/gm) || [];
   const images: AffiliateImage[] = [];
 
   for (const link of affiliateLinks) {
     // Find the most relevant heading for this affiliate link
-    const relevantHeading = headings.find(h =>
-      h.toLowerCase().includes(link.name.toLowerCase())
-    ) || headings[0] || '## Product Recommendations';
+    const relevantHeading =
+      headings.find((h) => h.toLowerCase().includes(link.name.toLowerCase())) ||
+      headings[0] ||
+      '## Product Recommendations';
 
     const heading = relevantHeading.replace(/^##\s+/, '');
 
@@ -131,6 +134,7 @@ export function insertImagesIntoContent(
       currentHeading = line.replace(/^##\s+/, '');
     }
 
+    // Push the current line to newLines
     newLines.push(line);
 
     // Only process images if we're not in the affiliate links section
@@ -139,24 +143,35 @@ export function insertImagesIntoContent(
       const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
       if (linkMatch) {
         const [_, linkText, url] = linkMatch;
-        const key = `${url}|${currentHeading}`;
-        const productImages = imagesByUrlAndHeading[key];
 
-        // Only insert images if:
-        // 1. We have images for this URL and heading combination
-        // 2. We haven't already inserted a slideshow in this section
-        // 3. The link text or current heading contains some keywords from the image heading
-        if (productImages &&
-            !newLines.some(l => l.includes(`class="product-slideshow"`)) &&
-            (linkText.toLowerCase().includes(productImages[0].heading.toLowerCase()) ||
-             currentHeading.toLowerCase().includes(productImages[0].heading.toLowerCase()))) {
-          newLines.push(''); // Add blank line
-          newLines.push('<div class="product-slideshow">');
-          productImages.forEach((img, index) => {
-            newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
-          });
-          newLines.push('</div>');
-          newLines.push(''); // Add blank line
+        // Skip lines that start with *[View all photos] (from your snippet)
+        if (!line.startsWith('*[View all photos]')) {
+          const key = `${url}|${currentHeading}`;
+          const productImages = imagesByUrlAndHeading[key];
+
+          // Only insert images if:
+          // 1. We have images for this URL+heading
+          // 2. We haven't already inserted a slideshow in this section
+          // 3. The link text or heading includes the product heading
+          if (
+            productImages &&
+            !newLines.some((l) => l.includes('class="product-slideshow"')) &&
+            (
+              linkText.toLowerCase().includes(productImages[0].heading.toLowerCase()) ||
+              currentHeading.toLowerCase().includes(productImages[0].heading.toLowerCase())
+            )
+          ) {
+            newLines.push('');
+            newLines.push('<div class="product-slideshow">');
+            productImages.forEach((img, index) => {
+              newLines.push(
+                `  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`
+              );
+            });
+            newLines.push('</div>');
+            newLines.push('');
+            // IMPORTANT: We do NOT insert "*[View all photos](${url})*" here
+          }
         }
       }
     }
