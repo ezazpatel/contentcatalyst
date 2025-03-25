@@ -28,3 +28,28 @@ export function Navbar() {
     </nav>
   );
 }
+import { useLocalStorage } from "@/lib/hooks";
+import { Button } from "./ui/button";
+
+export function Navbar() {
+  const [testMode, setTestMode] = useLocalStorage("testMode", false);
+  
+  return (
+    <nav className="border-b py-3 px-4">
+      <div className="container mx-auto flex justify-between items-center">
+        <div className="text-lg font-bold">Blog Manager</div>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={testMode}
+              onChange={(e) => setTestMode(e.target.checked)}
+              className="h-4 w-4"
+            />
+            Test Mode
+          </label>
+        </div>
+      </div>
+    </nav>
+  );
+}
