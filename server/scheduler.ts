@@ -1,6 +1,7 @@
 import { Anthropic } from "@anthropic-ai/sdk";
 import { storage } from "./storage";
 import { BlogPost } from "@shared/schema";
+import { crawlAffiliateLink, matchImagesWithHeadings, insertImagesIntoContent } from "./services/image-crawler";
 
 // Create an Anthropic client
 const client = new Anthropic({
@@ -16,13 +17,16 @@ function convertMarkdownToHTML(content: string): string {
   content = content.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   content = content.replace(/^### (.+)$/gm, '<h3>$1</h3>');
 
+  // Convert images
+  content = content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
   // Convert links - matches [text](url) pattern
   content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
   // Convert paragraphs - add proper spacing
   content = content.split('\n\n').map(para => {
     if (!para.trim()) return '';
-    if (para.startsWith('<h') || para.startsWith('<ul') || para.startsWith('<ol')) {
+    if (para.startsWith('<h') || para.startsWith('<img') || para.startsWith('<ul') || para.startsWith('<ol')) {
       return para;
     }
     return `<p>${para}</p>`;
@@ -35,11 +39,12 @@ async function generateContent(keywords: string[], description: string = "", pos
   content: string;
   title: string;
   description: string;
+  images: any[]; // Added images property
 }> {
   try {
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a blog post about: ${keywords.join(", ")}.
-
+    
 ${post.description ? `
 Additional Context from User:
 ${post.description}` : ""}
@@ -304,6 +309,20 @@ Use proper markdown:
 
     fullContent += conclusionResponse.content[0].text;
 
+    // After content generation, crawl affiliate links and add images
+    console.log("Crawling affiliate links for images...");
+    let images = [];
+
+    if (Array.isArray(post.affiliateLinks)) {
+      try {
+        images = await matchImagesWithHeadings(fullContent, post.affiliateLinks);
+        fullContent = insertImagesIntoContent(fullContent, images);
+        console.log(`Added ${images.length} affiliate product images to the content`);
+      } catch (error) {
+        console.error("Error processing affiliate images:", error);
+      }
+    }
+
     // Calculate word count
     const wordCount = fullContent.split(/\s+/).length;
     console.log(`Generated content with ${wordCount} words`);
@@ -314,11 +333,11 @@ Use proper markdown:
       finalDescription = fullContent.split("\n").slice(2, 4).join(" ").slice(0, 155) + "...";
     }
 
-
     return {
       content: fullContent,
       title: outlineResult.title,
-      description: finalDescription
+      description: finalDescription,
+      images, // Return images so they can be stored in the database
     };
   } catch (error) {
     console.error("Error generating content:", error);
@@ -575,6 +594,10 @@ export async function checkScheduledPosts() {
   const now = new Date();
 
   try {
+    // First check if we're in test mode
+    const settings = await storage.getSettings();
+    console.log(`Current test mode status: ${settings.test_mode}`);
+
     // Get all scheduled posts where the date is in the past and content hasn't been generated yet
     const posts = await storage.getAllBlogPosts();
 
@@ -590,19 +613,6 @@ export async function checkScheduledPosts() {
 
     console.log(`Found ${postsToProcess.length} posts to process`);
 
-    // Log more details about which posts were found
-    if (postsToProcess.length > 0) {
-      postsToProcess.forEach(post => {
-        console.log(`- Post ID ${post.id}: "${post.title || 'Untitled'}" (${post.status}) scheduled for ${new Date(post.scheduledDate).toLocaleString()}`);
-      });
-    } else {
-      // If no posts were found, log a sample of all posts to help diagnose
-      console.log("No posts to process. Here are all available posts:");
-      posts.slice(0, 5).forEach(post => {
-        console.log(`- Post ID ${post.id}: "${post.title || 'Untitled'}" (${post.status}) scheduled for ${post.scheduledDate ? new Date(post.scheduledDate).toLocaleString() : 'not scheduled'}`);
-      });
-    }
-
     // Process each post one by one
     for (const post of postsToProcess) {
       console.log(`Processing post ID ${post.id}: ${post.keywords.join(", ")}`);
@@ -615,20 +625,21 @@ export async function checkScheduledPosts() {
           post
         );
 
-        // Update the post with generated content
+        // Update the post with generated content and images
         const updatedPost = await storage.updateBlogPost(post.id, {
           title: generated.title,
           content: generated.content,
           description: generated.description,
-          status: "published", // Mark as published locally
-          publishedDate: new Date()
+          status: settings.test_mode ? "draft" : "published", // Keep as draft in test mode
+          publishedDate: settings.test_mode ? null : new Date(), // Only set published date if not in test mode
+          affiliateImages: generated.images, // Store the crawled images
         });
 
-        console.log(`Successfully generated content for post ID ${post.id}`);
+        console.log(`Successfully generated content for post ID ${post.id}. Status: ${settings.test_mode ? 'draft (test mode)' : 'published'}`);
 
-        // Now publish to WordPress if credentials are available
-        if (process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
-          console.log(`Attempting to publish post ID ${post.id} to WordPress...`);
+        // WordPress publishing is disabled in test mode
+        if (!settings.test_mode && process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
+          console.log(`Test mode is OFF - attempting to publish post ID ${post.id} to WordPress...`);
 
           try {
             // Create Basic Auth token from username and application password
@@ -682,7 +693,7 @@ export async function checkScheduledPosts() {
             // We continue processing other posts even if WordPress publishing fails
           }
         } else {
-          console.log(`⚠️ WordPress credentials not configured. Post ID ${post.id} was generated but not published to WordPress.`);
+          console.log(`⚠️ Test mode is ON or WordPress credentials not configured. Post ID ${post.id} was generated but NOT published to WordPress.`);
         }
       } catch (error) {
         console.error(`Error processing post ID ${post.id}:`, error);
