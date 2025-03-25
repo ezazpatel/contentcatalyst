@@ -69,27 +69,14 @@ export default function BlogsList() {
       <h1 className="text-3xl font-bold mb-8">Blog Posts</h1>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {sortedPosts.map((post) => (
-          <Card key={post.id} className="group relative flex flex-col overflow-hidden">
-            <Link href={`/view/${post.id}`}>
-              <div className="flex-1 p-6 cursor-pointer hover:bg-accent/50 transition-colors">
-                <div className="text-sm text-muted-foreground mb-2">
-                  Keyword Phrases: {post.keywords.join(", ")}
-                </div>
-                <CardTitle className="line-clamp-2 mb-4">{post.title || "Untitled Post"}</CardTitle>
-                <div className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                  {post.excerpt || (post.content?.slice(0, 150) + "...")}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {post.status === "published" ? "Published" : "Scheduled"}: {format(new Date(post.scheduledDate || new Date()), "PPP")}
-                </div>
-              </div>
-            </Link>
+          <Card key={post.id} className="group relative">
+            {/* Delete button - Always visible but only on non-published posts */}
             {post.status !== "published" && (
-              <div className="absolute top-2 right-2">
+              <div className="absolute top-4 right-4 z-10">
                 <Button
-                  variant="ghost"
+                  variant="destructive"
                   size="icon"
-                  className="bg-background/80 backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -101,10 +88,27 @@ export default function BlogsList() {
                 </Button>
               </div>
             )}
+
+            {/* Card content */}
+            <Link href={`/view/${post.id}`}>
+              <div className="p-6 cursor-pointer hover:bg-accent/50 transition-colors h-full">
+                <div className="text-sm text-muted-foreground mb-2">
+                  Keywords: {post.keywords.join(", ")}
+                </div>
+                <CardTitle className="line-clamp-2 mb-4">{post.title || "Untitled Post"}</CardTitle>
+                <div className="text-sm text-muted-foreground mb-4 line-clamp-3">
+                  {post.excerpt || (post.content?.slice(0, 150) + "...")}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {post.status === "published" ? "Published" : "Scheduled"}: {format(new Date(post.scheduledDate || new Date()), "PPP")}
+                </div>
+              </div>
+            </Link>
           </Card>
         ))}
       </div>
 
+      {/* Delete confirmation dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
