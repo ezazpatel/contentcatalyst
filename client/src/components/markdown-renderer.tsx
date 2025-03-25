@@ -23,8 +23,9 @@ export function MarkdownRenderer({ content }: { content: string }) {
     const renderer = new marked.Renderer();
 
     renderer.html = (html: string) => {
+      // Special handling for slideshow divs to ensure they're preserved
       if (html.includes('product-slideshow')) {
-        return html;
+        return `\n<div class="slideshow-wrapper">${html}</div>\n`;
       }
       return html;
     };
@@ -45,7 +46,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
     tempDiv.innerHTML = parsedHtml;
 
     // Find all slideshows
-    const slideshowDivs = tempDiv.querySelectorAll('.product-slideshow');
+    const slideshowDivs = tempDiv.querySelectorAll('div.product-slideshow');
     const newSlideshows: SlideshowData[] = [];
 
     slideshowDivs.forEach(div => {
@@ -69,8 +70,13 @@ export function MarkdownRenderer({ content }: { content: string }) {
 
   const contentParts = htmlContent.split('<!-- slideshow-placeholder -->');
 
+  useEffect(() => {
+    console.log("Content parts:", contentParts);
+    console.log("Slideshows:", slideshows);
+  }, [contentParts, slideshows]);
+
   return (
-    <div className="prose max-w-none">
+    <div className="prose max-w-none overflow-x-hidden">
       {contentParts.map((part, index) => (
         <div key={index}>
           <div dangerouslySetInnerHTML={{ __html: part }} />
