@@ -145,21 +145,18 @@ export function insertImagesIntoContent(
         // Only insert images if:
         // 1. We have images for this URL and heading combination
         // 2. We haven't already inserted a slideshow in this section
-        // 3. The link text or current heading contains keywords from the image
+        // 3. The link text or current heading contains keywords from the image heading
         if (productImages &&
             !newLines.some(l => l.includes('class="product-slideshow"')) &&
             (linkText.toLowerCase().includes(productImages[0].heading.toLowerCase()) ||
              currentHeading.toLowerCase().includes(productImages[0].heading.toLowerCase()))) {
 
-          // Insert React component placeholder
           newLines.push('');
-          newLines.push('<!-- slideshow-start -->');
           newLines.push('<div class="product-slideshow">');
           productImages.forEach((img, index) => {
             newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
           });
           newLines.push('</div>');
-          newLines.push('<!-- slideshow-end -->');
           newLines.push('');
         }
       }

@@ -31,32 +31,23 @@ export function MarkdownRenderer({ content }: { content: string }) {
 
     marked.setOptions({
       renderer,
-      headerIds: false,
-      mangle: false,
       gfm: true,
       breaks: true
     });
 
     // Convert markdown to HTML
-    const parsedHtml = marked.parse(content);
+    const html = marked(content);
 
     // Create a temporary div to parse the HTML
     const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = parsedHtml;
+    tempDiv.innerHTML = html;
 
-    // Find all slideshow sections
-    const slideshowSections = tempDiv.innerHTML.split('<!-- slideshow-start -->');
+    // Find all slideshow divs
+    const slideshowDivs = tempDiv.querySelectorAll('.product-slideshow');
     const newSlideshows: SlideshowData[] = [];
 
-    // Process each section after the first one (which is before any slideshow)
-    slideshowSections.slice(1).forEach(section => {
-      const [slideshowHtml, ...rest] = section.split('<!-- slideshow-end -->');
-
-      // Extract images from the slideshow HTML
-      const tempSlideshow = document.createElement('div');
-      tempSlideshow.innerHTML = slideshowHtml;
-
-      const images = Array.from(tempSlideshow.querySelectorAll('img')).map(img => ({
+    slideshowDivs.forEach((div, index) => {
+      const images = Array.from(div.querySelectorAll('img')).map(img => ({
         url: img.src,
         alt: img.alt,
         affiliateUrl: img.dataset.affiliateUrl
@@ -66,11 +57,11 @@ export function MarkdownRenderer({ content }: { content: string }) {
         const productName = images[0].alt.split(' - ')[0] || 'Product';
         newSlideshows.push({ images, productName });
 
-        // Replace slideshow HTML with placeholder
-        tempDiv.innerHTML = tempDiv.innerHTML.replace(
-          slideshowHtml,
-          '<!-- slideshow-placeholder -->'
-        );
+        // Replace the original div with a placeholder
+        const placeholder = document.createElement('div');
+        placeholder.className = 'slideshow-placeholder';
+        placeholder.dataset.index = index.toString();
+        div.replaceWith(placeholder);
       }
     });
 
@@ -78,24 +69,28 @@ export function MarkdownRenderer({ content }: { content: string }) {
     setSlideshows(newSlideshows);
   }, [content]);
 
-  // Split content by slideshow placeholders
-  const contentParts = htmlContent.split('<!-- slideshow-placeholder -->');
-
   return (
     <div className="prose max-w-none overflow-x-hidden">
-      {contentParts.map((part, index) => (
-        <div key={index}>
-          <div dangerouslySetInnerHTML={{ __html: part }} />
-          {index < slideshows.length && (
-            <div className="my-8">
-              <ProductSlideshow
-                images={slideshows[index].images}
-                productName={slideshows[index].productName}
-              />
-            </div>
-          )}
-        </div>
-      ))}
+      {htmlContent.split('<div class="slideshow-placeholder"').map((part, index) => {
+        if (index === 0) return <div key="start" dangerouslySetInnerHTML={{ __html: part }} />;
+
+        const [dataIndex, ...rest] = part.split('>');
+        const slideshowIndex = parseInt(dataIndex.match(/data-index="(\d+)"/)?.[1] || "0");
+
+        return (
+          <React.Fragment key={index}>
+            {slideshows[slideshowIndex] && (
+              <div className="my-8">
+                <ProductSlideshow
+                  images={slideshows[slideshowIndex].images}
+                  productName={slideshows[slideshowIndex].productName}
+                />
+              </div>
+            )}
+            <div dangerouslySetInnerHTML={{ __html: rest.join('>') }} />
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }
