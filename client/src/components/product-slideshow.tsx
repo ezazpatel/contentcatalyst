@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 interface ProductImage {
   url: string;
   alt: string;
-  affiliateUrl: string;
+  affiliateUrl?: string;
 }
 
 interface ProductSlideshowProps {
@@ -63,18 +63,24 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
       {images.map((image, index) => (
         <div
           key={index}
-          className={`absolute w-full h-full transition-transform duration-500 ease-in-out ${
-            index === currentIndex ? "translate-x-0" : "translate-x-full"
-          }`}
+          className={`absolute w-full h-full transition-transform duration-500 ease-in-out`}
           style={{ transform: `translateX(${100 * (index - currentIndex)}%)` }}
         >
-          <a href={image.affiliateUrl} target="_blank" rel="noopener noreferrer">
+          {image.affiliateUrl ? (
+            <a href={image.affiliateUrl} target="_blank" rel="noopener noreferrer">
+              <img
+                src={image.url}
+                alt={image.alt || `${productName} Image ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
+            </a>
+          ) : (
             <img
               src={image.url}
-              alt={image.alt || productName}
+              alt={image.alt || `${productName} Image ${index + 1}`}
               className="w-full h-full object-cover"
             />
-          </a>
+          )}
         </div>
       ))}
       
@@ -97,7 +103,7 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
             key={index}
             onClick={() => setCurrentIndex(index)}
             className={`w-2 h-2 rounded-full ${
-              index === currentIndex ? "bg-white" : "bg-white/50"
+              index === currentIndex ? 'bg-white' : 'bg-white/50'
             }`}
           />
         ))}

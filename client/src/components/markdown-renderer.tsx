@@ -1,16 +1,12 @@
+
 import { marked } from "marked";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ProductSlideshow } from "./product-slideshow";
 
 interface ProductImage {
   url: string;
   alt: string;
-  affiliateUrl: string;
-}
-
-interface SlideShowData {
-  images: ProductImage[];
-  productName: string;
+  affiliateUrl?: string;
 }
 
 interface SlideshowData {
@@ -55,7 +51,8 @@ export function MarkdownRenderer({ content }: { content: string }) {
     slideshowDivs.forEach(div => {
       const images = Array.from(div.querySelectorAll('img')).map(img => ({
         url: img.src,
-        alt: img.alt
+        alt: img.alt,
+        affiliateUrl: img.getAttribute('data-affiliate-url') || undefined
       }));
 
       if (images.length > 0) {
@@ -65,8 +62,6 @@ export function MarkdownRenderer({ content }: { content: string }) {
         div.innerHTML = '<!-- slideshow-placeholder -->';
       }
     });
-
-    // Process slideshows that were found earlier
 
     setHtmlContent(tempDiv.innerHTML);
     setSlideshows(newSlideshows);
