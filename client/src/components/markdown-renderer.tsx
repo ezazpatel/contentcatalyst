@@ -1,4 +1,3 @@
-
 import { marked } from "marked";
 import { useEffect, useState } from "react";
 import { ProductSlideshow } from "./product-slideshow";
@@ -69,11 +68,6 @@ export function MarkdownRenderer({ content }: { content: string }) {
   }, [content]);
 
   const contentParts = htmlContent.split('<!-- slideshow-placeholder -->');
-
-  useEffect(() => {
-    console.log("Content parts:", contentParts);
-    console.log("Slideshows:", slideshows);
-  }, [contentParts, slideshows]);
 
   return (
     <div className="prose max-w-none overflow-x-hidden">
