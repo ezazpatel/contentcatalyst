@@ -3,6 +3,23 @@ import { useEffect, useRef } from "react";
 import { createRoot } from 'react-dom/client';
 import { ProductSlideshow } from "./product-slideshow";
 
+// Custom renderer for handling product slideshows
+const renderer = new marked.Renderer();
+renderer.html = (html: string) => {
+  if (html.includes('product-slideshow')) {
+    return html; // Preserve product slideshow HTML blocks
+  }
+  return html;
+};
+
+marked.setOptions({
+  renderer,
+  headerIds: false,
+  mangle: false,
+  gfm: true,
+  breaks: true
+});
+
 interface SlideshowData {
   images: {
     url: string;
