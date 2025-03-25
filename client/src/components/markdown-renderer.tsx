@@ -66,26 +66,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
       }
     });
 
-    // Find product slideshow divs and extract their data
-    const slideshowDivs = tempDiv.getElementsByClassName('product-slideshow');
-    const newSlideshows: SlideShowData[] = [];
-
-    Array.from(slideshowDivs).forEach((div) => {
-      const images = Array.from(div.getElementsByTagName('img')).map((img) => ({
-        url: img.getAttribute('src') || '',
-        alt: img.getAttribute('alt') || '',
-        affiliateUrl: img.getAttribute('data-affiliate-url') || img.getAttribute('src') || '',
-      }));
-      
-      if (images.length > 0) {
-        newSlideshows.push({
-          images,
-          productName: images[0].alt,
-        });
-        // Replace the slideshow div with a placeholder
-        div.outerHTML = '<!-- slideshow-placeholder -->';
-      }
-    });
+    // Process slideshows that were found earlier
 
     setHtmlContent(tempDiv.innerHTML);
     setSlideshows(newSlideshows);
