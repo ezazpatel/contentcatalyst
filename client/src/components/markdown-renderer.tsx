@@ -59,7 +59,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
 
         // Replace the original div with a placeholder
         const placeholder = document.createElement('div');
-        placeholder.className = 'slideshow-placeholder';
+        placeholder.className = 'product-slideshow-placeholder';
         placeholder.dataset.index = index.toString();
         div.replaceWith(placeholder);
       }
@@ -71,7 +71,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
 
   return (
     <div className="prose max-w-none overflow-x-hidden">
-      {htmlContent.split('<div class="slideshow-placeholder"').map((part, index) => {
+      {htmlContent.split('<div class="product-slideshow-placeholder"').map((part, index) => {
         if (index === 0) return <div key="start" dangerouslySetInnerHTML={{ __html: part }} />;
 
         const [dataIndex, ...rest] = part.split('>');
