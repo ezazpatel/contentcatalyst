@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { MarkdownRenderer } from "@/components/markdown-renderer";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Link } from "wouter";
 
 export default function ViewPost() {
@@ -65,7 +66,7 @@ export default function ViewPost() {
           <div className="flex justify-between items-center">
             <div>
               <div className="text-sm text-muted-foreground mb-2">
-                Keywords: {post.keywords.join(", ")}
+                Keyword Phrases: {post.keywords.join(", ")}
               </div>
               <CardTitle className="text-3xl">{post.title}</CardTitle>
             </div>
@@ -84,8 +85,16 @@ export default function ViewPost() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="prose prose-sm max-w-none dark:prose-invert overflow-x-hidden">
-            <MarkdownRenderer content={post.content} />
+          <div className="prose prose-sm max-w-none dark:prose-invert">
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                // Override h1 rendering to prevent duplicate titles
+                h1: () => null
+              }}
+            >
+              {post.content}
+            </ReactMarkdown>
           </div>
 
           {post.affiliateLinks && Object.keys(post.affiliateLinks).length > 0 && (
