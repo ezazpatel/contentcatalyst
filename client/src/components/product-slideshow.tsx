@@ -1,13 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 interface ProductImage {
   url: string;
   alt: string;
+  affiliateUrl: string;
 }
 
 interface ProductSlideshowProps {
@@ -49,63 +46,62 @@ export function ProductSlideshow({ images, productName }: ProductSlideshowProps)
     setTouchEnd(null);
   };
 
-  // Auto-advance slides
   useEffect(() => {
     const timer = setInterval(nextSlide, 5000);
     return () => clearInterval(timer);
   }, []);
 
-  if (!images.length) return null;
+  if (!images || images.length === 0) return null;
 
   return (
-    <Card className="overflow-hidden">
-      <div className="relative w-full">
+    <div 
+      className="relative w-full h-96 overflow-hidden rounded-lg shadow-lg my-4"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {images.map((image, index) => (
         <div
-          className="relative aspect-[16/9]"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+          key={index}
+          className={`absolute w-full h-full transition-transform duration-500 ease-in-out ${
+            index === currentIndex ? "translate-x-0" : "translate-x-full"
+          }`}
+          style={{ transform: `translateX(${100 * (index - currentIndex)}%)` }}
         >
-          {images.map((image, index) => (
-            <div
-              key={index}
-              className={cn(
-                "absolute inset-0 transition-opacity duration-300",
-                currentIndex === index ? "opacity-100" : "opacity-0 pointer-events-none"
-              )}
-            >
-              <img
-                src={image.url}
-                alt={`${productName} - ${image.alt}`}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ))}
-          <div className="absolute inset-0 flex items-center justify-between p-4">
-            <Button
-              variant="outline"
-              size="icon"
-              className="bg-white/80 hover:bg-white"
-              onClick={prevSlide}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="bg-white/80 hover:bg-white"
-              onClick={nextSlide}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          <a href={image.affiliateUrl} target="_blank" rel="noopener noreferrer">
+            <img
+              src={image.url}
+              alt={image.alt || productName}
+              className="w-full h-full object-cover"
+            />
+          </a>
         </div>
-        <div className="p-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            {currentIndex + 1} of {images.length}
-          </p>
-        </div>
+      ))}
+      
+      <button
+        onClick={prevSlide}
+        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full"
+      >
+        ←
+      </button>
+      <button
+        onClick={nextSlide}
+        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full"
+      >
+        →
+      </button>
+      
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+        {images.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentIndex(index)}
+            className={`w-2 h-2 rounded-full ${
+              index === currentIndex ? "bg-white" : "bg-white/50"
+            }`}
+          />
+        ))}
       </div>
-    </Card>
+    </div>
   );
 }
