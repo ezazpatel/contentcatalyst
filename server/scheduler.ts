@@ -425,9 +425,7 @@ The introduction should:
 - Give an overview of what the article will cover
 - End with a transition to the first section: "${outlineResult.outline[0]?.heading || 'First Section'}"
 
-Format your response with proper markdown:
-# ${outlineResult.title}
-
+Format your response as markdown, starting directly with the content:
 [Your introduction here]`;
 
     const introResponse = await client.messages.create({
