@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BlogPost } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { Link } from "wouter";
