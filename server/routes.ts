@@ -102,7 +102,6 @@ function convertMarkdownToHTML(markdown: string): string {
 
   return html;
 }
-}
 
 export async function registerRoutes(app: Express) {
   await runMigrations();
