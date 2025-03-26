@@ -10,31 +10,74 @@ function convertMarkdownToHTML(markdown: string): string {
   const slideshows: string[] = [];
   markdown = markdown.replace(/<div class="product-slideshow">([\s\S]*?)<\/div>/g, (match) => {
     const images = match.match(/<img src="([^"]+)" alt="([^"]+)" \/>/g) || [];
-    const gallery = images.map(img => {
+    const slideshowId = `slideshow-${slideshows.length}`;
+    
+    const slides = images.map((img, index) => {
       const [_, src, alt] = img.match(/<img src="([^"]+)" alt="([^"]+)" \/>/) || [];
-      return `<div class="gallery-item"><img src="${src}" alt="${alt}" /></div>`;
+      return `
+        <div class="slide" style="display: ${index === 0 ? 'block' : 'none'}">
+          <img src="${src}" alt="${alt}" style="width: 100%; height: auto; border-radius: 8px;">
+        </div>`;
     }).join('');
     
     const slideshow = `
-      <div class="product-gallery">
-        ${gallery}
+      <div class="slideshow-container" id="${slideshowId}">
+        ${slides}
+        <button class="prev" onclick="moveSlide('${slideshowId}', -1)">❮</button>
+        <button class="next" onclick="moveSlide('${slideshowId}', 1)">❯</button>
+        <p class="caption">${images[0]?.match(/alt="([^"]+)"/)?.[1] || ''}</p>
         <style>
-          .product-gallery {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
+          .slideshow-container {
+            max-width: 100%;
+            position: relative;
             margin: 20px 0;
           }
-          .product-gallery .gallery-item {
-            flex: 0 1 300px;
-          }
-          .product-gallery img {
+          .slide {
             width: 100%;
-            height: auto;
-            border-radius: 8px;
+          }
+          .prev, .next {
+            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 16px;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            background: rgba(0,0,0,0.5);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .next {
+            right: 0;
+          }
+          .prev {
+            left: 0;
+          }
+          .caption {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
           }
         </style>
+        <script>
+          function moveSlide(slideshowId, direction) {
+            const container = document.getElementById(slideshowId);
+            const slides = container.getElementsByClassName('slide');
+            let activeIndex = Array.from(slides).findIndex(slide => 
+              slide.style.display === 'block'
+            );
+            slides[activeIndex].style.display = 'none';
+            activeIndex = (activeIndex + direction + slides.length) % slides.length;
+            slides[activeIndex].style.display = 'block';
+          }
+        </script>
       </div>
     `;
     slideshows.push(slideshow);
