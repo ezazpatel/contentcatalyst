@@ -46,14 +46,15 @@ export function MarkdownRenderer({ content, images }: Props) {
     // Check for product links in the line
     const linkMatches = Array.from(line.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g));
     
-    // Add the markdown line
+    // Add the markdown line, filtering out image markdown
+    const noImageLine = processedLine.replace(/!\[.*?\]\(.*?\)/g, '');
     elements.push(
       <ReactMarkdown 
         key={`${lineKey}-md`}
         remarkPlugins={[remarkGfm]} 
         rehypePlugins={[rehypeRaw]}
       >
-        {processedLine}
+        {noImageLine}
       </ReactMarkdown>
     );
 
