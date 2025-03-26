@@ -324,8 +324,7 @@ Use proper markdown:
     if (Array.isArray(post.affiliateLinks)) {
       try {
         images = await matchImagesWithHeadings(fullContent, post.affiliateLinks);
-        fullContent = insertImagesIntoContent(fullContent, images);
-        console.log(`Added ${images.length} affiliate product images to the content`);
+        console.log(`Found ${images.length} affiliate product images`);
       } catch (error) {
         console.error("Error processing affiliate images:", error);
       }

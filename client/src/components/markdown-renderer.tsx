@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -25,7 +24,7 @@ function capitalizeWords(text: string): string {
 
 export function MarkdownRenderer({ content, images }: Props) {
   const contentWithoutTitle = content.replace(/^#\s+.*\n+/, '');
-  
+
   // Group images by product code
   const imagesByCode = images.reduce((acc, img) => {
     const code = getProductCode(img.affiliateUrl);
@@ -47,13 +46,13 @@ export function MarkdownRenderer({ content, images }: Props) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const lineKey = `line-${i}`;
-    
+
     // Check for product links in the line
     const linkMatches = Array.from(line.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g));
-    
+
     for (const [_, __, url] of linkMatches) {
       const code = getProductCode(url);
-      
+
       if (!firstOccurrence.has(code)) {
         firstOccurrence.add(code);
         continue;
@@ -71,16 +70,20 @@ export function MarkdownRenderer({ content, images }: Props) {
 
     // Handle heading capitalization
     const processedLine = line.startsWith('## ') ? capitalizeWords(line) : line;
-    
-    elements.push(
-      <ReactMarkdown 
-        key={`${lineKey}-md`}
-        remarkPlugins={[remarkGfm]} 
-        rehypePlugins={[rehypeRaw]}
-      >
-        {processedLine}
-      </ReactMarkdown>
-    );
+
+    // Add the markdown line, filtering out any remaining image markdown
+    const noImageLine = line.replace(/!\[.*?\]\(.*?\)/g, '');
+    if (noImageLine.trim()) {
+      elements.push(
+        <ReactMarkdown 
+          key={`${lineKey}-md`}
+          remarkPlugins={[remarkGfm]} 
+          rehypePlugins={[rehypeRaw]}
+        >
+          {noImageLine}
+        </ReactMarkdown>
+      );
+    }
   }
 
   return <>{elements}</>;
