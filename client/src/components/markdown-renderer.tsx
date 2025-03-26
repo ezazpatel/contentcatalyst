@@ -34,16 +34,6 @@ export function MarkdownRenderer({ content, images }: Props) {
     return acc;
   }, {} as Record<string, AffiliateImage[]>);
 
-  // Group images by product code
-  const imagesByCode = images.reduce((acc, img) => {
-    const code = getProductCode(img.affiliateUrl);
-    if (!acc[code]) {
-      acc[code] = [];
-    }
-    acc[code].push(img);
-    return acc;
-  }, {} as Record<string, AffiliateImage[]>);
-
   for (const line of lines) {
     // Create a more unique key using line content and position
     const lineKey = `md-${line.trim().substring(0, 20)}-${newLines.length}`;
