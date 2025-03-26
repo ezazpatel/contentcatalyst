@@ -21,22 +21,12 @@ interface ViatorProduct {
  * - /d817-5518724P7 -> 5518724P7
  */
 function extractProductCode(url: string): string | null {
-  console.log(`Extracting product code from URL: ${url}`);
   try {
-    // Split the URL by forward slashes and get segments
     const urlParts = new URL(url);
     const pathSegments = urlParts.pathname.split('/').filter(Boolean);
-
-    // Get the last segment before any query parameters
     const lastSegment = pathSegments[pathSegments.length - 1];
-
-    // Extract the product code from the last segment
-    // It could be after 'd###-' or just the code itself
     const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
-    const productCode = codeMatch ? codeMatch[1] : null;
-
-    console.log(`Extracted product code: ${productCode}`);
-    return productCode;
+    return codeMatch ? codeMatch[1] : null;
   } catch (error) {
     console.error('Error parsing URL:', error);
     return null;
@@ -47,9 +37,7 @@ function extractProductCode(url: string): string | null {
  * Fetch product details from Viator API
  */
 async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | null> {
-  console.log(`Fetching Viator product with code: ${productCode}`);
   try {
-    // According to Viator API docs, we need these specific headers
     const headers = {
       'exp-api-key': process.env.VIATOR_API_KEY!,
       'Accept': 'application/json;version=2.0',
@@ -57,14 +45,11 @@ async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | 
       'Cache-Control': 'no-cache',
     };
 
-    console.log('Using headers:', JSON.stringify(headers, null, 2));
-
     const response = await fetch(`${VIATOR_BASE_URL}/products/${productCode}`, {
       headers
     });
 
     const responseText = await response.text();
-    console.log(`Viator API Response for ${productCode}:`, responseText);
 
     if (!response.ok) {
       console.error(`Error fetching Viator product ${productCode}:`, responseText);
