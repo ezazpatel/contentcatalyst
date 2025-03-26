@@ -209,7 +209,8 @@ export async function registerRoutes(app: Express) {
                 _yoast_wpseo_metadesc: post.seoDescription || '',
                 _yoast_wpseo_title: post.seoTitle || '',
               },
-            })
+            }),
+            timeout: 120000 // Added timeout
           });
 
           if (!response.ok) {
@@ -295,7 +296,8 @@ export async function registerRoutes(app: Express) {
             _yoast_wpseo_metadesc: req.body.seoDescription || '',
             _yoast_wpseo_title: req.body.seoTitle || '',
           },
-        })
+        }),
+        timeout: 120000 // Added timeout
       });
 
       if (!response.ok) {
@@ -342,7 +344,8 @@ export async function registerRoutes(app: Express) {
           'Content-Type': 'application/json',
           'Authorization': `Basic ${authToken}`,
           'Accept': 'application/json'
-        }
+        },
+        timeout: 120000 // Added timeout
       });
 
       const responseData = await response.text();
