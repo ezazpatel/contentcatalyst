@@ -230,7 +230,12 @@ ${post.internalLinks
 
 Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
 Focus on providing valuable information and real experiences, using keywords only where they naturally fit into the narrative. Prioritize reader engagement over keyword placement.
-Do not include any image markdown (no ![alt](url) syntax) - images will be handled separately.
+
+Rules for content:
+1. Do NOT include any image markdown syntax (no ![alt](url))
+2. Do NOT include any product/affiliate links more than once per section
+3. When mentioning a product, only use the exact product name without additional text in the link
+4. Place affiliate links naturally within the text, not as lists or groups
 
 Also create content for these subheadings:
 ${section.subheadings.map(subheading => `- ## ${subheading}`).join('\n')}
