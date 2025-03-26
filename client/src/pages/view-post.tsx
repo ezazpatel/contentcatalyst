@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { Link } from "wouter";
+import ProductSlideshow from "@/components/product-slideshow";
 
 export default function ViewPost() {
   const [match, params] = useRoute<{ id: string }>("/view/:id");
@@ -85,9 +86,7 @@ export default function ViewPost() {
         </CardHeader>
         <CardContent>
           <div className="prose prose-sm md:prose-base lg:prose-lg xl:prose-xl max-w-none dark:prose-invert mx-auto px-4 sm:px-6 lg:px-8">
-            <MarkdownRenderer 
-              content={post.content.replace(/^#\s+.*\n/, '')}
-            />
+            <MarkdownRenderer content={post.content} images={post.affiliateImages} />
           </div>
 
           {post.affiliateLinks && Object.keys(post.affiliateLinks).length > 0 && (
