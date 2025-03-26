@@ -16,12 +16,10 @@ async function fetchWithTimeout(url: string, timeout = 5000) {
 }
 
 export async function crawlAffiliateLink(url: string, heading: string): Promise<AffiliateImage[]> {
-  // Check if it's a Viator link first
   if (isViatorLink(url)) {
     return await getViatorImages(url, heading);
   }
 
-  // Otherwise, fallback to web crawling
   try {
     const response = await fetchWithTimeout(url);
     if (!response.ok) {
@@ -33,29 +31,24 @@ export async function crawlAffiliateLink(url: string, heading: string): Promise<
     const $ = cheerio.load(html);
     const images: AffiliateImage[] = [];
 
-    // Look for product images with good resolution
     $('img').each((_, element) => {
       const img = $(element);
       const src = img.attr('src');
       const alt = img.attr('alt') || '';
 
-      // Skip small images, icons, and logos
       const width = parseInt(img.attr('width') || '0');
       const height = parseInt(img.attr('height') || '0');
       if ((width > 0 && width < 200) || (height > 0 && height < 200)) {
         return;
       }
 
-      // Skip if no src or if it's a data URL
       if (!src || src.startsWith('data:')) {
         return;
       }
 
-      // Convert relative URLs to absolute
       const imageUrl = new URL(src, url).toString();
 
-      // Only add if it looks like a product image
-      if (alt.toLowerCase().includes('product') || 
+      if (alt.toLowerCase().includes('product') ||
           src.toLowerCase().includes('product') ||
           alt.length > 20) {
         images.push({
@@ -83,14 +76,12 @@ export async function matchImagesWithHeadings(
   const images: AffiliateImage[] = [];
 
   for (const link of affiliateLinks) {
-    // Find the most relevant heading for this affiliate link
-    const relevantHeading = headings.find(h => 
+    const relevantHeading = headings.find(h =>
       h.toLowerCase().includes(link.name.toLowerCase())
     ) || headings[0] || '## Product Recommendations';
 
     const heading = relevantHeading.replace(/^##\s+/, '');
 
-    // Get images using the appropriate method (Viator API or web crawling)
     const productImages = await crawlAffiliateLink(link.url, heading);
     images.push(...productImages);
   }
@@ -98,66 +89,109 @@ export async function matchImagesWithHeadings(
   return images;
 }
 
-export function insertImagesIntoContent(
-  content: string,
-  images: AffiliateImage[]
-): string {
+export function insertImagesIntoContent(content: string, images: AffiliateImage[]): string {
+  if (!images.length) return content;
+
   const lines = content.split('\n');
   const newLines: string[] = [];
-  let currentHeading = '';
+  let inRecommendationsSection = false;
+  const usedCodes = new Set<string>();
 
-  // Group images by affiliate URL
-  const imagesByUrl = images.reduce((acc, img) => {
-    if (!acc[img.affiliateUrl]) {
-      acc[img.affiliateUrl] = [];
+  // Group images by product code
+  const imagesByCode = images.reduce((acc, img) => {
+    const code = getProductCode(img.affiliateUrl);
+    if (!acc[code]) {
+      acc[code] = [];
     }
-    acc[img.affiliateUrl].push(img);
+    acc[code].push(img);
     return acc;
   }, {} as Record<string, AffiliateImage[]>);
 
   for (const line of lines) {
-    newLines.push(line);
-
-    // Check if this is a heading
-    if (line.startsWith('## ')) {
-      currentHeading = line.replace(/^##\s+/, '');
-
-      // Find images that belong to affiliate links mentioned in this section
-      Object.entries(imagesByUrl).forEach(([url, productImages]) => {
-        const imagesForHeading = productImages.filter(img => img.heading === currentHeading);
-        if (imagesForHeading.length > 0) {
-          // Generate a slideshow component for this product's images
-          newLines.push(''); // Add blank line
-          newLines.push('<div class="product-slideshow">');
-          imagesForHeading.forEach((img, index) => {
-            newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${imagesForHeading.length}" />`);
-          });
-          newLines.push('</div>');
-          newLines.push(`*[View all photos](${url})*`);
-          newLines.push(''); // Add blank line
-        }
-      });
+    // Skip adding slideshows in the recommendations section
+    if (line.includes('## Top') && line.includes('Recommendations')) {
+      inRecommendationsSection = true;
+    } else if (line.startsWith('## ') && inRecommendationsSection) {
+      inRecommendationsSection = false;
     }
 
-    // Check if this line contains an affiliate link
-    const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-    if (linkMatch && imagesByUrl[linkMatch[2]] && !line.startsWith('*[View all photos]')) {
-      const [_, linkText, url] = linkMatch;
-      const productImages = imagesByUrl[url];
+    newLines.push(line);
 
-      // Only insert images if we haven't already inserted them for this URL in this section
-      if (productImages && !newLines.some(l => l.includes(`*[View all photos](${url})*`))) {
-        newLines.push(''); // Add blank line
-        newLines.push('<div class="product-slideshow">');
-        productImages.forEach((img, index) => {
-          newLines.push(`  <img src="${img.url}" alt="${img.alt}" data-index="${index}" data-total="${productImages.length}" />`);
-        });
-        newLines.push('</div>');
-        newLines.push(`*[View all photos](${url})*`);
-        newLines.push(''); // Add blank line
+    if (!inRecommendationsSection) {
+      const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
+      if (linkMatch) {
+        const [_, linkText, url] = linkMatch;
+        const code = getProductCode(url);
+        const productImages = imagesByCode[code];
+
+        if (productImages?.length > 0 && !usedCodes.has(code)) {
+          usedCodes.add(code);
+          newLines.push(line);
+          newLines.push('');
+          newLines.push('<div class="product-slideshow">');
+          productImages.forEach(img => {
+            newLines.push(`<img src="${img.url}" alt="${img.alt}" />`);
+          });
+          newLines.push('</div>');
+        }
       }
     }
   }
 
   return newLines.join('\n');
+}
+
+function getProductCode(url: string): string {
+  // Implement your logic to extract product code from URL here.  This is a placeholder.
+  //  For example, you might use a regular expression to extract a code from the URL.
+  return url.split('/').pop() || '';
+}
+
+
+import { AffiliateImage } from '@shared/schema';
+
+interface ContentSection {
+  text: string;
+  images: AffiliateImage[];
+}
+
+export function processContentWithImages(
+  content: string,
+  images: AffiliateImage[]
+): ContentSection[] {
+  const sections: ContentSection[] = [];
+  const lines = content.split('\n');
+  let currentText: string[] = [];
+  let currentHeading = '';
+
+  const imagesByHeading = images.reduce((acc, img) => {
+    if (!acc[img.heading]) {
+      acc[img.heading] = [];
+    }
+    acc[img.heading].push(img);
+    return acc;
+  }, {} as Record<string, AffiliateImage[]>);
+
+  for (const line of lines) {
+    if (line.startsWith('## ')) {
+      if (currentText.length > 0) {
+        sections.push({
+          text: currentText.join('\n'),
+          images: imagesByHeading[currentHeading] || []
+        });
+        currentText = [];
+      }
+      currentHeading = line.replace(/^##\s+/, '');
+    }
+    currentText.push(line);
+  }
+
+  if (currentText.length > 0) {
+    sections.push({
+      text: currentText.join('\n'),
+      images: imagesByHeading[currentHeading] || []
+    });
+  }
+
+  return sections;
 }

@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { Link } from "wouter";
+import ProductSlideshow from "@/components/product-slideshow";
 
 export default function ViewPost() {
   const [match, params] = useRoute<{ id: string }>("/view/:id");
@@ -48,37 +48,36 @@ export default function ViewPost() {
   }
 
   if (isLoading) {
-    return <div className="mx-auto py-8">Loading...</div>;
+    return <div className="container mx-auto py-8">Loading...</div>;
   }
 
   if (!post) {
     return (
-      <div className="mx-auto py-8">
+      <div className="container mx-auto py-8">
         Post not found. <Link href="/blogs"><Button>Back to Posts</Button></Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Card className="max-w-none">
+    <div className="w-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Card className="w-full">
         <CardHeader>
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+          <div className="flex justify-between items-center">
             <div>
-              <div className="text-sm text-muted-foreground mb-2 break-words">
+              <div className="text-sm text-muted-foreground mb-2">
                 Keyword Phrases: {post.keywords.join(", ")}
               </div>
-              <CardTitle className="text-2xl md:text-3xl">{post.title}</CardTitle>
+              <CardTitle className="text-3xl">{post.title}</CardTitle>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
+            <div className="flex gap-4">
               <Link href="/blogs">
-                <Button variant="outline" className="w-full sm:w-auto">Back to Posts</Button>
+                <Button variant="outline">Back to Posts</Button>
               </Link>
               <Button 
                 variant="secondary"
                 onClick={() => republishToWordPress.mutate()}
                 disabled={republishToWordPress.isPending}
-                className="w-full sm:w-auto"
               >
                 {republishToWordPress.isPending ? "Publishing..." : "Republish to WordPress"}
               </Button>
@@ -86,16 +85,8 @@ export default function ViewPost() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="prose prose-sm max-w-none dark:prose-invert">
-            <ReactMarkdown 
-              remarkPlugins={[remarkGfm]}
-              components={{
-                // Override h1 rendering to prevent duplicate titles
-                h1: () => null
-              }}
-            >
-              {post.content}
-            </ReactMarkdown>
+          <div className="prose prose-sm md:prose-base lg:prose-lg xl:prose-xl max-w-none dark:prose-invert mx-auto px-4 sm:px-6 lg:px-8">
+            <MarkdownRenderer content={post.content} images={post.affiliateImages} />
           </div>
 
           {post.affiliateLinks && Object.keys(post.affiliateLinks).length > 0 && (
