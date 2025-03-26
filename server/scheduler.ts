@@ -129,10 +129,10 @@ Write an engaging introduction (150-200 words) for "${outlineResult.title}".
 Include:
 - A hook that grabs attention
 - Brief mention of key benefits readers will get
-- Natural transition to the first section: "'First Section'}"
+- Natural transition to the first section: "${outlineResult.outline[0]?.heading || 'First Section'}"
 
-Format your response as markdown, starting directly with the content:
-[Your introduction here, without including the title]`;
+Format your response:
+[Your introduction here]`;
 
     const introResponse = await client.messages.create({
       model: ANTHROPIC_MODEL,
@@ -503,7 +503,7 @@ ${validAffiliateLinks.map(link => {
 - Only include factual information. Do not make up any details.
 ${affiliateLinksInstruction}
 
-Write a detailed section (200-300 words) for the heading "${section.heading}".
+Write a detailed section (200-300 words) for the heading "${section.heading}" that's part of an article titled "${outlineResult.title}".
 Include rich details, examples, personal anecdotes, and naturally place affiliate links where relevant.
 
 Also create content for these subheadings:

@@ -14,37 +14,15 @@ function capitalizeWords(str: string): string {
 }
 
 export function MarkdownRenderer({ content }: Props) {
-  // First extract the title from the content
-  const titleMatch = content.match(/^# (.*)\n/);
-  const title = titleMatch ? titleMatch[1] : '';
-  
-  const lines = content.split('\n');
+  // Skip the first line if it's an H1 heading (title)
+  const lines = content.split('\n').filter((line, index) => 
+    !(index === 0 && line.startsWith('# '))
+  );
   const newLines: (string | JSX.Element)[] = [];
   
   // Process slideshow divs
   let currentSlideshow: AffiliateImage[] = [];
   let inSlideshow = false;
-
-  // Skip lines that match the title
-  let skipNextLine = false;
-  for (let i = 0; i < lines.length; i++) {
-    if (skipNextLine) {
-      skipNextLine = false;
-      continue;
-    }
-    // Skip if this line matches the title
-    if (lines[i].trim() === `# ${title}`) {
-      skipNextLine = true; // Skip the next line which is usually empty
-      continue;
-    }
-    newLines.push(lines[i]);
-  }
-
-  return (
-    <div className="prose prose-lg max-w-none">
-      {newLines.join('\n')}
-    </div>
-  );
 
   for (const line of lines) {
     const lineKey = `md-${line.trim().substring(0, 20)}-${newLines.length}`;
