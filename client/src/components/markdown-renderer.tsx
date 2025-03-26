@@ -30,8 +30,10 @@ export function MarkdownRenderer({ content, images }: Props) {
   }, {} as Record<string, AffiliateImage[]>);
 
   for (const line of lines) {
+    // Create a more unique key using line content and position
+    const lineKey = `md-${line.trim().substring(0, 20)}-${newLines.length}`;
     newLines.push(
-      <ReactMarkdown key={`md-${line}`} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+      <ReactMarkdown key={lineKey} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
         {line}
       </ReactMarkdown>
     );
@@ -39,7 +41,9 @@ export function MarkdownRenderer({ content, images }: Props) {
     const linkMatches = Array.from(line.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g));
     for (const match of linkMatches) {
       const [_, linkText, url] = match;
+      if (!url?.trim()) continue;
       const code = getProductCode(url);
+      if (!code) continue;
       
       if (!firstOccurrence.has(code)) {
         firstOccurrence.add(code);
