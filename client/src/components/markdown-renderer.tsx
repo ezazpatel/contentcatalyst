@@ -3,7 +3,7 @@ import * as React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import { ProductSlideshow } from './product-slideshow';
+import ProductSlideshow from './product-slideshow';
 import type { AffiliateImage } from '@shared/schema';
 
 interface Props {
