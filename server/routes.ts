@@ -14,18 +14,20 @@ function convertMarkdownToHTML(markdown: string): string {
     // Create a simple gallery div that WordPress can handle
     const gallery = images.map((img) => {
       const [_, src, alt] = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/) || [];
-      return `
-        <figure class="wp-block-image">
-          <img src="${src}" alt="${alt}" class="wp-image"/>
-          <figcaption>${alt}</figcaption>
-        </figure>`;
-    }).join('\n');
+      return `{"url":"${src}","caption":"${alt}","id":""}`;
+    }).join(',');
 
     const slideshow = `
-      <div class="wp-block-gallery">
-        ${gallery}
-      </div>
-    `;
+<!-- wp:gallery {"linkTo":"none"} -->
+<figure class="wp-block-gallery has-nested-images columns-default is-cropped">
+${images.map((img) => {
+  const [_, src, alt] = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/) || [];
+  return `<!-- wp:image {"sizeSlug":"large"} -->
+<figure class="wp-block-image size-large"><img src="${src}" alt="${alt}"/><figcaption class="wp-element-caption">${alt}</figcaption></figure>
+<!-- /wp:image -->`;
+}).join('\n')}
+</figure>
+<!-- /wp:gallery -->`;
     
     slideshows.push(slideshow);
     return `{{SLIDESHOW_PLACEHOLDER_${slideshows.length - 1}}}`;
