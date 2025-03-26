@@ -48,19 +48,19 @@ export default function ViewPost() {
   }
 
   if (isLoading) {
-    return <div className="container mx-auto py-8">Loading...</div>;
+    return <div className="mx-auto py-8">Loading...</div>;
   }
 
   if (!post) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="mx-auto py-8">
         Post not found. <Link href="/blogs"><Button>Back to Posts</Button></Link>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="px-4 py-8">
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
