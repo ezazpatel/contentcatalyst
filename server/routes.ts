@@ -18,16 +18,14 @@ function convertMarkdownToHTML(markdown: string): string {
     }).join(',');
 
     const slideshow = `
-<!-- wp:gallery {"linkTo":"none"} -->
-<figure class="wp-block-gallery has-nested-images columns-default is-cropped">
+<!-- wp:html -->
+<div class="custom-carousel">
 ${images.map((img) => {
   const [_, src, alt] = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/) || [];
-  return `<!-- wp:image {"sizeSlug":"large"} -->
-<figure class="wp-block-image size-large"><img src="${src}" alt="${alt}"/><figcaption class="wp-element-caption">${alt}</figcaption></figure>
-<!-- /wp:image -->`;
+  return `  <div class="slide"><img src="${src}" alt="${alt}" /><div class="caption">${alt}</div></div>`;
 }).join('\n')}
-</figure>
-<!-- /wp:gallery -->`;
+</div>
+<!-- /wp:html -->`;
     
     slideshows.push(slideshow);
     return `{{SLIDESHOW_PLACEHOLDER_${slideshows.length - 1}}}`;
