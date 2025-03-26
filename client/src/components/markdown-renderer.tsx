@@ -3,16 +3,12 @@ import * as React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import { AffiliateImage } from "@shared/schema";
-import ProductSlideshow from "@/components/product-slideshow";
+import { ProductSlideshow } from './product-slideshow';
+import type { AffiliateImage } from '@shared/schema';
 
 interface Props {
   content: string;
   images: AffiliateImage[];
-}
-
-function capitalizeWords(str: string): string {
-  return str.replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
 function getProductCode(url: string): string {
@@ -20,9 +16,8 @@ function getProductCode(url: string): string {
 }
 
 export function MarkdownRenderer({ content, images }: Props) {
-  // Remove title and empty lines at start
   const contentWithoutTitle = content.replace(/^#\s+.*\n+/, '');
-  
+
   // Group images by product code
   const imagesByCode = images.reduce((acc, img) => {
     const code = getProductCode(img.affiliateUrl);
@@ -33,27 +28,35 @@ export function MarkdownRenderer({ content, images }: Props) {
     return acc;
   }, {} as Record<string, AffiliateImage[]>);
 
-  // Track used codes and first occurrences
+  // Track used codes to prevent duplicate rendering
   const usedCodes = new Set<string>();
-  const firstOccurrence = new Set<string>();
 
   // Process content line by line
-  const processedLines = contentWithoutTitle.split('\n').map((line, index) => {
-    let elements: JSX.Element[] = [];
-    const lineKey = `line-${index}`;
+  const lines = contentWithoutTitle.split('\n');
+  const elements: JSX.Element[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineKey = `line-${i}`;
 
     // Handle heading capitalization
     const processedLine = line.startsWith('## ') ? capitalizeWords(line) : line;
+
+    // Check for product links in the line
+    const linkMatches = Array.from(line.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g));
     
     // Add the markdown line
     elements.push(
-      <ReactMarkdown key={`${lineKey}-md`} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+      <ReactMarkdown 
+        key={`${lineKey}-md`}
+        remarkPlugins={[remarkGfm]} 
+        rehypePlugins={[rehypeRaw]}
+      >
         {processedLine}
       </ReactMarkdown>
     );
 
-    // Handle product slideshows
-    const linkMatches = Array.from(line.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g));
+    // Add slideshow after the line containing the product link
     for (const match of linkMatches) {
       const [_, linkText, url] = match;
       if (!url?.trim()) continue;
@@ -61,25 +64,26 @@ export function MarkdownRenderer({ content, images }: Props) {
       const code = getProductCode(url);
       if (!code) continue;
 
-      if (!firstOccurrence.has(code)) {
-        firstOccurrence.add(code);
-        continue;
-      }
-
       if (!usedCodes.has(code) && imagesByCode[code]?.length > 0) {
         usedCodes.add(code);
         elements.push(
-          <ProductSlideshow key={`${lineKey}-slideshow-${code}`} images={imagesByCode[code]} productCode={code} />
+          <ProductSlideshow 
+            key={`${lineKey}-slideshow-${code}`} 
+            images={imagesByCode[code]} 
+            productCode={code} 
+          />
         );
       }
     }
-
-    return elements;
-  }).flat();
+  }
 
   return (
     <div className="prose prose-sm w-full max-w-none dark:prose-invert lg:prose-base">
-      {processedLines}
+      {elements}
     </div>
   );
+}
+
+function capitalizeWords(str: string): string {
+  return str.replace(/\b\w/g, (match) => match.toUpperCase());
 }
