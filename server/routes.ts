@@ -10,76 +10,23 @@ function convertMarkdownToHTML(markdown: string): string {
   const slideshows: string[] = [];
   markdown = markdown.replace(/<div class="product-slideshow">([\s\S]*?)<\/div>/g, (match) => {
     const images = match.match(/<img src="([^"]+)" alt="([^"]+)" \/>/g) || [];
-    const slideshowId = `slideshow-${slideshows.length}`;
-
-    const slides = images.map((img, index) => {
+    
+    // Create a simple gallery div that WordPress can handle
+    const gallery = images.map((img) => {
       const [_, src, alt] = img.match(/<img src="([^"]+)" alt="([^"]+)" \/>/) || [];
       return `
-        <div class="slide" style="display: ${index === 0 ? 'block' : 'none'}">
-          <img src="${src}" alt="${alt}" style="width: 100%; height: auto; border-radius: 8px;">
-        </div>`;
-    }).join('');
+        <figure class="wp-block-image">
+          <img src="${src}" alt="${alt}" class="wp-image"/>
+          <figcaption>${alt}</figcaption>
+        </figure>`;
+    }).join('\n');
 
     const slideshow = `
-      <div class="slideshow-container" id="${slideshowId}">
-        ${slides}
-        <button class="prev" onclick="moveSlide('${slideshowId}', -1)">❮</button>
-        <button class="next" onclick="moveSlide('${slideshowId}', 1)">❯</button>
-        <p class="caption">${images[0]?.match(/alt="([^"]+)"/)?.[1] || ''}</p>
-        <style>
-          .slideshow-container {
-            max-width: 100%;
-            position: relative;
-            margin: 20px 0;
-          }
-          .slide {
-            width: 100%;
-          }
-          .prev, .next {
-            cursor: pointer;
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            padding: 16px;
-            color: white;
-            font-weight: bold;
-            font-size: 18px;
-            background: rgba(0,0,0,0.5);
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          .next {
-            right: 0;
-          }
-          .prev {
-            left: 0;
-          }
-          .caption {
-            text-align: center;
-            font-size: 14px;
-            color: #666;
-            margin-top: 8px;
-          }
-        </style>
-        <script>
-          function moveSlide(slideshowId, direction) {
-            const container = document.getElementById(slideshowId);
-            const slides = container.getElementsByClassName('slide');
-            let activeIndex = Array.from(slides).findIndex(slide => 
-              slide.style.display === 'block'
-            );
-            slides[activeIndex].style.display = 'none';
-            activeIndex = (activeIndex + direction + slides.length) % slides.length;
-            slides[activeIndex].style.display = 'block';
-          }
-        </script>
+      <div class="wp-block-gallery">
+        ${gallery}
       </div>
     `;
+    
     slideshows.push(slideshow);
     return `{{SLIDESHOW_PLACEHOLDER_${slideshows.length - 1}}}`;
   });
