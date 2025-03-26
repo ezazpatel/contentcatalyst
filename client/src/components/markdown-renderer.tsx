@@ -17,9 +17,7 @@ function capitalizeWords(str: string): string {
 }
 
 export function MarkdownRenderer({ content, images }: Props) {
-  // Remove title and empty lines at start
-  const contentWithoutTitle = content.replace(/^#\s+.*\n\n?/, '');
-  const lines = contentWithoutTitle.split('\n');
+  const lines = content.split('\n');
   const newLines: (string | JSX.Element)[] = [];
   const usedCodes = new Set<string>();
   const firstOccurrence = new Set<string>();
