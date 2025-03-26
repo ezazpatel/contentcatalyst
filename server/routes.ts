@@ -9,11 +9,11 @@ function convertMarkdownToHTML(markdown: string): string {
   // First extract and save product slideshow divs
   const slideshows: string[] = [];
   markdown = markdown.replace(/<div class="product-slideshow">([\s\S]*?)<\/div>/g, (match) => {
-    const images = match.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"[\/\s]*>/g) || [];
+    const images = match.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/g) || [];
     
     // Create a simple gallery div that WordPress can handle
     const gallery = images.map((img) => {
-      const [_, src, alt] = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"[\/\s]*>/) || [];
+      const [_, src, alt] = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/) || [];
       return `
         <figure class="wp-block-image">
           <img src="${src}" alt="${alt}" class="wp-image"/>
