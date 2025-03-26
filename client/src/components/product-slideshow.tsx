@@ -28,7 +28,7 @@ export default function ProductSlideshow({ images, productCode }: ProductSlidesh
         alt={images[currentIndex].alt}
         className="w-full h-64 object-cover rounded-lg"
       />
-      <p className="text-center text-sm text-gray-500 mt-2">Product code: {productCode}</p>
+      <p className="text-center text-sm text-gray-500 mt-2">{images[0].heading}</p>
       {images.length > 1 && (
         <div className="absolute inset-0 flex items-center justify-between p-4">
           <Button
