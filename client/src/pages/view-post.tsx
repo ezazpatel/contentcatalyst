@@ -59,7 +59,9 @@ export default function ViewPost() {
       <Card>
         <CardContent className="pt-6">
           <div className="prose prose-lg max-w-none">
-            <MarkdownRenderer content={post.content} />
+            <MarkdownRenderer 
+              content={post.content.replace(/^#\s+.*\n/, '')} 
+            />
           </div>
         </CardContent>
       </Card>
