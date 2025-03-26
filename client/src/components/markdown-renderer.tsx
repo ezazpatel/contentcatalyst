@@ -28,7 +28,8 @@ export function MarkdownRenderer({ content, images }: Props) {
     return acc;
   }, {} as Record<string, AffiliateImage[]>);
 
-  // Track used codes to prevent duplicate rendering
+  // Track first occurrences and used codes
+  const firstOccurrence = new Set<string>();
   const usedCodes = new Set<string>();
 
   // Process content line by line
@@ -63,6 +64,11 @@ export function MarkdownRenderer({ content, images }: Props) {
       
       const code = getProductCode(url);
       if (!code) continue;
+
+      if (!firstOccurrence.has(code)) {
+        firstOccurrence.add(code);
+        continue;
+      }
 
       if (!usedCodes.has(code) && imagesByCode[code]?.length > 0) {
         usedCodes.add(code);
