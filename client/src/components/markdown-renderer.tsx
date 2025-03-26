@@ -12,6 +12,10 @@ interface Props {
 
 import { getProductCode } from '@/utils/url-helpers';
 
+function capitalizeWords(str: string): string {
+  return str.replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
 export function MarkdownRenderer({ content, images }: Props) {
   // Remove title and empty lines at start
   const contentWithoutTitle = content.replace(/^#\s+.*\n\n?/, '');
@@ -33,11 +37,20 @@ export function MarkdownRenderer({ content, images }: Props) {
   for (const line of lines) {
     // Create a more unique key using line content and position
     const lineKey = `md-${line.trim().substring(0, 20)}-${newLines.length}`;
-    newLines.push(
-      <ReactMarkdown key={lineKey} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-        {line}
-      </ReactMarkdown>
-    );
+    
+    if (line.startsWith('## ')) {
+      const heading = capitalizeWords(line.substring(3));
+      newLines.push(
+        <h2 key={lineKey}>{heading}</h2>
+      );
+    } else {
+      newLines.push(
+        <ReactMarkdown key={lineKey} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+          {line}
+        </ReactMarkdown>
+      );
+    }
+
 
     const linkMatches = Array.from(line.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g));
     for (const match of linkMatches) {
