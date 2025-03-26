@@ -60,24 +60,25 @@ export default function ViewPost() {
   }
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto px-4 py-8">
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
             <div>
-              <div className="text-sm text-muted-foreground mb-2">
+              <div className="text-sm text-muted-foreground mb-2 break-words">
                 Keyword Phrases: {post.keywords.join(", ")}
               </div>
-              <CardTitle className="text-3xl">{post.title}</CardTitle>
+              <CardTitle className="text-2xl md:text-3xl">{post.title}</CardTitle>
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
               <Link href="/blogs">
-                <Button variant="outline">Back to Posts</Button>
+                <Button variant="outline" className="w-full sm:w-auto">Back to Posts</Button>
               </Link>
               <Button 
                 variant="secondary"
                 onClick={() => republishToWordPress.mutate()}
                 disabled={republishToWordPress.isPending}
+                className="w-full sm:w-auto"
               >
                 {republishToWordPress.isPending ? "Publishing..." : "Republish to WordPress"}
               </Button>
