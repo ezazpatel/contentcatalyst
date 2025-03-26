@@ -132,8 +132,6 @@ Include:
 - Natural transition to the first section: "${outlineResult.outline[0]?.heading || 'First Section'}"
 
 Format your response:
-${outlineResult.title}
-
 [Your introduction here]`;
 
     const introResponse = await client.messages.create({
