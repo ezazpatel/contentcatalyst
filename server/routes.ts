@@ -11,7 +11,7 @@ function convertMarkdownToHTML(markdown: string): string {
   markdown = markdown.replace(/<div class="product-slideshow">([\s\S]*?)<\/div>/g, (match) => {
     const images = match.match(/<img src="([^"]+)" alt="([^"]+)" \/>/g) || [];
     const slideshowId = `slideshow-${slideshows.length}`;
-    
+
     const slides = images.map((img, index) => {
       const [_, src, alt] = img.match(/<img src="([^"]+)" alt="([^"]+)" \/>/) || [];
       return `
@@ -19,7 +19,7 @@ function convertMarkdownToHTML(markdown: string): string {
           <img src="${src}" alt="${alt}" style="width: 100%; height: auto; border-radius: 8px;">
         </div>`;
     }).join('');
-    
+
     const slideshow = `
       <div class="slideshow-container" id="${slideshowId}">
         ${slides}
@@ -284,7 +284,11 @@ export async function registerRoutes(app: Express) {
         },
         body: JSON.stringify({
           title: { raw: req.body.title },
-          content: { raw: htmlContent },
+          content: { 
+            raw: htmlContent,
+            protected: false,
+            rendered: false
+          },
           status: 'publish',
           excerpt: { raw: req.body.excerpt || '' },
           meta: {
