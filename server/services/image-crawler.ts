@@ -94,8 +94,8 @@ export function insertImagesIntoContent(content: string, images: AffiliateImage[
 
   const lines = content.split('\n');
   const newLines: string[] = [];
-  let inRecommendationsSection = false;
   const usedCodes = new Set<string>();
+  const firstOccurrence = new Set<string>();
 
   // Group images by product code
   const imagesByCode = images.reduce((acc, img) => {
@@ -108,32 +108,29 @@ export function insertImagesIntoContent(content: string, images: AffiliateImage[
   }, {} as Record<string, AffiliateImage[]>);
 
   for (const line of lines) {
-    // Skip adding slideshows in the recommendations section
-    if (line.includes('## Top') && line.includes('Recommendations')) {
-      inRecommendationsSection = true;
-    } else if (line.startsWith('## ') && inRecommendationsSection) {
-      inRecommendationsSection = false;
-    }
-
     newLines.push(line);
 
-    if (!inRecommendationsSection) {
-      const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-      if (linkMatch) {
-        const [_, linkText, url] = linkMatch;
-        const code = getProductCode(url);
-        const productImages = imagesByCode[code];
+    const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
+    if (linkMatch) {
+      const [_, linkText, url] = linkMatch;
+      const code = getProductCode(url);
+      
+      // Track first occurrence of each product code
+      if (!firstOccurrence.has(code)) {
+        firstOccurrence.add(code);
+        continue;
+      }
 
-        if (productImages?.length > 0 && !usedCodes.has(code)) {
-          usedCodes.add(code);
-          newLines.push(line);
-          newLines.push('');
-          newLines.push('<div class="product-slideshow">');
-          productImages.forEach(img => {
-            newLines.push(`<img src="${img.url}" alt="${img.alt}" />`);
-          });
-          newLines.push('</div>');
-        }
+      const productImages = imagesByCode[code];
+      if (productImages?.length > 0 && !usedCodes.has(code)) {
+        usedCodes.add(code);
+        newLines.push('');
+        newLines.push('<div class="product-slideshow">');
+        productImages.forEach(img => {
+          newLines.push(`<img src="${img.url}" alt="${img.alt}" />`);
+        });
+        newLines.push('</div>');
+        newLines.push('');
       }
     }
   }
