@@ -56,14 +56,14 @@ export default function ViewPost() {
             <Button 
               onClick={async () => {
                 try {
-                  const response = await apiRequest("POST", "/api/wordpress/publish-all");
+                  const response = await apiRequest("POST", "/api/wordpress/publish", post);
                   if (!response.ok) {
                     throw new Error("Failed to publish to WordPress");
                   }
                   const result = await response.json();
                   toast({
                     title: "Success",
-                    description: result.message || "Started publishing to WordPress",
+                    description: "Post published to WordPress successfully",
                   });
                 } catch (error) {
                   toast({
