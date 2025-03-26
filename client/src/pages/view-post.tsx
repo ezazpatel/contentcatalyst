@@ -85,17 +85,17 @@ export default function ViewPost() {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="mt-8">
+            {post.affiliateImages && post.affiliateImages.length > 0 && (
+              <ProductSlideshow images={post.affiliateImages} productCode="all" />
+            )}
+          </div>
           <div className="prose prose-sm md:prose-base lg:prose-lg xl:prose-xl max-w-none dark:prose-invert mx-auto px-4 sm:px-6 lg:px-8">
             <MarkdownRenderer 
               content={post.content.replace(/^#\s+.*\n/, '')} 
               images={[]} 
             />
           </div>
-          {post.affiliateImages && post.affiliateImages.length > 0 && (
-            <div className="mt-8">
-              <ProductSlideshow images={post.affiliateImages} />
-            </div>
-          )}
 
           {post.affiliateLinks && Object.keys(post.affiliateLinks).length > 0 && (
             <div className="mt-8 border-t pt-4">
