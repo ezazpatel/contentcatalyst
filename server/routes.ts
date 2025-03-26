@@ -18,14 +18,9 @@ function convertMarkdownToHTML(markdown: string): string {
     }).join(',');
 
     const slideshow = `
-<!-- wp:html -->
-<div class="custom-carousel">
-${images.map((img) => {
-  const [_, src, alt] = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/) || [];
-  return `  <div class="slide"><img src="${src}" alt="${alt}" /><div class="caption">${alt}</div></div>`;
-}).join('\n')}
-</div>
-<!-- /wp:html -->`;
+<!-- wp:shortcode -->
+[metaslider id="1805"]
+<!-- /wp:shortcode -->`;
     
     slideshows.push(slideshow);
     return `{{SLIDESHOW_PLACEHOLDER_${slideshows.length - 1}}}`;
