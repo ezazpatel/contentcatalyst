@@ -14,10 +14,8 @@ function capitalizeWords(str: string): string {
 }
 
 export function MarkdownRenderer({ content }: Props) {
-  // Skip the first line if it's an H1 heading (title)
-  const lines = content.split('\n').filter((line, index) => 
-    !(index === 0 && line.startsWith('# '))
-  );
+  const lines = content.split('\n');
+  
   const newLines: (string | JSX.Element)[] = [];
   
   // Process slideshow divs

@@ -129,7 +129,7 @@ Write an engaging introduction (150-200 words) for "${outlineResult.title}".
 Include:
 - A hook that grabs attention
 - Brief mention of key benefits readers will get
-- Natural transition to the first section: "${outlineResult.outline[0]?.heading || 'First Section'}"
+- Natural transition to the first section: "'First Section'}"
 
 Format your response:
 [Your introduction here]`;
