@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -14,7 +13,9 @@ interface Props {
 import { getProductCode } from '@/utils/url-helpers';
 
 export function MarkdownRenderer({ content, images }: Props) {
-  const lines = content.split('\n');
+  // Remove title and empty lines at start
+  const contentWithoutTitle = content.replace(/^#\s+.*\n\n?/, '');
+  const lines = contentWithoutTitle.split('\n');
   const newLines: (string | JSX.Element)[] = [];
   const usedCodes = new Set<string>();
   const firstOccurrence = new Set<string>();
@@ -44,7 +45,7 @@ export function MarkdownRenderer({ content, images }: Props) {
       if (!url?.trim()) continue;
       const code = getProductCode(url);
       if (!code) continue;
-      
+
       if (!firstOccurrence.has(code)) {
         firstOccurrence.add(code);
         continue;
