@@ -26,7 +26,7 @@ export default function ProductSlideshow({ images, productCode }: ProductSlidesh
       <img
         src={images[currentIndex].url}
         alt={images[currentIndex].alt}
-        className="w-full h-64 object-cover rounded-lg"
+        className="w-full rounded-lg"
       />
       <p className="text-center text-sm text-gray-500 mt-2">{images[0].heading}</p>
       {images.length > 1 && (
