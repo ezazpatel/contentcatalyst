@@ -17,9 +17,11 @@ export function MarkdownRenderer({ content, images }: Props) {
   const usedCodes = new Set<string>();
   const firstOccurrence = new Set<string>();
 
+  import { getProductCode } from '@/utils/url-helpers';
+
   // Group images by product code
   const imagesByCode = images.reduce((acc, img) => {
-    const code = img.affiliateUrl.split('/').pop() || '';
+    const code = getProductCode(img.affiliateUrl);
     if (!acc[code]) {
       acc[code] = [];
     }
@@ -29,7 +31,7 @@ export function MarkdownRenderer({ content, images }: Props) {
 
   for (const line of lines) {
     newLines.push(
-      <ReactMarkdown key={line} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+      <ReactMarkdown key={`md-${line}`} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
         {line}
       </ReactMarkdown>
     );
@@ -37,7 +39,7 @@ export function MarkdownRenderer({ content, images }: Props) {
     const linkMatches = Array.from(line.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g));
     for (const match of linkMatches) {
       const [_, linkText, url] = match;
-      const code = url.split('/').pop() || '';
+      const code = getProductCode(url);
       
       if (!firstOccurrence.has(code)) {
         firstOccurrence.add(code);
