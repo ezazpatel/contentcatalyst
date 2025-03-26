@@ -16,14 +16,14 @@ function capitalizeWords(str: string): string {
   return str.replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
-export function MarkdownRenderer({ content, images }: Props) {
+export function MarkdownRenderer({ content, images = [] }: Props) {
   const lines = content.split('\n');
   const newLines: (string | JSX.Element)[] = [];
   const usedCodes = new Set<string>();
   const firstOccurrence = new Set<string>();
 
   // Group images by product code
-  const imagesByCode = images.reduce((acc, img) => {
+  const imagesByCode = (images || []).reduce((acc, img) => {
     const code = getProductCode(img.affiliateUrl);
     if (!acc[code]) {
       acc[code] = [];
