@@ -231,12 +231,6 @@ ${post.internalLinks
 Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
 Focus on providing valuable information and real experiences, using keywords only where they naturally fit into the narrative. Prioritize reader engagement over keyword placement.
 
-Rules for content:
-1. Do NOT include any image markdown syntax (no ![alt](url))
-2. Do NOT include any product/affiliate links more than once per section
-3. When mentioning a product, only use the exact product name without additional text in the link
-4. Place affiliate links naturally within the text, not as lists or groups
-
 Also create content for these subheadings:
 ${section.subheadings.map(subheading => `- ## ${subheading}`).join('\n')}
 
@@ -287,8 +281,6 @@ Instructions:
 1. Use grade 5-6 level Canadian English
 2. Keep the tone professional but warm
 3. Avoid emoji usage
-4. Do not include any image markdown (no ![alt](url) syntax)
-5. Only use text and link markdown
 
 Write a conclusion (150-200 words) for "${outlineResult.title}" about ${keywords.join(", ")}.
 Include:
@@ -324,7 +316,8 @@ Use proper markdown:
     if (Array.isArray(post.affiliateLinks)) {
       try {
         images = await matchImagesWithHeadings(fullContent, post.affiliateLinks);
-        console.log(`Found ${images.length} affiliate product images`);
+        fullContent = insertImagesIntoContent(fullContent, images);
+        console.log(`Added ${images.length} affiliate product images to the content`);
       } catch (error) {
         console.error("Error processing affiliate images:", error);
       }
