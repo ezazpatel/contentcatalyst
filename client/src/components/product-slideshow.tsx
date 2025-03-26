@@ -3,7 +3,12 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AffiliateImage } from "@shared/schema";
 
-export default function ProductSlideshow({ images }: { images: AffiliateImage[] }) {
+interface ProductSlideshowProps {
+  images: AffiliateImage[];
+  productCode: string;
+}
+
+export default function ProductSlideshow({ images, productCode }: ProductSlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!images?.length) return null;
@@ -23,6 +28,7 @@ export default function ProductSlideshow({ images }: { images: AffiliateImage[] 
         alt={images[currentIndex].alt}
         className="w-full h-64 object-cover rounded-lg"
       />
+      <p className="text-center text-sm text-gray-500 mt-2">Product code: {productCode}</p>
       {images.length > 1 && (
         <div className="absolute inset-0 flex items-center justify-between p-4">
           <Button

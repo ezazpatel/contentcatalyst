@@ -53,7 +53,7 @@ export function MarkdownRenderer({ content, images }: Props) {
       if (!usedCodes.has(code) && imagesByCode[code]?.length > 0) {
         usedCodes.add(code);
         newLines.push(
-          <ProductSlideshow key={`slideshow-${code}`} images={imagesByCode[code]} />
+          <ProductSlideshow key={`slideshow-${code}`} images={imagesByCode[code]} productCode={code} />
         );
       }
     }
