@@ -11,13 +11,13 @@ interface Props {
   images: AffiliateImage[];
 }
 
+import { getProductCode } from '@/utils/url-helpers';
+
 export function MarkdownRenderer({ content, images }: Props) {
   const lines = content.split('\n');
   const newLines: (string | JSX.Element)[] = [];
   const usedCodes = new Set<string>();
   const firstOccurrence = new Set<string>();
-
-  import { getProductCode } from '@/utils/url-helpers';
 
   // Group images by product code
   const imagesByCode = images.reduce((acc, img) => {
