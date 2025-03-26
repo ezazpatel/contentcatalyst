@@ -51,36 +51,9 @@ export default function ViewPost() {
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold">{post.title}</h1>
-        <div className="flex gap-2">
-          {post.status === "published" && (
-            <Button 
-              onClick={async () => {
-                try {
-                  const response = await apiRequest("POST", "/api/wordpress/publish", post);
-                  if (!response.ok) {
-                    throw new Error("Failed to publish to WordPress");
-                  }
-                  const result = await response.json();
-                  toast({
-                    title: "Success",
-                    description: "Post published to WordPress successfully",
-                  });
-                } catch (error) {
-                  toast({
-                    title: "Error",
-                    description: error.message || "Failed to publish to WordPress",
-                    variant: "destructive",
-                  });
-                }
-              }}
-            >
-              Republish to WordPress
-            </Button>
-          )}
-          <Link href="/blogs">
-            <Button variant="outline">Back to Posts</Button>
-          </Link>
-        </div>
+        <Link href="/blogs">
+          <Button variant="outline">Back to Posts</Button>
+        </Link>
       </div>
 
       <Card>

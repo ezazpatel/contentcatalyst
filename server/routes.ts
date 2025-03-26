@@ -281,19 +281,7 @@ export async function registerRoutes(app: Express) {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Basic ${authToken}`,
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-          'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
-          'Sec-Ch-Ua-Mobile': '?0',
-          'Sec-Ch-Ua-Platform': '"Windows"',
-          'Sec-Fetch-Dest': 'document',
-          'Sec-Fetch-Mode': 'navigate',
-          'Sec-Fetch-Site': 'none',
-          'Sec-Fetch-User': '?1',
-          'Upgrade-Insecure-Requests': '1'
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           title: { raw: req.body.title },
@@ -309,21 +297,8 @@ export async function registerRoutes(app: Express) {
             _yoast_wpseo_title: req.body.seoTitle || '',
           },
         }),
-        timeout: 120000,
-        follow: 5 // Allow redirects
+        timeout: 120000 // Added timeout
       });
-
-      // Better error handling
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('WordPress API Error Details:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: Object.fromEntries(response.headers.entries()),
-          body: errorText
-        });
-        throw new Error(`WordPress API error (${response.status}): ${errorText}`);
-      }
 
       if (!response.ok) {
         const errorText = await response.text();
