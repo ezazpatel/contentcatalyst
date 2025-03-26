@@ -22,8 +22,7 @@ export function MarkdownRenderer({ content, images }: Props) {
 
     // Group images by product code
     const imagesByCode = images.reduce((acc, img) => {
-      const urlParts = new URL(img.affiliateUrl).pathname.split('/');
-      const code = urlParts[urlParts.length - 1];
+      const code = img.affiliateUrl.split('/').pop() || '';
       if (!acc[code]) {
         acc[code] = [];
       }
@@ -34,11 +33,10 @@ export function MarkdownRenderer({ content, images }: Props) {
     for (const line of lines) {
       newLines.push(line);
 
-      const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-      if (linkMatch) {
-        const [_, linkText, url] = linkMatch;
-        const urlParts = new URL(url).pathname.split('/');
-        const code = urlParts[urlParts.length - 1];
+      const linkMatches = Array.from(line.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g));
+      for (const match of linkMatches) {
+        const [_, linkText, url] = match;
+        const code = url.split('/').pop() || '';
         
         if (!firstOccurrence.has(code)) {
           firstOccurrence.add(code);
@@ -48,11 +46,7 @@ export function MarkdownRenderer({ content, images }: Props) {
         if (!usedCodes.has(code) && imagesByCode[code]?.length > 0) {
           usedCodes.add(code);
           newLines.push('');
-          newLines.push(`<div class="product-slideshow">`);
-          imagesByCode[code].forEach(img => {
-            newLines.push(`<img src="${img.url}" alt="${img.alt}" />`);
-          });
-          newLines.push('</div>');
+          newLines.push('{<ProductSlideshow images={' + JSON.stringify(imagesByCode[code]) + '} />}');
           newLines.push('');
         }
       }
