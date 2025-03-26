@@ -230,6 +230,7 @@ ${post.internalLinks
 
 Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
 Focus on providing valuable information and real experiences, using keywords only where they naturally fit into the narrative. Prioritize reader engagement over keyword placement.
+Do not include any image markdown (no ![alt](url) syntax) - images will be handled separately.
 
 Also create content for these subheadings:
 ${section.subheadings.map(subheading => `- ## ${subheading}`).join('\n')}
@@ -281,6 +282,8 @@ Instructions:
 1. Use grade 5-6 level Canadian English
 2. Keep the tone professional but warm
 3. Avoid emoji usage
+4. Do not include any image markdown (no ![alt](url) syntax)
+5. Only use text and link markdown
 
 Write a conclusion (150-200 words) for "${outlineResult.title}" about ${keywords.join(", ")}.
 Include:
