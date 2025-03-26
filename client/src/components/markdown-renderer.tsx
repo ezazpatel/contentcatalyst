@@ -19,6 +19,11 @@ export function MarkdownRenderer({ content }: { content: string }) {
 
     // Find all product slideshow divs
     const slideshowDivs = containerRef.current.querySelectorAll('.product-slideshow');
+    
+    if (slideshowDivs.length === 0) {
+      console.debug('No slideshow divs found in content');
+      return;
+    }
     slideshowDivs.forEach(div => {
       // Get all images in this slideshow
       const images = Array.from(div.querySelectorAll('img')).map(img => ({

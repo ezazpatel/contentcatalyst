@@ -6,9 +6,9 @@ import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
 
 function convertMarkdownToHTML(markdown: string): string {
-  // First extract and save product slideshow divs
+  // First extract and save product slideshow divs and their view all photos links
   const slideshows: string[] = [];
-  markdown = markdown.replace(/<div class="product-slideshow">[\s\S]*?<\/div>/g, (match) => {
+  markdown = markdown.replace(/(<div class="product-slideshow">[\s\S]*?<\/div>\n\*\[View all photos\]\([^)]+\)\*)/g, (match) => {
     slideshows.push(match);
     return `{{SLIDESHOW_PLACEHOLDER_${slideshows.length - 1}}}`;
   });
