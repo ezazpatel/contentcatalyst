@@ -281,7 +281,8 @@ export async function registerRoutes(app: Express) {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Basic ${authToken}`,
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         },
         body: JSON.stringify({
           title: { raw: req.body.title },
@@ -297,8 +298,21 @@ export async function registerRoutes(app: Express) {
             _yoast_wpseo_title: req.body.seoTitle || '',
           },
         }),
-        timeout: 120000 // Added timeout
+        timeout: 120000,
+        follow: 5 // Allow redirects
       });
+
+      // Better error handling
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('WordPress API Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          body: errorText
+        });
+        throw new Error(`WordPress API error (${response.status}): ${errorText}`);
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
