@@ -16,9 +16,21 @@ function capitalizeWords(str: string): string {
   return str.replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
-export function MarkdownRenderer({ content }: Props) {
+export function MarkdownRenderer({ content, images }: Props) {
   const lines = content.split('\n');
   const newLines: (string | JSX.Element)[] = [];
+  const usedCodes = new Set<string>();
+  const firstOccurrence = new Set<string>();
+
+  // Group images by product code
+  const imagesByCode = images.reduce((acc, img) => {
+    const code = getProductCode(img.affiliateUrl);
+    if (!acc[code]) {
+      acc[code] = [];
+    }
+    acc[code].push(img);
+    return acc;
+  }, {} as Record<string, AffiliateImage[]>);
 
   for (const line of lines) {
     // Create a more unique key using line content and position
