@@ -22,7 +22,7 @@ export default function ProductSlideshow({ images, productCode }: ProductSlidesh
   };
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto my-4">
+    <div className="relative w-full mx-auto my-4">
       <img
         src={images[currentIndex].url}
         alt={images[currentIndex].alt}
