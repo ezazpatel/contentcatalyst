@@ -38,18 +38,11 @@ export function MarkdownRenderer({ content, images }: Props) {
     // Create a more unique key using line content and position
     const lineKey = `md-${line.trim().substring(0, 20)}-${newLines.length}`;
     
-    if (line.startsWith('## ')) {
-      const heading = capitalizeWords(line.substring(3));
-      newLines.push(
-        <h2 key={lineKey}>{heading}</h2>
-      );
-    } else {
-      newLines.push(
-        <ReactMarkdown key={lineKey} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-          {line}
-        </ReactMarkdown>
-      );
-    }
+    newLines.push(
+      <ReactMarkdown key={lineKey} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+        {line.startsWith('## ') ? capitalizeWords(line) : line}
+      </ReactMarkdown>
+    );
 
 
     const linkMatches = Array.from(line.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g));
