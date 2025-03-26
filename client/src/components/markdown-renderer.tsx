@@ -17,10 +17,22 @@ function capitalizeWords(str: string): string {
 }
 
 export function MarkdownRenderer({ content, images }: Props) {
-  const lines = content.split('\n');
+  // Remove title and empty lines at start
+  const contentWithoutTitle = content.replace(/^#\s+.*\n+/, '');
+  const lines = contentWithoutTitle.split('\n');
   const newLines: (string | JSX.Element)[] = [];
   const usedCodes = new Set<string>();
   const firstOccurrence = new Set<string>();
+  
+  // Group images by product code
+  const imagesByCode = images.reduce((acc, img) => {
+    const code = getProductCode(img.affiliateUrl);
+    if (!acc[code]) {
+      acc[code] = [];
+    }
+    acc[code].push(img);
+    return acc;
+  }, {} as Record<string, AffiliateImage[]>);
 
   // Group images by product code
   const imagesByCode = images.reduce((acc, img) => {
