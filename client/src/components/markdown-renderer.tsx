@@ -53,7 +53,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
   return (
     <div
       ref={containerRef}
-      className="blog-content prose max-w-none"
+      className="blog-content prose" // Removed max-w-none for responsiveness
       dangerouslySetInnerHTML={{ __html: htmlContent }}
     />
   );

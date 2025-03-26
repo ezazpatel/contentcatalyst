@@ -60,8 +60,8 @@ export default function ViewPost() {
   }
 
   return (
-    <div className="px-4 py-8">
-      <Card>
+    <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Card className="max-w-none">
         <CardHeader>
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
             <div>
