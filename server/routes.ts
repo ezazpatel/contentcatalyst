@@ -228,8 +228,13 @@ export async function registerRoutes(app: Express) {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Basic ${authToken}`,
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Origin': process.env.WORDPRESS_API_URL,
+          'Referer': process.env.WORDPRESS_API_URL
         },
+        redirect: 'follow',
         body: JSON.stringify({
           title: { raw: req.body.title },
           content: { 
