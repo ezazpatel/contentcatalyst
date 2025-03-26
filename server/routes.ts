@@ -6,10 +6,38 @@ import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
 
 function convertMarkdownToHTML(markdown: string): string {
-  // First extract and save product slideshow divs and their view all photos links
+  // First extract and save product slideshow divs
   const slideshows: string[] = [];
-  markdown = markdown.replace(/(<div class="product-slideshow">[\s\S]*?<\/div>\n\*\[View all photos\]\([^)]+\)\*)/g, (match) => {
-    slideshows.push(match);
+  markdown = markdown.replace(/<div class="product-slideshow">([\s\S]*?)<\/div>/g, (match) => {
+    const images = match.match(/<img src="([^"]+)" alt="([^"]+)" \/>/g) || [];
+    const gallery = images.map(img => {
+      const [_, src, alt] = img.match(/<img src="([^"]+)" alt="([^"]+)" \/>/) || [];
+      return `<div class="gallery-item"><img src="${src}" alt="${alt}" /></div>`;
+    }).join('');
+    
+    const slideshow = `
+      <div class="product-gallery">
+        ${gallery}
+        <style>
+          .product-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+          }
+          .product-gallery .gallery-item {
+            flex: 0 1 300px;
+          }
+          .product-gallery img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+          }
+        </style>
+      </div>
+    `;
+    slideshows.push(slideshow);
     return `{{SLIDESHOW_PLACEHOLDER_${slideshows.length - 1}}}`;
   });
 
@@ -30,6 +58,7 @@ function convertMarkdownToHTML(markdown: string): string {
   html = html.replace(/{{SLIDESHOW_PLACEHOLDER_(\d+)}}/g, (_, index) => slideshows[parseInt(index)]);
 
   return html;
+}
 }
 
 export async function registerRoutes(app: Express) {
