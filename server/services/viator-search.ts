@@ -30,8 +30,13 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         sortOrder: "RELEVANCE",
         page: 0,
         size: limit,
-        currency: "CAD",
-        status: "ACTIVE"
+        currencyCode: "CAD",
+        filtering: {
+          text: keyword,
+          destinationId: null,
+          productTypes: null,
+          categories: null
+        }
       })
     });
 
