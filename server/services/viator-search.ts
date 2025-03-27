@@ -52,7 +52,8 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         'exp-api-key': process.env.VIATOR_API_KEY!,
         'Accept': 'application/json;version=2.0',
         'Accept-Language': 'en-US',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'campaign-value': process.env.VIATOR_CAMPAIGN_ID || ''
       },
       body: JSON.stringify(requestBody)
     });
