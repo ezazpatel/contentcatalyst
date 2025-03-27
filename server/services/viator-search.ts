@@ -37,8 +37,8 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         searchTypes: [{
           searchType: "PRODUCTS",
           pagination: {
-            start: 0,
-            count: limit
+            start: 1,
+            count: Math.min(limit, 50)
           }
         }],
         destinationIds: ["Canada"]
