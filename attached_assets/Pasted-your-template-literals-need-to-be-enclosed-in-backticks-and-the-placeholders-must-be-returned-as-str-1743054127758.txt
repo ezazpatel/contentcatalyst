@@ -1,0 +1,54 @@
+your template literals need to be enclosed in backticks and the placeholders must be returned as strings.
+
+Here's a corrected version of your snippet from routes.ts:
+
+ts
+Copy
+function convertMarkdownToHTML(markdown: string): string {
+  // First extract and save product slideshow divs
+  const slideshows: string[] = [];
+  markdown = markdown.replace(/<div class="product-slideshow">([\s\S]*?)<\/div>/g, (match) => {
+    const images = match.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/g) || [];
+    
+    // Create a gallery block that WordPress can handle
+    const gallery = images.map((img) => {
+      const m = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/);
+      const src = m ? m[1] : '';
+      const alt = m ? m[2] : '';
+      return `{"url":"${src}","caption":"${alt}","id":""}`;
+    }).join(',');
+
+    const slideshow = `
+<!-- wp:html -->
+<div class="wp-block-custom-carousel custom-carousel" data-type="custom-carousel">
+${images.map((img) => {
+  const m = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/);
+  const src = m ? m[1] : '';
+  const alt = m ? m[2] : '';
+  return `<div class="wp-block-custom-slide slide" data-type="custom-slide"><img src="${src}" alt="${alt}" class="wp-image" /><div class="wp-caption caption">${alt}</div></div>`;
+}).join('\n')}
+</div>
+<!-- /wp:html -->`;
+    
+    slideshows.push(slideshow);
+    return `{{SLIDESHOW_PLACEHOLDER_${slideshows.length - 1}}}`;
+  });
+
+  // Convert markdown to HTML
+  let html = markdown
+    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^\s*[-+*]\s+(.*)/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+    .replace(/^\d+\.\s+(.*)/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, '<ol>$&</ol>')
+    .replace(/^(?!<[uo]l|<li|<h[1-6])(.*$)/gm, '<p>$1</p>');
+
+  // Restore product slideshow divs
+  html = html.replace(/{{SLIDESHOW_PLACEHOLDER_(\d+)}}/g, (_, index) => slideshows[parseInt(index)]);
+
+  return html;
+}
