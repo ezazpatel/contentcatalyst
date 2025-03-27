@@ -11,6 +11,7 @@ async function fetchWithTimeout(url: string, timeout = 5000) {
     return response;
   } catch (error) {
     clearTimeout(id);
+    console.log(`Attempted to fetch URL: ${url}`);
     throw error;
   }
 }

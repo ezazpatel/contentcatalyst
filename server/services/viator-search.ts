@@ -59,12 +59,6 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
       body: JSON.stringify(requestBody)
     });
 
-    const responseText = await response.text();
-    console.log('Viator search response:', {
-      status: response.status,
-      headers: Object.fromEntries(response.headers.entries()),
-      body: responseText
-    });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -73,14 +67,12 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         statusText: response.statusText,
         body: errorText
       });
-      throw new Error(`Viator search failed (${response.status}): ${responseText}`);
+      console.error(`Viator search failed with invalid URL: ${response.url}`); //Added logging for invalid URL
+      throw new Error(`Viator search failed (${response.status}): ${errorText}`);
     }
 
+    const responseText = await response.text();
     const data = JSON.parse(responseText);
-    console.log('Parsed Viator search results:', {
-      totalResults: data.products?.totalCount,
-      productCount: data.products?.results?.length || 0
-    });
     return data.products?.results || [];
   } catch (error) {
     console.error('Error searching Viator products:', error);
