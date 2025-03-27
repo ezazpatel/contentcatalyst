@@ -23,6 +23,29 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
   console.log('Searching Viator products:', { keyword, limit, apiKey: !!process.env.VIATOR_API_KEY });
 
   try {
+    const requestBody = {
+      searchTerm: keyword,
+      currency: "CAD",
+      searchTypes: [{
+        searchType: "PRODUCTS",
+        pagination: {
+          start: 1,
+          count: Math.min(limit, 50)
+        }
+      }]
+    };
+
+    console.log('Viator search request:', {
+      url: `${VIATOR_BASE_URL}/search/freetext`,
+      headers: {
+        'exp-api-key': 'HIDDEN',
+        'Accept': 'application/json;version=2.0',
+        'Accept-Language': 'en-US',
+        'Content-Type': 'application/json'
+      },
+      body: requestBody
+    });
+
     const response = await fetch(`${VIATOR_BASE_URL}/search/freetext`, {
       method: 'POST',
       headers: {
@@ -31,17 +54,14 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         'Accept-Language': 'en-US',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        searchTerm: keyword,
-        currency: "CAD",
-        searchTypes: [{
-          searchType: "PRODUCTS",
-          pagination: {
-            start: 1,
-            count: Math.min(limit, 50)
-          }
-        }]
-      })
+      body: JSON.stringify(requestBody)
+    });
+
+    const responseText = await response.text();
+    console.log('Viator search response:', {
+      status: response.status,
+      headers: Object.fromEntries(response.headers.entries()),
+      body: responseText
     });
 
     if (!response.ok) {
@@ -51,10 +71,14 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         statusText: response.statusText,
         body: errorText
       });
-      throw new Error(`Viator search failed (${response.status}): ${errorText}`);
+      throw new Error(`Viator search failed (${response.status}): ${responseText}`);
     }
 
-    const data = await response.json();
+    const data = JSON.parse(responseText);
+    console.log('Parsed Viator search results:', {
+      totalResults: data.totalCount,
+      productCount: data.products?.length || 0
+    });
     return data.products || [];
   } catch (error) {
     console.error('Error searching Viator products:', error);
