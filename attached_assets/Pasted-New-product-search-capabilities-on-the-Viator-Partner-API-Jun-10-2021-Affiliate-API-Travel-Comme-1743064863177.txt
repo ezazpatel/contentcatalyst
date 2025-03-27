@@ -1,0 +1,48 @@
+New product search capabilities on the Viator Partner API
+Jun 10, 2021 | Affiliate API, Travel Commerce Partners
+
+search api
+We’re making it easier and faster for affiliate partners to connect to Viator’s supply
+We’ve recently launched a new endpoint that makes it possible to search for relevant products. This is made possible by the new /products/search endpoint, which allows for a faster connection to Viator than our ingestion model. This means that partners can take advantage of an API connection with Viator faster and easier than before. Using the search model, partners can take advantage of:
+
+}
+Faster go-to-market times
+
+Streamlined merchandising
+T
+Easier product selection
++
+Limited data handling
+A simpler way to get the products your customers want
+Prior to the launch of the /products/search endpoint, partners were required to build and maintain a local database of our product catalogue of over 300,000+ products. While partners may still benefit from having a local database, the single /products/search endpoints allows partners to connect to Viator and scale our inventory catalogue across their site or other applications without having to build or maintain a local database or having to manage large amounts of data. This agility means that partners of all sizes can now benefit from an evergreen API connection with Viator.
+
+Streamlined merchandising
+Through the /products/search endpoint partners request product summaries, which includes the crucial elements for merchandising products, such as titles, short descriptions, cover images, and review ratings/counts. The amount of information returned in the request is best suited for applications where a brief product summary is needed, such as search cards on search results pages.
+
+When you make the call to get products, you’ll input the search criteria as well as the sort order and the format in which you want the response. The search criteria required to make the API call acts as filters on our supply (e.g. filter to only include products with free cancellation). This gives you more control and scalability over which Viator products you merchandise so you can best match the right products with the right audience.
+
+In each request, partners will specify:
+
+Destination
+
+Tags
+e.g. a tag for our “Dinner cruises” category
+
+
+Flags
+e.g. “free cancellations” or “skip the line” tours
+
+
+Price range & currency
+
+Date range
+{
+Language
+Choosing between ingestion and search connections
+Content partners using the Viator Affiliate API now have two options of connecting to Viator’s supply: search model and ingestion model.
+
+U
+Search
+Partner uses /products/search endpoint to filter for only the products they want displayed.
+Partner handles a limited amount of product data and is not required to store it.
+Ideal for partners who want a fast integration and do not desire a full tours and activities integration.

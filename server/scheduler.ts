@@ -119,7 +119,7 @@ Format your response as JSON:
 
     const outlineResponse = await client.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 4000,
+      max_tokens: 200,
       temperature: 0.7,
       messages: [{ role: "user", content: outlinePrompt }]
     });
@@ -178,7 +178,7 @@ Format your response:
 
     const introResponse = await client.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 4000,
+      max_tokens: 200,
       temperature: 0.7,
       messages: [{ role: "user", content: introPrompt }]
     });
@@ -286,7 +286,7 @@ ${section.subheadings.map(subheading => `### ${subheading}\n\n[Subheading conten
 
       const sectionResponse = await client.messages.create({
         model: ANTHROPIC_MODEL,
-        max_tokens: 4000,
+        max_tokens: 200,
         temperature: 0.7,
         messages: [{ role: "user", content: sectionPrompt }]
       });
@@ -342,7 +342,7 @@ Use proper markdown:
 
     const conclusionResponse = await client.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 4000,
+      max_tokens: 200,
       temperature: 0.7,
       messages: [{ role: "user", content: conclusionPrompt }]
     });
@@ -414,7 +414,7 @@ Ensure JSON is properly formatted with no trailing commas.`;
 
     const outlineResponse = await client.messages.create({
       model: "claude-3-opus-20240229",
-      max_tokens: 4000,
+      max_tokens: 200,
       temperature: 0.7,
       messages: [
         {
@@ -472,7 +472,7 @@ Format your response as markdown, starting directly with the content:
 
     const introResponse = await client.messages.create({
       model: "claude-3-opus-20240229",
-      max_tokens: 4000,
+      max_tokens: 200,
       temperature: 0.7,
       messages: [
         {
@@ -561,7 +561,7 @@ ${section.subheadings.map(subheading => `### ${subheading}\n\n[Content for this 
 
       const sectionResponse = await client.messages.create({
         model: "claude-3-opus-20240229",
-        max_tokens: 4000,
+        max_tokens: 200,
         temperature: 0.7,
         messages: [
           {
@@ -594,7 +594,7 @@ Use proper markdown:
 
     const conclusionResponse = await client.messages.create({
       model: "claude-3-opus-20240229",
-      max_tokens: 4000,
+      max_tokens: 200,
       temperature: 0.7,
       messages: [
         {
