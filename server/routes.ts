@@ -19,10 +19,10 @@ function convertMarkdownToHTML(markdown: string): string {
 
     const slideshow = `
 <!-- wp:html -->
-<div class="custom-carousel">
+<div class="wp-block-custom-carousel custom-carousel" data-type="custom-carousel">
 ${images.map((img) => {
   const [_, src, alt] = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/) || [];
-  return `  <div class="slide"><img src="${src}" alt="${alt}" /><div class="caption">${alt}</div></div>`;
+  return `  <div class="wp-block-custom-slide slide" data-type="custom-slide"><img src="${src}" alt="${alt}" class="wp-image" /><div class="wp-caption caption">${alt}</div></div>`;
 }).join('\n')}
 </div>
 <!-- /wp:html -->`;
