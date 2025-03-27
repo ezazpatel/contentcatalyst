@@ -1,53 +1,55 @@
-import * as cheerio from 'cheerio';
 import type { AffiliateImage } from '@shared/schema';
-import { getViatorImages, isViatorLink } from './viator-api';
+import { VIATOR_BASE_URL } from './viator-api';
 
-async function fetchWithTimeout(url: string, timeout = 5000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(id);
-    return response;
-  } catch (error) {
-    clearTimeout(id);
-    console.log(`Attempted to fetch URL: ${url}`);
-    throw error;
-  }
-}
-
-export async function crawlAffiliateLink(url: string, heading: string): Promise<AffiliateImage[]> {
-  if (isViatorLink(url)) {
-    return await getViatorImages(url, heading);
+export async function crawlAffiliateLink(productCode: string, heading: string): Promise<AffiliateImage[]> {
+  if (!process.env.VIATOR_API_KEY) {
+    console.error('No Viator API key configured');
+    return [];
   }
 
   try {
-    const response = await fetchWithTimeout(url);
+    const response = await fetch(`${VIATOR_BASE_URL}/products/${productCode}`, {
+      headers: {
+        'exp-api-key': process.env.VIATOR_API_KEY,
+        'Accept': 'application/json;version=2.0',
+        'Accept-Language': 'en-US'
+      }
+    });
+
     if (!response.ok) {
-      console.error(`Failed to fetch ${url}: ${response.statusText}`);
+      console.error(`Failed to fetch product ${productCode}: ${response.statusText}`);
       return [];
     }
 
-    const html = await response.text();
-    const $ = cheerio.load(html);
+    const data = await response.json();
     const images: AffiliateImage[] = [];
 
-    $('img').each((_, element) => {
-      const img = $(element);
-      const src = img.attr('src');
-      const alt = img.attr('alt') || '';
+    if (data.images) {
+      data.images.forEach((img: any) => {
+        // Find highest resolution variant
+        const bestVariant = img.variants?.reduce((best: any, current: any) => {
+          if (!best || (current.width * current.height) > (best.width * best.height)) {
+            return current;
+          }
+          return best;
+        }, null);
 
-      const width = parseInt(img.attr('width') || '0');
-      const height = parseInt(img.attr('height') || '0');
-      if ((width > 0 && width < 200) || (height > 0 && height < 200)) {
-        return;
-      }
+        images.push({
+          url: bestVariant?.url || img.url,
+          alt: img.caption || data.title || 'Product Image',
+          affiliateUrl: data.webURL,
+          heading,
+          cached: false
+        });
+      });
+    }
 
-      if (!src || src.startsWith('data:')) {
-        return;
-      }
-
-      const imageUrl = new URL(src, url).toString();
+    return images;
+  } catch (error) {
+    console.error(`Error fetching product ${productCode}:`, error);
+    return [];
+  }
+}
 
       if (alt.toLowerCase().includes('product') ||
           src.toLowerCase().includes('product') ||
