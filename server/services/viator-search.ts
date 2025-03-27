@@ -15,7 +15,19 @@ interface ViatorSearchResponse {
 }
 
 export async function searchViatorProducts(keyword: string, limit: number = 10): Promise<ViatorSearchResult[]> {
+  if (!process.env.VIATOR_API_KEY) {
+    console.log('No Viator API key configured');
+    return [];
+  }
+
   console.log('Searching Viator products:', { keyword, limit, apiKey: !!process.env.VIATOR_API_KEY });
+
+  const filters = {
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    sorting: "RELEVANCE"
+  };
+
   try {
     const response = await fetch(`${VIATOR_BASE_URL}/products/search`, {
       method: 'POST',
@@ -31,12 +43,7 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         page: 0,
         size: limit,
         currencyCode: "CAD",
-        filtering: {
-          text: keyword,
-          destinationId: null,
-          productTypes: null,
-          categories: null
-        }
+        filtering: filters
       })
     });
 
