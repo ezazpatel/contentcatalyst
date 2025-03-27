@@ -29,7 +29,7 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
   };
 
   try {
-    const response = await fetch(`${VIATOR_BASE_URL}/products/search`, {
+    const response = await fetch(`${VIATOR_BASE_URL}/search/freetext`, {
       method: 'POST',
       headers: {
         'exp-api-key': process.env.VIATOR_API_KEY!,
@@ -38,12 +38,10 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        query: keyword,
-        sortOrder: "RELEVANCE",
-        page: 0,
-        size: limit,
+        text: keyword,
         currency: "CAD",
-        filtering: filters
+        page: 0,
+        size: limit
       })
     });
 
