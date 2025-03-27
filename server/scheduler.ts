@@ -64,8 +64,11 @@ async function generateContent(keywords: string[], description: string = "", pos
 }> {
   // Search for relevant Viator products
   const viatorProducts = await searchViatorProducts(keywords.join(' '), 10);
+  const validProducts = Array.isArray(viatorProducts) ? viatorProducts : [];
+  console.log('Found Viator products:', validProducts.length);
+  
   const affiliateLinks = await Promise.all(
-    viatorProducts.map(async product => ({
+    validProducts.map(async product => ({
       name: product.title,
       url: await getViatorAffiliateUrl(product.productCode) || '',
       description: product.description
