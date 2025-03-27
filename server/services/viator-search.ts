@@ -88,18 +88,16 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
   }
 }
 
-export async function getViatorAffiliateUrl(productUrl: string): Promise<string | null> {
+export async function getViatorAffiliateUrl(productCode: string): Promise<string | null> {
   try {
-    const campaignValue = process.env.VIATOR_CAMPAIGN_ID || '';
-    if (!productUrl) {
+    if (!productCode) {
       return null;
     }
-
-    // Append campaign value to product URL
-    const separator = productUrl.includes('?') ? '&' : '?';
-    return `${productUrl}${separator}mcid=${campaignValue}`;
+    // The webURL property from the search results will already include the campaign parameters
+    // because we included campaign-value in the search request headers
+    return productCode;
   } catch (error) {
-    console.error('Error constructing affiliate URL:', error);
+    console.error('Error with affiliate URL:', error);
     return null;
   }
 }
