@@ -1,6 +1,10 @@
 import type { AffiliateImage } from '@shared/schema';
 import { VIATOR_BASE_URL } from './viator-api';
 
+function getProductCode(url: string): string {
+  return url.split('/').pop() || '';
+}
+
 export async function crawlAffiliateLink(productCode: string, heading: string): Promise<AffiliateImage[]> {
   if (!process.env.VIATOR_API_KEY) {
     console.error('No Viator API key configured');
@@ -51,29 +55,9 @@ export async function crawlAffiliateLink(productCode: string, heading: string): 
   }
 }
 
-      if (alt.toLowerCase().includes('product') ||
-          src.toLowerCase().includes('product') ||
-          alt.length > 20) {
-        images.push({
-          url: imageUrl,
-          alt,
-          affiliateUrl: url,
-          heading,
-          cached: false
-        });
-      }
-    });
-
-    return images;
-  } catch (error) {
-    console.error(`Error crawling ${url}:`, error);
-    return [];
-  }
-}
-
 export async function matchImagesWithHeadings(
   content: string,
-  affiliateLinks: { name: string; url: string }[],
+  affiliateLinks: { name: string; url: string }[]
 ): Promise<AffiliateImage[]> {
   const headings = content.match(/^##\s+(.+)$/gm) || [];
   const images: AffiliateImage[] = [];
@@ -84,8 +68,8 @@ export async function matchImagesWithHeadings(
     ) || headings[0] || '## Product Recommendations';
 
     const heading = relevantHeading.replace(/^##\s+/, '');
-
-    const productImages = await crawlAffiliateLink(link.url, heading);
+    const productCode = getProductCode(link.url);
+    const productImages = await crawlAffiliateLink(productCode, heading);
     images.push(...productImages);
   }
 
@@ -117,8 +101,7 @@ export function insertImagesIntoContent(content: string, images: AffiliateImage[
     if (linkMatch) {
       const [_, linkText, url] = linkMatch;
       const code = getProductCode(url);
-      
-      // Track first occurrence of each product code
+
       if (!firstOccurrence.has(code)) {
         firstOccurrence.add(code);
         continue;
@@ -127,11 +110,10 @@ export function insertImagesIntoContent(content: string, images: AffiliateImage[
       const productImages = imagesByCode[code];
       if (productImages?.length > 0 && !usedCodes.has(code)) {
         usedCodes.add(code);
-        
-        // Find highest resolution image for this product
+
         let bestImage = productImages[0];
         let maxResolution = 0;
-        
+
         productImages.forEach(img => {
           if (img.width && img.height) {
             const resolution = img.width * img.height;
@@ -142,33 +124,18 @@ export function insertImagesIntoContent(content: string, images: AffiliateImage[
           }
         });
 
-        if (bestImage) {
-          newLines.push('');
-          newLines.push(`<figure class="wp-block-image size-large">`);
-          newLines.push(`<img src="${bestImage.url}" alt="${bestImage.alt}" />`);
-          newLines.push(`<figcaption class="wp-element-caption">${bestImage.alt}</figcaption>`);
-          newLines.push(`</figure>`);
-          newLines.push('');
-        }
+        newLines.push('');
+        newLines.push('<div class="product-slideshow">');
+        productImages.forEach(img => {
+          newLines.push(`<img src="${img.url}" alt="${img.alt}" />`);
+        });
+        newLines.push('</div>');
+        newLines.push('');
       }
     }
   }
 
   return newLines.join('\n');
-}
-
-function getProductCode(url: string): string {
-  // Implement your logic to extract product code from URL here.  This is a placeholder.
-  //  For example, you might use a regular expression to extract a code from the URL.
-  return url.split('/').pop() || '';
-}
-
-
-import { AffiliateImage } from '@shared/schema';
-
-interface ContentSection {
-  text: string;
-  images: AffiliateImage[];
 }
 
 export function processContentWithImages(
@@ -210,4 +177,8 @@ export function processContentWithImages(
   }
 
   return sections;
+}
+interface ContentSection {
+  text: string;
+  images: AffiliateImage[];
 }
