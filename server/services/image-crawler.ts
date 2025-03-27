@@ -124,13 +124,29 @@ export function insertImagesIntoContent(content: string, images: AffiliateImage[
       const productImages = imagesByCode[code];
       if (productImages?.length > 0 && !usedCodes.has(code)) {
         usedCodes.add(code);
-        newLines.push('');
-        newLines.push('<div class="product-slideshow">');
+        
+        // Find highest resolution image for this product
+        let bestImage = productImages[0];
+        let maxResolution = 0;
+        
         productImages.forEach(img => {
-          newLines.push(`<img src="${img.url}" alt="${img.alt}" />`);
+          if (img.width && img.height) {
+            const resolution = img.width * img.height;
+            if (resolution > maxResolution) {
+              maxResolution = resolution;
+              bestImage = img;
+            }
+          }
         });
-        newLines.push('</div>');
-        newLines.push('');
+
+        if (bestImage) {
+          newLines.push('');
+          newLines.push(`<figure class="wp-block-image size-large">`);
+          newLines.push(`<img src="${bestImage.url}" alt="${bestImage.alt}" />`);
+          newLines.push(`<figcaption class="wp-element-caption">${bestImage.alt}</figcaption>`);
+          newLines.push(`</figure>`);
+          newLines.push('');
+        }
       }
     }
   }

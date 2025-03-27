@@ -259,6 +259,21 @@ export async function registerRoutes(app: Express) {
 
       const htmlContent = convertMarkdownToHTML(req.body.content);
 
+      // Find highest resolution image overall for featured image
+      const allImages = req.body.affiliateImages || [];
+      let featuredImage = null;
+      let maxResolution = 0;
+
+      allImages.forEach(img => {
+        if (img.width && img.height) {
+          const resolution = img.width * img.height;
+          if (resolution > maxResolution) {
+            maxResolution = resolution;
+            featuredImage = img.url;
+          }
+        }
+      });
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -285,6 +300,7 @@ export async function registerRoutes(app: Express) {
             _yoast_wpseo_metadesc: req.body.seoDescription || "",
             _yoast_wpseo_title: req.body.seoTitle || "",
           },
+          featured_media_url: featuredImage,
         }),
         timeout: 120000, // Added timeout
       });
