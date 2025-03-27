@@ -7,6 +7,7 @@ interface ViatorSearchResult {
   rating: number;
   reviewCount: number;
   thumbnailUrl: string;
+  webURL: string; // Added webURL to the interface
 }
 
 interface ViatorSearchResponse {
@@ -87,24 +88,18 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
   }
 }
 
-export async function getViatorAffiliateUrl(productCode: string): Promise<string | null> {
+export async function getViatorAffiliateUrl(productUrl: string): Promise<string | null> {
   try {
-    const response = await fetch(`${VIATOR_BASE_URL}/products/${productCode}`, {
-      headers: {
-        'exp-api-key': process.env.VIATOR_API_KEY!,
-        'Accept': 'application/json;version=2.0',
-        'campaign-value': process.env.VIATOR_CAMPAIGN_ID || ''
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to get affiliate URL: ${response.statusText}`);
+    const campaignValue = process.env.VIATOR_CAMPAIGN_ID || '';
+    if (!productUrl) {
+      return null;
     }
 
-    const data = await response.json();
-    return data.webURL || null;
+    // Append campaign value to product URL
+    const separator = productUrl.includes('?') ? '&' : '?';
+    return `${productUrl}${separator}mcid=${campaignValue}`;
   } catch (error) {
-    console.error('Error getting affiliate URL:', error);
+    console.error('Error constructing affiliate URL:', error);
     return null;
   }
 }
