@@ -1,3 +1,4 @@
+
 import { VIATOR_BASE_URL } from './viator-api';
 
 interface ViatorSearchResult {
@@ -21,12 +22,6 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
   }
 
   console.log('Searching Viator products:', { keyword, limit, apiKey: !!process.env.VIATOR_API_KEY });
-
-  const filters = {
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    sorting: "RELEVANCE"
-  };
 
   try {
     const response = await fetch(`${VIATOR_BASE_URL}/search/freetext`, {
