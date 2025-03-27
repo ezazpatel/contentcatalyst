@@ -36,7 +36,9 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         searchTerm: keyword,
         currency: "CAD",
         page: 0,
-        size: limit
+        size: limit,
+        searchTypes: ["DESTINATIONS"],
+        destinationIds: ["Canada"]
       })
     });
 
