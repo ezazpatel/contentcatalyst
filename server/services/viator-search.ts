@@ -1,4 +1,3 @@
-
 import { VIATOR_BASE_URL } from './viator-api';
 
 interface ViatorSearchResult {
@@ -52,7 +51,7 @@ export async function getViatorAffiliateUrl(productCode: string): Promise<string
       headers: {
         'exp-api-key': process.env.VIATOR_API_KEY!,
         'Accept': 'application/json;version=2.0',
-        'campaign-value': process.env.VIATOR_CAMPAIGN_ID!
+        'campaign-value': process.env.VIATOR_CAMPAIGN_ID || ''
       }
     });
 
