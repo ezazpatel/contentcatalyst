@@ -1,4 +1,3 @@
-
 import { VIATOR_BASE_URL } from './viator-api';
 
 interface ViatorSearchResult {
@@ -35,9 +34,13 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
       body: JSON.stringify({
         searchTerm: keyword,
         currency: "CAD",
-        page: 0,
-        size: limit,
-        searchTypes: ["DESTINATIONS"],
+        searchTypes: [{
+          searchType: "PRODUCTS",
+          pagination: {
+            start: 0,
+            count: limit
+          }
+        }],
         destinationIds: ["Canada"]
       })
     });
