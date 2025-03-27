@@ -42,7 +42,7 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         sortOrder: "RELEVANCE",
         page: 0,
         size: limit,
-        currencyCode: "CAD",
+        currency: "CAD",
         filtering: filters
       })
     });
