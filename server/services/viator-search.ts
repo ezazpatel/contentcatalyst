@@ -31,12 +31,7 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         page: 0,
         size: limit,
         currency: "CAD",
-        status: "ACTIVE",
-        filtering: {
-          startDate: new Date().toISOString().split('T')[0],
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          destination: "WORLDWIDE"
-        }
+        status: "ACTIVE"
       })
     });
 
