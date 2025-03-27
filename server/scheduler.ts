@@ -2,6 +2,7 @@ import { Anthropic } from "@anthropic-ai/sdk";
 import { storage } from "./storage";
 import { BlogPost } from "@shared/schema";
 import { crawlAffiliateLink, matchImagesWithHeadings, insertImagesIntoContent } from "./services/image-crawler";
+import { searchViatorProducts, getViatorAffiliateUrl } from './services/viator-search';
 
 // Create an Anthropic client
 const client = new Anthropic({
@@ -35,16 +36,57 @@ function convertMarkdownToHTML(content: string): string {
   return content;
 }
 
+async function findRelevantPosts(keyword: string, posts: BlogPost[], limit: number = 3): Promise<any[]> {
+  const keywordWords = keyword.toLowerCase().split(/\s+/);
+  return posts
+    .filter(post => post.status === "published" && post.wordpressUrl)
+    .map(post => ({
+      post,
+      relevance: keywordWords.reduce((score, word) => 
+        score + (post.title.toLowerCase().includes(word) ? 1 : 0) +
+        (post.keywords.some(k => k.toLowerCase().includes(word)) ? 0.5 : 0), 0)
+    }))
+    .filter(({relevance}) => relevance > 0)
+    .sort((a, b) => b.relevance - a.relevance)
+    .slice(0, limit)
+    .map(({post}) => ({
+      title: post.title,
+      url: post.wordpressUrl,
+      description: post.description
+    }));
+}
+
 async function generateContent(keywords: string[], description: string = "", post: any = {}): Promise<{
   content: string;
   title: string;
   description: string;
-  images: any[]; // Added images property
+  images: any[];
 }> {
+  // Search for relevant Viator products
+  const viatorProducts = await searchViatorProducts(keywords.join(' '), 10);
+  const affiliateLinks = await Promise.all(
+    viatorProducts.map(async product => ({
+      name: product.title,
+      url: await getViatorAffiliateUrl(product.productCode) || '',
+      description: product.description
+    }))
+  );
+
+  // Filter out products where we couldn't get affiliate URLs
+  const validAffiliateLinks = affiliateLinks.filter(link => link.url);
+
+  // Find relevant internal links
+  const allPosts = await storage.getAllBlogPosts();
+  const internalLinks = await findRelevantPosts(keywords.join(' '), allPosts);
+
+  // Add the found links to the post object
+  post.affiliateLinks = validAffiliateLinks;
+  post.internalLinks = internalLinks;
+
   try {
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a blog post about: ${keywords.join(", ")}.
-    
+
 ${post.description ? `
 Additional Context from User:
 ${post.description}` : ""}
@@ -457,7 +499,7 @@ Format your response as markdown, starting directly with the content:
         fullContent += affiliateLinksMarkdown;
       }
     }
-    
+
 
     fullContent += "\n\n";
 
