@@ -25,7 +25,7 @@ function convertMarkdownToHTML(markdown: string): string {
         .join(",");
 
       const slideshow = `
-<!-- wp:html -->
+[raw]
 <div class="wp-block-custom-carousel custom-carousel" data-type="custom-carousel">
 ${images
   .map((img) => {
@@ -36,7 +36,7 @@ ${images
   })
   .join("\n")}
 </div>
-<!-- /wp:html -->`;
+[/raw]`;
 
       slideshows.push(slideshow);
       return `{{SLIDESHOW_PLACEHOLDER_${slideshows.length - 1}}}`;
