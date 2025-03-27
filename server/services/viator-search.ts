@@ -27,10 +27,11 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
       },
       body: JSON.stringify({
         query: keyword,
-        sortOrder: "RELEVANCE",
+        sortOrder: "RELEVANCE", 
         page: 0,
         size: limit,
-        currencyCode: "CAD"
+        currency: "CAD",
+        status: "ACTIVE"
       })
     });
 
