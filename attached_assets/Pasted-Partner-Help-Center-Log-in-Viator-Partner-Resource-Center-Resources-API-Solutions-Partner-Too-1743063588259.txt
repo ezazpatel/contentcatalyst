@@ -1,0 +1,121 @@
+Partner Help Center
+ 
+Log in
+ Viator Partner Resource Center
+Resources
+ 
+API Solutions
+ 
+Partner Tools
+ 
+Blog
+Search …
+Affiliate Attribution: How It Works
+Jan 14, 2022 | Affiliate API, Blog, Features & Tools
+
+In this guide you will learn how booking attribution works for the Viator Partner Program.
+
+As a Viator affiliate, you earn commission from sales made by your users after being redirected to the Viator site. Viator uses cookies to track the activity of your users on our site and attribute sales to your account for 30 days. This tracking and attribution is enabled via URL parameters.
+
+Quick find:
+
+How tracking works
+Adding campaign tracking
+Tracking multiple campaigns
+Tracking across languages and geos
+Troubleshooting broken parameters
+How Viator tracks your bookings and session data
+Viator uses URL parameters to track and attribute traffic to affiliates. Your tracking parameters must be appended to any active Viator.com URL. Any misuse of tracking and attribution parameters (e.g. removing or changing parameters) could result in inaccurate reporting in your account dashboard or could result in loss of booking commission.
+
+Parameters will vary slightly depending on the tool(s) you use, but will all trigger the same 30 days of tracking and attribution. There are four tools available to you via your affiliate account:
+
+Links – Direct URL links to Viator
+Widgets – Customizable widgets displaying 1-30 product previews
+Banners – Banner ads, available in standard size formats
+Affiliate API – API solution to more deeply integrate and customize Viator content
+Your tracking and attribution parameters consist of four elements:
+
+PID: Your nine digit account ID
+MCID: An internal tracking ID used by Viator
+Medium: The medium used to retrieve a link. Media can be link, widget, banner, and API
+Campaign: An optional user-defined code which partners can use to track campaigns and touchpoints
+How should I add campaign tracking parameters?
+The specifics of how you should redirect your users to Viator will depend on which of our partner tools you are using. For each of the solutions, it is important to only include alphanumeric characters (abc…, 123…) and dashes (-). Special characters may prevent campaigns from being tracked, or break tracking and attribution entirely
+
+Links
+Using the tool within your account admin, generate your desired links, and add them to the desired locations on your platform.
+
+Widgets & banners
+Using the tool within your account, generate your desired HTML code, and copy-paste it into the HTML of your website where the banner should appear.
+
+API
+If you would like to add a campaign parameter to a product URL, please use the optional “campaign-value” parameter in your API request to the /products/search, /products/bulk, /products/modified-since, or /products/{product-code} endpoints.
+To add campaign tracking to non-product links (for example attractions), you will need to manually insert the parameter. This can be done by appending “&campaign={your-campaign}” to the links returned by the API.
+I have multiple campaigns and touchpoints I would like to track simultaneously
+You may want to track multiple factors related to re-direction. For example, you may want to track the touchpoint (i.e a given destination page), as well as attribute clicks to a user account.
+
+Although the campaign parameter is designed to track a single campaign or touchpoint, you can include multiple internal codes in the campaign parameter. As long as no breaking characters are included, this will give you the information needed to track these factors on your end. Partners may choose to separate different elements with dashes, as shown below:
+
+
+My platform covers multiple geos and languages
+Viator affiliates have access to all languages offered by Viator. To determine which language is displayed, you will need to update the subdomain with one of the below.
+
+Links
+Before copy-pasting your desired URL into the links tool, select your desired language in the top right of the Viator site.
+
+
+Widgets & banners
+Select language using the dropdown menu in the widget and banner builder. Below is an example of how to do so in the widget builder.
+
+
+Affiliate API
+Set the Accept-Language header parameter for your request to the desired language code. All available languages are listed in the chart.
+
+English	en, en-US
+Danish	da, da-DK
+Dutch	nl, nl-NL
+Norwegian	no, no-NO
+Spanish	es, es-ES
+Swedish	sv, sv-SE
+French	fr, fr-FR
+Italian	it, it-IT
+German	de, de-DE
+Portuguese	pt, pt-PT
+Japanese	ja, ja-JP
+Chinese (traditional)	zh-TW
+Chinese (simplified)	zh-CN
+Korean	ko, ko-KR
+Troubleshooting broken tracking parameters
+Because almost all errors related to attribution come from removing or modifying URL parameters, it is best to rely on our built-in tools to manage tracking and attribution parameters.
+
+If you believe your traffic or bookings are not being correctly tracked, please refer to the troubleshooting guide below before reaching out to us at affiliateapi@tripadvisor.com.
+
+Ensure that campaign field uses only appropriate characters.
+– Correct “?pid=P00049694&mcid=12345&medium=link&campaign=example”
+– Incorrect: “?pid=P00049694&mcid=12345&medium=link&campaign=examp#$le”
+Ensure that a “?” is included before only the first parameter, and that a “&” is included between all following parameters. 
+– For example: https://www.viator.com?pid=P00049694&mcid=42383&medium=link&campaign=example
+Frequently asked questions
+Which Viator pages can I connect to?
+You can direct your users to any active Viator URL, including destination/attraction pages, language/PoS subdomains, and microsites. Many partners choose to connect to destination, attraction, and/or product pages.
+
+How should I redirect users to Viator?
+I’ve noticed that when I navigate to a new Viator page after redirecting, my parameter no longer appears in the URL. Will this disrupt my attribution?
+The parameters are only needed for redirection – once the user has reached the Viator site using an appropriate link, tracking and attribution will remain active. Because attribution relies on cookies, if the user manually clears their browser’s cache, tracking and attribution will be removed.
+
+When I try to redirect to a product page, I’ve noticed that the landing page is different from the standard product page.
+Did you find this article useful?
+Yes
+No
+Test Tag cloud
+social media tutorial Viator Shop video
+Help center
+
+Privacy & Cookies Statement
+
+About Viator
+
+Terms & Conditions
+
+© 1997–2025 Viator, Inc.
+Manage Consent Tab
