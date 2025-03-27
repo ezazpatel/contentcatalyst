@@ -76,10 +76,10 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
 
     const data = JSON.parse(responseText);
     console.log('Parsed Viator search results:', {
-      totalResults: data.totalCount,
-      productCount: data.products?.length || 0
+      totalResults: data.products?.totalCount,
+      productCount: data.products?.results?.length || 0
     });
-    return data.products || [];
+    return data.products?.results || [];
   } catch (error) {
     console.error('Error searching Viator products:', error);
     return [];
