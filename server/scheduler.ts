@@ -350,6 +350,23 @@ Use proper markdown:
     fullContent += conclusionResponse.content[0].text;
 
     // After content generation, crawl affiliate links and add images
+    // Search for Viator products and handle empty results
+    console.log("Searching for Viator products...");
+    const viatorProducts = await searchViatorProducts(keywords.join(' '), 10) || [];
+    
+    // Generate affiliate links only if we have valid products
+    const affiliateLinks = await Promise.all(
+      viatorProducts.map(async product => ({
+        name: product.title,
+        url: await getViatorAffiliateUrl(product.productCode) || '',
+        description: product.description
+      }))
+    );
+
+    // Filter out products where we couldn't get affiliate URLs
+    const validAffiliateLinks = affiliateLinks.filter(link => link.url);
+    post.affiliateLinks = validAffiliateLinks;
+
     console.log("Crawling affiliate links for images...");
     let images = [];
 
