@@ -33,7 +33,7 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        text: keyword,
+        searchTerm: keyword,
         currency: "CAD",
         page: 0,
         size: limit
