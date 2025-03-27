@@ -7,39 +7,34 @@ import { runMigrations } from "./migrations";
 
 function convertMarkdownToHTML(markdown: string): string {
   // First extract and save product slideshow divs
-  const slideshows: string[] = [];
+  const galleries: string[] = [];
   markdown = markdown.replace(
     /<div class="product-slideshow">([\s\S]*?)<\/div>/g,
     (match) => {
-      const images =
-        match.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/g) || [];
+      const images = match.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/g) || [];
 
-      // Create a gallery block that WordPress can handle
-      const gallery = images
-        .map((img) => {
-          const m = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/);
-          const src = m ? m[1] : "";
-          const alt = m ? m[2] : "";
-          return `{"url":"${src}","caption":"${alt}","id":""}`;
-        })
-        .join(",");
+      // Create gallery HTML that WordPress recognizes
+      const galleryHTML = `
+<!-- wp:gallery {"linkTo":"none"} -->
+<figure class="wp-block-gallery has-nested-images columns-default is-cropped">
+${images.map((img) => {
+  const m = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/);
+  const src = m ? m[1] : "";
+  const alt = m ? m[2] : "";
+  return `
+<!-- wp:image {"sizeSlug":"large"} -->
+<figure class="wp-block-image size-large">
+  <img src="${src}" alt="${alt}"/>
+  <figcaption class="wp-element-caption">${alt}</figcaption>
+</figure>
+<!-- /wp:image -->`;
+}).join("\n")}
+</figure>
+<!-- /wp:gallery -->`;
 
-      const slideshow = `<!-- wp:html -->
-<div class="wp-block-custom-carousel custom-carousel" data-type="custom-carousel">
-${images
-  .map((img) => {
-    const m = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/);
-    const src = m ? m[1] : "";
-    const alt = m ? m[2] : "";
-    return `<div class="wp-block-custom-slide slide" data-type="custom-slide"><img src="${src}" alt="${alt}" class="wp-image" /><div class="wp-caption caption">${alt}</div></div>`;
-  })
-  .join("\n")}
-</div>
-<!-- /wp:html -->`;
-
-      slideshows.push(slideshow);
-      return `{{SLIDESHOW_PLACEHOLDER_${slideshows.length - 1}}}`;
-    },
+      galleries.push(galleryHTML);
+      return `{{GALLERY_PLACEHOLDER_${galleries.length - 1}}}`;
+    }
   );
 
   // Convert markdown to HTML
@@ -55,12 +50,8 @@ ${images
     .replace(/(<li>.*<\/li>\n?)+/g, "<ol>$&</ol>")
     .replace(/^(?!<[uo]l|<li|<h[1-6])(.*$)/gm, "<p>$1</p>");
 
-  // Restore product slideshow divs
-  html = html.replace(
-    /{{SLIDESHOW_PLACEHOLDER_(\d+)}}/g,
-    (_, index) => slideshows[parseInt(index)],
-  );
-
+  // Restore gallery blocks
+  html = html.replace(/{{GALLERY_PLACEHOLDER_(\d+)}}/g, (_, index) => galleries[parseInt(index)]);
   return html;
 }
 
