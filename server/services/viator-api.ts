@@ -1,7 +1,7 @@
 import { AffiliateImage } from '@shared/schema';
 
 // Viator API endpoints
-const VIATOR_BASE_URL = "https://api.viator.com/partner";
+export const VIATOR_BASE_URL = "https://api.viator.com/partner";
 
 interface ViatorProduct {
   productCode: string;
