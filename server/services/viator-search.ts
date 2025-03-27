@@ -15,6 +15,7 @@ interface ViatorSearchResponse {
 }
 
 export async function searchViatorProducts(keyword: string, limit: number = 10): Promise<ViatorSearchResult[]> {
+  console.log('Searching Viator products:', { keyword, limit, apiKey: !!process.env.VIATOR_API_KEY });
   try {
     const response = await fetch(`${VIATOR_BASE_URL}/products/search`, {
       method: 'POST',
@@ -34,7 +35,13 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
     });
 
     if (!response.ok) {
-      throw new Error(`Viator search failed: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Viator API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Viator search failed (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
