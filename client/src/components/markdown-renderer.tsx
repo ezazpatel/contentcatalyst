@@ -33,7 +33,11 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
       const sectionImages = imagesByHeading[heading] || [];
 
       const imageMarkdown = sectionImages
-        .map(img => `![${img.alt}](${img.url})`)
+        .filter(img => img.url && img.url !== 'undefined')
+        .map(img => {
+          console.log('Processing affiliate image:', img);
+          return `![${img.alt || ''}](${img.url})`;
+        })
         .join('\n\n');
 
       return `## ${heading}\n\n${imageMarkdown}\n\n${sectionContent}`;
