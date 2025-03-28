@@ -12,29 +12,41 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRendererProps) {
   const processedContent = useMemo(() => {
-    let currentImageIndex = 0;
+    // Create maps to track product codes and their images
+    const productCodeOccurrences: { [key: string]: number } = {};
+    const productCodeToImage: { [key: string]: AffiliateImage } = {};
+    
+    // Map images to their product codes
+    affiliateImages.forEach(img => {
+      if (img.affiliateUrl) {
+        const match = img.affiliateUrl.match(/viator\.com\/tours\/[^\/]+\/[^\/]+\/([^\/\-]+)/);
+        if (match) {
+          productCodeToImage[match[1]] = img;
+        }
+      }
+    });
+
     const lines = content.split('\n');
     
     // Process content line by line
     const processedLines = lines.map(line => {
-      // If line contains a Viator URL
-      if (line.includes('viator.com/tours/')) {
-        currentImageIndex++;
-        // On second occurrence of a Viator URL, add an image
-        if (currentImageIndex % 2 === 0 && affiliateImages[currentImageIndex - 1]) {
-          const image = affiliateImages[currentImageIndex - 1];
+      // Check for Viator URLs and extract product code
+      const match = line.match(/viator\.com\/tours\/[^\/]+\/[^\/]+\/([^\/\-]+)/);
+      if (match) {
+        const productCode = match[1];
+        productCodeOccurrences[productCode] = (productCodeOccurrences[productCode] || 0) + 1;
+        
+        // On second occurrence of this specific product code, add its image
+        if (productCodeOccurrences[productCode] === 2 && productCodeToImage[productCode]) {
+          const image = productCodeToImage[productCode];
           return `${line}\n\n![${image.alt || ''}](${image.url})`;
         }
       }
       return line;
     });
 
-    // Handle any remaining undefined image placeholders
-    const finalContent = processedLines.join('\n').replace(/!\[([^\]]*)\]\(undefined\)/g, () => {
-      const image = affiliateImages[currentImageIndex];
-      currentImageIndex = (currentImageIndex + 1) % affiliateImages.length;
-      return image ? `![${image.alt || ''}](${image.url})` : '';
-    });
+    // Remove any remaining undefined image placeholders
+    const finalContent = processedLines.join('\n').replace(/!\[([^\]]*)\]\(undefined\)/g, '');
 
     return finalContent;
   }, [content, affiliateImages]);
