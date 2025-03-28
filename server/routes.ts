@@ -75,8 +75,9 @@ export async function registerRoutes(app: Express) {
                         img.url?.replace('-50x50', '') || 
                         img.url || '';
 
-        // Get product details and its code from Viator
-        const productDetails = await fetchViatorProduct(post.id);
+        // Only fetch product details if we have a valid product code from the URL
+        const productCode = extractProductCode(img.url);
+        const productDetails = productCode ? await fetchViatorProduct(productCode) : null;
 
         return {
           url: imageUrl,
