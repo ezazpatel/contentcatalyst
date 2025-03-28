@@ -2,11 +2,14 @@ import { Anthropic } from "@anthropic-ai/sdk";
 import { storage } from "./storage";
 import { BlogPost } from "@shared/schema";
 
-import { searchViatorProducts, getViatorAffiliateUrl } from './services/viator-search';
+import {
+  searchViatorProducts,
+  getViatorAffiliateUrl,
+} from "./services/viator-search";
 
 // Create an Anthropic client
 const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
@@ -15,64 +18,89 @@ const ANTHROPIC_MODEL = "claude-3-7-sonnet-20250219";
 // Add a function to convert markdown to HTML
 function convertMarkdownToHTML(content: string): string {
   // Convert headings, but skip h1 as it's reserved for the title
-  content = content.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  content = content.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  content = content.replace(/^## (.+)$/gm, "<h2>$1</h2>");
+  content = content.replace(/^### (.+)$/gm, "<h3>$1</h3>");
 
   // Convert images
-  content = content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+  content = content.replace(
+    /!\[([^\]]*)\]\(([^)]+)\)/g,
+    '<img src="$2" alt="$1">',
+  );
 
   // Convert links - matches [text](url) pattern
   content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
   // Convert paragraphs - add proper spacing
-  content = content.split('\n\n').map(para => {
-    if (!para.trim()) return '';
-    if (para.startsWith('<h') || para.startsWith('<img') || para.startsWith('<ul') || para.startsWith('<ol')) {
-      return para;
-    }
-    return `<p>${para}</p>`;
-  }).join('\n\n');
+  content = content
+    .split("\n\n")
+    .map((para) => {
+      if (!para.trim()) return "";
+      if (
+        para.startsWith("<h") ||
+        para.startsWith("<img") ||
+        para.startsWith("<ul") ||
+        para.startsWith("<ol")
+      ) {
+        return para;
+      }
+      return `<p>${para}</p>`;
+    })
+    .join("\n\n");
 
   return content;
 }
 
-async function findRelevantPosts(keyword: string, posts: BlogPost[], limit: number = 3): Promise<any[]> {
+async function findRelevantPosts(
+  keyword: string,
+  posts: BlogPost[],
+  limit: number = 3,
+): Promise<any[]> {
   const keywordWords = keyword.toLowerCase().split(/\s+/);
   return posts
-    .filter(post => post.status === "published" && post.wordpressUrl)
-    .map(post => ({
+    .filter((post) => post.status === "published" && post.wordpressUrl)
+    .map((post) => ({
       post,
-      relevance: keywordWords.reduce((score, word) => 
-        score + (post.title.toLowerCase().includes(word) ? 1 : 0) +
-        (post.keywords.some(k => k.toLowerCase().includes(word)) ? 0.5 : 0), 0)
+      relevance: keywordWords.reduce(
+        (score, word) =>
+          score +
+          (post.title.toLowerCase().includes(word) ? 1 : 0) +
+          (post.keywords.some((k) => k.toLowerCase().includes(word)) ? 0.5 : 0),
+        0,
+      ),
     }))
-    .filter(({relevance}) => relevance > 0)
+    .filter(({ relevance }) => relevance > 0)
     .sort((a, b) => b.relevance - a.relevance)
     .slice(0, limit)
-    .map(({post}) => ({
+    .map(({ post }) => ({
       title: post.title,
       url: post.wordpressUrl,
-      description: post.description
+      description: post.description,
     }));
 }
 
-async function generateContent(keywords: string[], description: string = "", post: any = {}): Promise<{
+async function generateContent(
+  keywords: string[],
+  description: string = "",
+  post: any = {},
+): Promise<{
   content: string;
   title: string;
   description: string;
   images: any[];
 }> {
-  console.log('Searching for Viator products before content generation...');
-  const viatorProducts = await searchViatorProducts(keywords.join(' '), 10);
+  console.log("Searching for Viator products before content generation...");
+  const viatorProducts = await searchViatorProducts(keywords.join(" "), 10);
   const validProducts = Array.isArray(viatorProducts) ? viatorProducts : [];
-  console.log('Found Viator products:', validProducts.length);
+  console.log("Found Viator products:", validProducts.length);
 
-  console.log('Crawling affiliate links and images...');
+  console.log("Crawling affiliate links and images...");
   const affiliateLinks = await Promise.all(
-    validProducts.map(async product => {
+    validProducts.map(async (product) => {
       const url = await getViatorAffiliateUrl(product.productCode);
       if (!url) {
-        console.log(`No affiliate URL found for product ${product.productCode}`);
+        console.log(
+          `No affiliate URL found for product ${product.productCode}`,
+        );
         return null;
       }
       return {
@@ -80,25 +108,27 @@ async function generateContent(keywords: string[], description: string = "", pos
         url,
         description: product.description,
         images: product.images || [],
-        productCode: product.productCode
+        productCode: product.productCode,
       };
-    })
-  ).then(links => links.filter(link => link !== null));
+    }),
+  ).then((links) => links.filter((link) => link !== null));
 
-  console.log(`Successfully crawled ${affiliateLinks.length} affiliate links with images`);
+  console.log(
+    `Successfully crawled ${affiliateLinks.length} affiliate links with images`,
+  );
   if (affiliateLinks.length === 0) {
-    console.log('No valid affiliate links found, generation may be limited');
+    console.log("No valid affiliate links found, generation may be limited");
   }
 
   // Store all images for later use
-  const allImages = affiliateLinks.flatMap(link => link.images);
+  const allImages = affiliateLinks.flatMap((link) => link.images);
 
   // Filter out products where we couldn't get affiliate URLs
-  const validAffiliateLinks = affiliateLinks.filter(link => link.url);
+  const validAffiliateLinks = affiliateLinks.filter((link) => link.url);
 
   // Find relevant internal links
   const allPosts = await storage.getAllBlogPosts();
-  const internalLinks = await findRelevantPosts(keywords.join(' '), allPosts);
+  const internalLinks = await findRelevantPosts(keywords.join(" "), allPosts);
 
   // Add the found links to the post object
   post.affiliateLinks = validAffiliateLinks;
@@ -108,13 +138,21 @@ async function generateContent(keywords: string[], description: string = "", pos
     console.log("Step 1: Generating title and outline...");
     const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a blog post about: ${keywords.join(", ")}.
 
-${post.description ? `
+${
+  post.description
+    ? `
 Additional Context from User:
-${post.description}` : ""}
+${post.description}`
+    : ""
+}
 
-${Array.isArray(post.internalLinks) && post.internalLinks.length > 0 ? `
+${
+  Array.isArray(post.internalLinks) && post.internalLinks.length > 0
+    ? `
 Important: This article should reference these related articles from our blog:
-${post.internalLinks.map(link => `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ''}`).join('\n')}` : ""}
+${post.internalLinks.map((link) => `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ""}`).join("\n")}`
+    : ""
+}
 
 Instructions:
 1. Write in grade 5-6 level Canadian English
@@ -124,7 +162,7 @@ Instructions:
    - A clear H2 heading that's topically relevant
    - 2-3 H3 subheadings under each main section
    - If any of these affiliate products/resources fit naturally as section topics, use them:
-     ${Array.isArray(post.affiliateLinks) ? post.affiliateLinks.map(link => `- ${link.name}`).join('\n     ') : ''}
+     ${Array.isArray(post.affiliateLinks) ? post.affiliateLinks.map((link) => `- ${link.name}`).join("\n     ") : ""}
 
 Format your response as JSON:
 {
@@ -142,33 +180,45 @@ Format your response as JSON:
       model: ANTHROPIC_MODEL,
       max_tokens: 1000,
       temperature: 0.7,
-      messages: [{ role: "user", content: outlinePrompt }]
+      messages: [{ role: "user", content: outlinePrompt }],
     });
 
     const outlineText = outlineResponse.content[0].text;
-    const outlineJson = outlineText.match(/```json\s*([\s\S]*?)\s*```/) || outlineText.match(/{[\s\S]*}/);
+    const outlineJson =
+      outlineText.match(/```json\s*([\s\S]*?)\s*```/) ||
+      outlineText.match(/{[\s\S]*}/);
     let outlineResult;
 
     if (outlineJson) {
       try {
-        outlineResult = JSON.parse(outlineJson[0].replace(/```json|```/g, '').trim());
+        outlineResult = JSON.parse(
+          outlineJson[0].replace(/```json|```/g, "").trim(),
+        );
       } catch (e) {
         console.error("Failed to parse outline JSON:", e);
-        outlineResult = { title: "Blog Post About " + keywords.join(", "), outline: [] };
+        outlineResult = {
+          title: "Blog Post About " + keywords.join(", "),
+          outline: [],
+        };
       }
     } else {
       console.error("Could not extract JSON from outline response");
-      outlineResult = { title: "Blog Post About " + keywords.join(", "), outline: [] };
+      outlineResult = {
+        title: "Blog Post About " + keywords.join(", "),
+        outline: [],
+      };
     }
 
     // Prepare affiliate links section if available
     let affiliateLinksMarkdown = "";
     if (Array.isArray(post.affiliateLinks) && post.affiliateLinks.length > 0) {
-      const validAffiliateLinks = post.affiliateLinks.filter(link => link.name && link.url);
+      const validAffiliateLinks = post.affiliateLinks.filter(
+        (link) => link.name && link.url,
+      );
       if (validAffiliateLinks.length > 0) {
         const categoryName = keywords[0] || "Resources";
         affiliateLinksMarkdown = `## Top ${validAffiliateLinks.length} ${categoryName} Recommendations\n\n`;
-        validAffiliateLinks.forEach(link => {
+        validAffiliateLinks.forEach((link) => {
           affiliateLinksMarkdown += `* [${link.name}](${link.url})\n`;
         });
         affiliateLinksMarkdown += "\n";
@@ -184,15 +234,19 @@ Instructions:
 4. Include keywords naturally
 5. Give a clear overview of what readers will learn
 
-${post.description ? `
+${
+  post.description
+    ? `
 Important: Review this context from the user and incorporate any URLs or specific instructions:
-${post.description}` : ""}
+${post.description}`
+    : ""
+}
 
 Write an engaging introduction (150-200 words) for "${outlineResult.title}".
 Include:
 - A hook that grabs attention
 - Brief mention of key benefits readers will get
-- Natural transition to the first section: "${outlineResult.outline[0]?.heading || 'First Section'}"
+- Natural transition to the first section: "${outlineResult.outline[0]?.heading || "First Section"}"
 
 Format your response:
 [Your introduction here]`;
@@ -201,7 +255,7 @@ Format your response:
       model: ANTHROPIC_MODEL,
       max_tokens: 300,
       temperature: 0.7,
-      messages: [{ role: "user", content: introPrompt }]
+      messages: [{ role: "user", content: introPrompt }],
     });
 
     let fullContent = "";
@@ -212,7 +266,6 @@ Format your response:
     }
 
     fullContent += introResponse.content[0].text + "\n\n";
-
 
     // Create a map of affiliate links for easier reference
     const affiliateLinksMap = Array.isArray(post.affiliateLinks)
@@ -226,24 +279,26 @@ Format your response:
 
     // Track affiliate link usage count
     const affiliateLinkUsage = {};
-    Object.keys(affiliateLinksMap).forEach(name => {
+    Object.keys(affiliateLinksMap).forEach((name) => {
       affiliateLinkUsage[name] = 0;
     });
 
     // Add internal links tracking similar to affiliate links
     const internalLinksUsage = {};
     if (Array.isArray(post.internalLinks)) {
-      post.internalLinks.forEach(link => {
+      post.internalLinks.forEach((link) => {
         internalLinksUsage[link.url] = 0;
       });
     }
-
 
     for (const section of outlineResult.outline) {
       console.log("Generating content for section:", section.heading);
 
       let affiliateInstructions = "";
-      if (section.affiliate_connection && affiliateLinksMap[section.affiliate_connection]) {
+      if (
+        section.affiliate_connection &&
+        affiliateLinksMap[section.affiliate_connection]
+      ) {
         affiliateInstructions = `
 This section MUST clearly and naturally feature [${section.affiliate_connection}](${affiliateLinksMap[section.affiliate_connection]}) as an H2 or H3 heading.
 When mentioning this product in the content, ALWAYS use the markdown link format: [${section.affiliate_connection}](${affiliateLinksMap[section.affiliate_connection]})
@@ -274,26 +329,37 @@ Instructions:
 4. Keep emoji usage minimal
 ${affiliateInstructions}
 
-${post.description ? `
+${
+  post.description
+    ? `
 Important: Review this context from the user and naturally incorporate any URLs or specific instructions:
-${post.description}` : ""}
+${post.description}`
+    : ""
+}
 
-${Array.isArray(post.internalLinks) && post.internalLinks.length > 0 ? `
+${
+  Array.isArray(post.internalLinks) && post.internalLinks.length > 0
+    ? `
 Important: Consider including these relevant internal links where appropriate:
 ${post.internalLinks
-  .filter(link => !internalLinksUsage[link.url]) // Only show unused links
-  .map(link => `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ''}`)
-  .join('\n')}
+  .filter((link) => !internalLinksUsage[link.url]) // Only show unused links
+  .map(
+    (link) =>
+      `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ""}`,
+  )
+  .join("\n")}
 
 - Each internal link should only be used once
 - Place them naturally where they add value to the content
-- Present them as "related reading" or "learn more" references` : ""}
+- Present them as "related reading" or "learn more" references`
+    : ""
+}
 
 Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
 Focus on providing valuable information and real experiences, using keywords only where they naturally fit into the narrative. Prioritize reader engagement over keyword placement.
 
 Also create content for these subheadings:
-${section.subheadings.map(subheading => `- ## ${subheading}`).join('\n')}
+${section.subheadings.map((subheading) => `- ## ${subheading}`).join("\n")}
 
 Each subheading section should be 100-150 words with specific, useful information.
 
@@ -303,32 +369,37 @@ Format with proper markdown:
 
 [Main section content]
 
-${section.subheadings.map(subheading => `### ${subheading}\n\n[Subheading content]`).join('\n\n')}`;
+${section.subheadings.map((subheading) => `### ${subheading}\n\n[Subheading content]`).join("\n\n")}`;
 
       const sectionResponse = await client.messages.create({
         model: ANTHROPIC_MODEL,
         max_tokens: 500,
         temperature: 0.7,
-        messages: [{ role: "user", content: sectionPrompt }]
+        messages: [{ role: "user", content: sectionPrompt }],
       });
 
       const sectionContent = sectionResponse.content[0].text;
 
       // Count affiliate link usage in this section
-      Object.keys(affiliateLinksMap).forEach(name => {
-        const regex = new RegExp(`\\[${name}\\]\\(${affiliateLinksMap[name]}\\)`, 'g');
+      Object.keys(affiliateLinksMap).forEach((name) => {
+        const regex = new RegExp(
+          `\\[${name}\\]\\(${affiliateLinksMap[name]}\\)`,
+          "g",
+        );
         const matches = sectionContent.match(regex);
         if (matches) {
-          affiliateLinkUsage[name] = (affiliateLinkUsage[name] || 0) + matches.length;
+          affiliateLinkUsage[name] =
+            (affiliateLinkUsage[name] || 0) + matches.length;
         }
       });
 
       // Track internal link usage similar to affiliate links
-      Object.keys(internalLinksUsage).forEach(url => {
-        const regex = new RegExp(`\\[.*?\\]\\(${url}\\)`, 'g');
+      Object.keys(internalLinksUsage).forEach((url) => {
+        const regex = new RegExp(`\\[.*?\\]\\(${url}\\)`, "g");
         const matches = sectionContent.match(regex);
         if (matches) {
-          internalLinksUsage[url] = (internalLinksUsage[url] || 0) + matches.length;
+          internalLinksUsage[url] =
+            (internalLinksUsage[url] || 0) + matches.length;
         }
       });
 
@@ -365,23 +436,27 @@ Use proper markdown:
       model: ANTHROPIC_MODEL,
       max_tokens: 500,
       temperature: 0.7,
-      messages: [{ role: "user", content: conclusionPrompt }]
+      messages: [{ role: "user", content: conclusionPrompt }],
     });
 
     fullContent += conclusionResponse.content[0].text;
 
     // Insert images into content
     if (allImages.length > 0) {
-      console.log(`Adding ${allImages.length} affiliate product images to the content`);
+      console.log(
+        `Adding ${allImages.length} affiliate product images to the content`,
+      );
       const sections = fullContent.split(/^## /m);
-      fullContent = sections.map((section, index) => {
-        if (index === 0) return section;
-        const image = allImages[index - 1];
-        if (image) {
-          return `## ${section.split('\n')[0]}\n\n![${image.alt || ''}](${image.url})\n\n${section.split('\n').slice(1).join('\n')}`;
-        }
-        return `## ${section}`;
-      }).join('');
+      fullContent = sections
+        .map((section, index) => {
+          if (index === 0) return section;
+          const image = allImages[index - 1];
+          if (image) {
+            return `## ${section.split("\n")[0]}\n\n![${image.alt || ""}](${image.url})\n\n${section.split("\n").slice(1).join("\n")}`;
+          }
+          return `## ${section}`;
+        })
+        .join("");
     }
 
     // Calculate word count
@@ -391,7 +466,8 @@ Use proper markdown:
     // Extract description if not provided
     let finalDescription = description;
     if (!finalDescription) {
-      finalDescription = fullContent.split("\n").slice(2, 4).join(" ").slice(0, 155) + "...";
+      finalDescription =
+        fullContent.split("\n").slice(2, 4).join(" ").slice(0, 155) + "...";
     }
 
     return {
@@ -406,7 +482,11 @@ Use proper markdown:
   }
 }
 
-async function generateContentOriginal(keywords: string[], description: string = "", post: any = {}): Promise<{
+async function generateContentOriginal(
+  keywords: string[],
+  description: string = "",
+  post: any = {},
+): Promise<{
   content: string;
   title: string;
   description: string;
@@ -440,35 +520,47 @@ Ensure JSON is properly formatted with no trailing commas.`;
       messages: [
         {
           role: "user",
-          content: outlinePrompt
-        }
-      ]
+          content: outlinePrompt,
+        },
+      ],
     });
 
     // Parse the outline result from the JSON response
     const outlineText = outlineResponse.content[0].text;
-    const outlineJson = outlineText.match(/```json\s*([\s\S]*?)\s*```/) || outlineText.match(/{[\s\S]*}/);
+    const outlineJson =
+      outlineText.match(/```json\s*([\s\S]*?)\s*```/) ||
+      outlineText.match(/{[\s\S]*}/);
     let outlineResult;
 
     if (outlineJson) {
       try {
-        outlineResult = JSON.parse(outlineJson[0].replace(/```json|```/g, '').trim());
+        outlineResult = JSON.parse(
+          outlineJson[0].replace(/```json|```/g, "").trim(),
+        );
       } catch (e) {
         console.error("Failed to parse outline JSON:", e);
-        outlineResult = { title: "Blog Post About " + keywords.join(", "), outline: [] };
+        outlineResult = {
+          title: "Blog Post About " + keywords.join(", "),
+          outline: [],
+        };
       }
     } else {
       console.error("Could not extract JSON from outline response");
-      outlineResult = { title: "Blog Post About " + keywords.join(", "), outline: [] };
+      outlineResult = {
+        title: "Blog Post About " + keywords.join(", "),
+        outline: [],
+      };
     }
 
     // Prepare affiliate links section
     let affiliateLinksMarkdown = "";
     if (Array.isArray(post.affiliateLinks) && post.affiliateLinks.length > 0) {
-      const validAffiliateLinks = post.affiliateLinks.filter(link => link.name && link.url);
+      const validAffiliateLinks = post.affiliateLinks.filter(
+        (link) => link.name && link.url,
+      );
       if (validAffiliateLinks.length > 0) {
         affiliateLinksMarkdown = "\n\n## Recommended Resources\n\n";
-        validAffiliateLinks.forEach(link => {
+        validAffiliateLinks.forEach((link) => {
           affiliateLinksMarkdown += `* [${link.name}](${link.url})\n`;
         });
         affiliateLinksMarkdown += "\n";
@@ -486,72 +578,83 @@ The introduction should:
 - Hook the reader with something interesting
 - Include the keywords naturally
 - Give an overview of what the article will cover
-- End with a transition to the first section: "${outlineResult.outline[0]?.heading || 'First Section'}"
+- End with a transition to the first section: "${outlineResult.outline[0]?.heading || "First Section"}"
 
 Format your response as markdown, starting directly with the content:
 [Your introduction here]`;
 
     const introResponse = await client.messages.create({
       model: "claude-3-opus-20240229",
-      max_tokens: 1000,
+      max_tokens: 300,
       temperature: 0.7,
       messages: [
         {
           role: "user",
-          content: introPrompt
-        }
-      ]
+          content: introPrompt,
+        },
+      ],
     });
 
     const introResult = {
-      introduction: introResponse.content[0].text
+      introduction: introResponse.content[0].text,
     };
 
     // Insert the affiliate links right after the title
     let fullContent = introResult.introduction;
     if (affiliateLinksMarkdown) {
       // Find the position after the title
-      const titleEndIndex = fullContent.indexOf('\n\n');
+      const titleEndIndex = fullContent.indexOf("\n\n");
       if (titleEndIndex !== -1) {
-        fullContent = fullContent.substring(0, titleEndIndex + 2) + 
-                      affiliateLinksMarkdown + 
-                      fullContent.substring(titleEndIndex + 2);
+        fullContent =
+          fullContent.substring(0, titleEndIndex + 2) +
+          affiliateLinksMarkdown +
+          fullContent.substring(titleEndIndex + 2);
       } else {
         fullContent += affiliateLinksMarkdown;
       }
     }
-
 
     fullContent += "\n\n";
 
     // Track the number of times each affiliate link has been used - we'll still reference them in the content
     const affiliateLinkUsage = {};
 
-    for (const section of outlineResult.outline.slice(0, Math.min(outlineResult.outline.length, 10))) {
+    for (const section of outlineResult.outline.slice(
+      0,
+      Math.min(outlineResult.outline.length, 10),
+    )) {
       console.log("Generating content for section:", section.heading);
 
       // Prepare affiliate links instruction
       let affiliateLinksInstruction = "";
-      if (Array.isArray(post.affiliateLinks) && post.affiliateLinks.length > 0) {
+      if (
+        Array.isArray(post.affiliateLinks) &&
+        post.affiliateLinks.length > 0
+      ) {
         // Filter out empty links
-        const validAffiliateLinks = post.affiliateLinks.filter(link => link.name && link.url);
+        const validAffiliateLinks = post.affiliateLinks.filter(
+          (link) => link.name && link.url,
+        );
 
         if (validAffiliateLinks.length > 0) {
           affiliateLinksInstruction = `
 - Important: Mention these products/resources naturally in your content where relevant:
-${validAffiliateLinks.map(link => {
-  // Initialize usage counter if not exists
-  if (!affiliateLinkUsage[link.url]) {
-    affiliateLinkUsage[link.url] = 0;
-  }
+${validAffiliateLinks
+  .map((link) => {
+    // Initialize usage counter if not exists
+    if (!affiliateLinkUsage[link.url]) {
+      affiliateLinkUsage[link.url] = 0;
+    }
 
-  // Only include mentions of links that haven't been referenced twice yet
-  if (affiliateLinkUsage[link.url] < 2) {
-    affiliateLinkUsage[link.url]++;
-    return `  - ${link.name}`;
-  }
-  return null;
-}).filter(Boolean).join('\n')}
+    // Only include mentions of links that haven't been referenced twice yet
+    if (affiliateLinkUsage[link.url] < 2) {
+      affiliateLinkUsage[link.url]++;
+      return `  - ${link.name}`;
+    }
+    return null;
+  })
+  .filter(Boolean)
+  .join("\n")}
 - Note: Do NOT include the links in your response. Only mention the names naturally within the content.
 - The links are already listed at the beginning of the post.`;
         }
@@ -568,7 +671,7 @@ Write a detailed section (200-300 words) for the heading "${section.heading}" th
 Include rich details, examples, personal anecdotes, and naturally place affiliate links where relevant.
 
 Also create content for these subheadings:
-${section.subheadings.map(subheading => `- ## ${subheading}`).join('\n')}
+${section.subheadings.map((subheading) => `- ## ${subheading}`).join("\n")}
 
 Each subheading section should be 100-150 words and provide specific, useful information related to the subheading topic.
 
@@ -578,18 +681,18 @@ Format your response with proper markdown headings:
 
 [Content for main section]
 
-${section.subheadings.map(subheading => `### ${subheading}\n\n[Content for this subheading]`).join('\n\n')}`;
+${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for this subheading]`).join("\n\n")}`;
 
       const sectionResponse = await client.messages.create({
         model: "claude-3-opus-20240229",
-        max_tokens: 1000,
+        max_tokens: 400,
         temperature: 0.7,
         messages: [
           {
             role: "user",
-            content: sectionPrompt
-          }
-        ]
+            content: sectionPrompt,
+          },
+        ],
       });
 
       fullContent += sectionResponse.content[0].text + "\n\n";
@@ -615,14 +718,14 @@ Use proper markdown:
 
     const conclusionResponse = await client.messages.create({
       model: "claude-3-opus-20240229",
-      max_tokens: 1000,
+      max_tokens: 300,
       temperature: 0.7,
       messages: [
         {
           role: "user",
-          content: conclusionPrompt
-        }
-      ]
+          content: conclusionPrompt,
+        },
+      ],
     });
 
     fullContent += conclusionResponse.content[0].text;
@@ -634,13 +737,14 @@ Use proper markdown:
     // Extract description if not provided
     let finalDescription = description;
     if (!finalDescription) {
-      finalDescription = fullContent.split("\n").slice(2, 4).join(" ").slice(0, 155) + "...";
+      finalDescription =
+        fullContent.split("\n").slice(2, 4).join(" ").slice(0, 155) + "...";
     }
 
     return {
       content: fullContent,
       title: outlineResult.title,
-      description: finalDescription
+      description: finalDescription,
     };
   } catch (error) {
     console.error("Error generating content:", error);
@@ -661,7 +765,7 @@ export async function checkScheduledPosts() {
     const posts = await storage.getAllBlogPosts();
 
     // Filter for posts that need processing (scheduled or draft with scheduledDate in the past and content is empty)
-    const postsToProcess = posts.filter(post => {
+    const postsToProcess = posts.filter((post) => {
       return (
         (post.status === "scheduled" || post.status === "draft") &&
         post.scheduledDate &&
@@ -679,9 +783,9 @@ export async function checkScheduledPosts() {
       try {
         // Generate content using Anthropic
         const generated = await generateContent(
-          post.keywords, 
+          post.keywords,
           post.description || "",
-          post
+          post,
         );
 
         // Update the post with generated content and images
@@ -694,65 +798,87 @@ export async function checkScheduledPosts() {
           affiliateImages: generated.images, // Store the crawled images
         });
 
-        console.log(`Successfully generated content for post ID ${post.id}. Status: ${settings.test_mode ? 'draft (test mode)' : 'published'}`);
+        console.log(
+          `Successfully generated content for post ID ${post.id}. Status: ${settings.test_mode ? "draft (test mode)" : "published"}`,
+        );
 
         // WordPress publishing is disabled in test mode
-        if (!settings.test_mode && process.env.WORDPRESS_API_URL && process.env.WORDPRESS_AUTH_TOKEN && process.env.WORDPRESS_USERNAME) {
-          console.log(`Test mode is OFF - attempting to publish post ID ${post.id} to WordPress...`);
+        if (
+          !settings.test_mode &&
+          process.env.WORDPRESS_API_URL &&
+          process.env.WORDPRESS_AUTH_TOKEN &&
+          process.env.WORDPRESS_USERNAME
+        ) {
+          console.log(
+            `Test mode is OFF - attempting to publish post ID ${post.id} to WordPress...`,
+          );
 
           try {
             // Create Basic Auth token from username and application password
-            const authToken = Buffer.from(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`).toString('base64');
+            const authToken = Buffer.from(
+              `${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`,
+            ).toString("base64");
 
             const apiUrl = process.env.WORDPRESS_API_URL;
-            const endpoint = apiUrl.endsWith('/wp-json') ? `${apiUrl}/wp/v2/posts` : `${apiUrl}/wp/v2/posts`;
+            const endpoint = apiUrl.endsWith("/wp-json")
+              ? `${apiUrl}/wp/v2/posts`
+              : `${apiUrl}/wp/v2/posts`;
 
             // Use the updatedPost data for WordPress
             const postData = {
               title: { raw: updatedPost.title },
-              content: { 
-                raw: convertMarkdownToHTML(updatedPost.content)
+              content: {
+                raw: convertMarkdownToHTML(updatedPost.content),
               },
-              status: 'publish',
-              excerpt: { raw: updatedPost.description || '' },
+              status: "publish",
+              excerpt: { raw: updatedPost.description || "" },
               meta: {
-                _yoast_wpseo_metadesc: updatedPost.seoDescription || '',
-                _yoast_wpseo_title: updatedPost.seoTitle || '',
-              }
+                _yoast_wpseo_metadesc: updatedPost.seoDescription || "",
+                _yoast_wpseo_title: updatedPost.seoTitle || "",
+              },
             };
 
             console.log(`Publishing to WordPress endpoint: ${endpoint}`);
 
             const response = await fetch(endpoint, {
-              method: 'POST',
+              method: "POST",
               headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${authToken}`,
-                'Accept': 'application/json'
+                "Content-Type": "application/json",
+                Authorization: `Basic ${authToken}`,
+                Accept: "application/json",
               },
-              body: JSON.stringify(postData)
+              body: JSON.stringify(postData),
             });
 
             if (!response.ok) {
               const errorText = await response.text();
-              throw new Error(`WordPress API error: ${response.statusText} - ${errorText}`);
+              throw new Error(
+                `WordPress API error: ${response.statusText} - ${errorText}`,
+              );
             }
 
             const result = await response.json();
-            console.log(`✅ Successfully published post ID ${post.id} to WordPress: ${result.link}`);
+            console.log(
+              `✅ Successfully published post ID ${post.id} to WordPress: ${result.link}`,
+            );
 
             // Update the post with WordPress URL
             if (result.link) {
               await storage.updateBlogPost(post.id, {
-                wordpressUrl: result.link
+                wordpressUrl: result.link,
               });
             }
           } catch (wpError) {
-            console.error(`❌ Error publishing post ID ${post.id} to WordPress:`, wpError);
+            console.error(
+              `❌ Error publishing post ID ${post.id} to WordPress:`,
+              wpError,
+            );
             // We continue processing other posts even if WordPress publishing fails
           }
         } else {
-          console.log(`⚠️ Test mode is ON or WordPress credentials not configured. Post ID ${post.id} was generated but NOT published to WordPress.`);
+          console.log(
+            `⚠️ Test mode is ON or WordPress credentials not configured. Post ID ${post.id} was generated but NOT published to WordPress.`,
+          );
         }
       } catch (error) {
         console.error(`Error processing post ID ${post.id}:`, error);
