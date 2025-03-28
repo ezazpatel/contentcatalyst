@@ -116,6 +116,7 @@ async function generateContent(
   console.log(
     `Successfully crawled ${affiliateLinks.length} affiliate links with images`,
   );
+  console.log('Affiliate Links and Images Data:', JSON.stringify(affiliateLinks, null, 2));
   if (affiliateLinks.length === 0) {
     console.log("No valid affiliate links found, generation may be limited");
   }
