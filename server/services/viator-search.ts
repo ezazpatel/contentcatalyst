@@ -127,14 +127,27 @@ export async function getViatorAffiliateUrl(productCode: string): Promise<string
     }
 
     const searchData = await searchResponse.json();
-    const campaignValue = searchData.products?.results[0]?.webURL?.split('?')[1];
-
-    if (!productUrl || !campaignValue) {
-      console.error('Missing product URL or campaign value:', { productUrl, campaignValue });
+    const searchResult = searchData.products?.results?.find(result => result.productCode === productCode);
+    
+    if (!searchResult?.webURL) {
+      console.error('No search result found with matching product code:', productCode);
       return null;
     }
 
-    return `${productUrl}?${campaignValue}`;
+    // Extract the campaign parameters from the search result URL
+    const searchUrl = new URL(searchResult.webURL);
+    const campaignParams = searchUrl.searchParams.toString();
+
+    if (!productData.webURL || !campaignParams) {
+      console.error('Missing product URL or campaign params:', { 
+        productUrl: productData.webURL, 
+        campaignParams 
+      });
+      return null;
+    }
+
+    // Combine product URL with campaign parameters
+    return `${productData.webURL}${productData.webURL.includes('?') ? '&' : '?'}${campaignParams}`;
   } catch (error) {
     console.error('Error constructing affiliate URL:', error);
     return null;
