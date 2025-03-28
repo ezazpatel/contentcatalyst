@@ -328,6 +328,7 @@ Format your response:
           const url = link.url;
           const productCode = urlToProductCode[url];
           const remainingMentions = 2 - (productCodeUsage[productCode] || 0);
+        }
 
           affiliateInstructions = `
 This section MUST clearly and naturally feature [${link.name}](${url}) as an H2 or H3 heading.
