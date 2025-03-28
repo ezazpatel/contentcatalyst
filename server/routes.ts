@@ -74,11 +74,10 @@ export async function registerRoutes(app: Express) {
                         img.url?.replace('-50x50', '') || 
                         img.url || '';
 
-        const match = imageUrl.match(/\/([^\/]+)\.jpg$/);
         return {
           url: imageUrl,
           alt: img.caption || '',
-          productCode: match ? match[1] : '',
+          productCode: img.productCode || '',
           heading: img.heading || '',
         };
       });
