@@ -119,7 +119,7 @@ export async function getViatorImages(url: string, heading: string): Promise<Aff
   return product.images.map(img => ({
     url: img.url,
     alt: img.alt || product.title,
-    affiliateUrl: url,
+    productCode: product.productCode,
     heading,
     cached: false
   }));
