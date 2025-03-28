@@ -68,7 +68,18 @@ export function MarkdownRenderer({ content }: Props) {
       //Modified to handle images directly within ReactMarkdown
       newLines.push(
         <ReactMarkdown key={lineKey} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={{
-          img: ({node, ...props}) => <img {...props} style={{maxWidth: '100%', height: 'auto'}}/>
+          img: ({node, alt, src, ...props}) => (
+            <figure className="my-4">
+              <img 
+                src={src} 
+                alt={alt} 
+                className="max-w-full h-auto rounded-lg mx-auto"
+                loading="lazy"
+                {...props}
+              />
+              {alt && <figcaption className="text-center text-sm text-gray-500 mt-2">{alt}</figcaption>}
+            </figure>
+          )
         }}>
           {line}
         </ReactMarkdown>
