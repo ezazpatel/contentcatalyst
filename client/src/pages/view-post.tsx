@@ -93,6 +93,7 @@ export default function ViewPost() {
                 affiliateUrl: img.affiliateUrl || '',
                 heading: img.heading || ''
               }))}
+              affiliateLinks={post.affiliateLinks}
             />
           </div>
 
