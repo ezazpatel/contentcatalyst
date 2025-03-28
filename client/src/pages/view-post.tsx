@@ -56,13 +56,7 @@ export default function ViewPost() {
     postId: post.id,
     title: post.title,
     affiliateImagesCount: post.affiliateImages?.length || 0,
-    affiliateImages: post.affiliateImages?.map((img, index) => ({
-      index: index + 1,
-      imageUrl: img.url,
-      affiliateUrl: img.affiliateUrl,
-      alt: img.alt,
-      heading: img.heading
-    }))
+    affiliateImages: post.affiliateImages
   });
 
   return (
