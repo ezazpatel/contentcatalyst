@@ -62,12 +62,7 @@ export default function ViewPost() {
       alt: img.alt,
       affiliateUrl: img.affiliateUrl
     }))
-  });
-
-   // Log affiliate URL here
-      })),
-      affiliateImageUrls: post.affiliateImages?.map(img => img.affiliateUrl) // This line will log URLs
-  });
+      });
 
   return (
     <div className="container mx-auto py-8">
