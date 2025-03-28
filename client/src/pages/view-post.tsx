@@ -49,7 +49,7 @@ export default function ViewPost() {
       </div>
     );
   }
-
+  
   console.log('ViewPost: Post loaded:', {
     title: post.title,
     contentLength: post.content?.length,
@@ -62,6 +62,11 @@ export default function ViewPost() {
       alt: img.alt,
       affiliateUrl: img.affiliateUrl
     }))
+  });
+
+   // Log affiliate URL here
+      })),
+      affiliateImageUrls: post.affiliateImages?.map(img => img.affiliateUrl) // This line will log URLs
   });
 
   return (
