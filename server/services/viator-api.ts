@@ -20,7 +20,7 @@ interface ViatorProduct {
  * - /3020_VAN7 -> 3020_VAN7
  * - /d817-5518724P7 -> 5518724P7
  */
-function extractProductCode(url: string): string | null {
+export function extractProductCode(url: string): string | null {
   try {
     const urlParts = new URL(url);
     const pathSegments = urlParts.pathname.split('/').filter(Boolean);
