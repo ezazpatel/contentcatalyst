@@ -86,68 +86,28 @@ export async function getViatorAffiliateUrl(productCode: string): Promise<string
       return null;
     }
 
-    // First get the product URL from the product endpoint
-    const productResponse = await fetch(`${VIATOR_BASE_URL}/products/${productCode}`, {
-      headers: {
-        'exp-api-key': process.env.VIATOR_API_KEY!,
-        'Accept': 'application/json;version=2.0',
-        'Accept-Language': 'en-US'
-      }
-    });
-
-    if (!productResponse.ok) {
-      throw new Error(`Failed to fetch product URL (${productResponse.status})`);
-    }
-
-    const productData = await productResponse.json();
-    const productUrl = productData.webURL;
-
-    // Get campaign value from search/freetext endpoint
-    const searchResponse = await fetch(`${VIATOR_BASE_URL}/search/freetext`, {
-      method: 'POST',
+    // Get the product URL with campaign value from the product endpoint
+    const response = await fetch(`${VIATOR_BASE_URL}/products/${productCode}`, {
       headers: {
         'exp-api-key': process.env.VIATOR_API_KEY!,
         'Accept': 'application/json;version=2.0',
         'Accept-Language': 'en-US',
-        'Content-Type': 'application/json',
         'campaign-value': process.env.VIATOR_CAMPAIGN_ID || ''
-      },
-      body: JSON.stringify({
-        searchTerm: productCode,
-        currency: "CAD",
-        searchTypes: [{
-          searchType: "PRODUCTS",
-          pagination: { start: 1, count: 1 }
-        }]
-      })
+      }
     });
 
-    if (!searchResponse.ok) {
-      throw new Error(`Failed to get campaign value (${searchResponse.status})`);
-    }
-
-    const searchData = await searchResponse.json();
-    const searchResult = searchData.products?.results?.find(result => result.productCode === productCode);
-    
-    if (!searchResult?.webURL) {
-      console.error('No search result found with matching product code:', productCode);
+    if (!response.ok) {
+      console.error(`Failed to fetch product ${productCode}: ${response.statusText}`);
       return null;
     }
 
-    // Extract the campaign parameters from the search result URL
-    const searchUrl = new URL(searchResult.webURL);
-    const campaignParams = searchUrl.searchParams.toString();
-
-    if (!productData.webURL || !campaignParams) {
-      console.error('Missing product URL or campaign params:', { 
-        productUrl: productData.webURL, 
-        campaignParams 
-      });
+    const data = await response.json();
+    if (!data.webURL) {
+      console.error('No webURL found for product:', productCode);
       return null;
     }
 
-    // Combine product URL with campaign parameters
-    return `${productData.webURL}${productData.webURL.includes('?') ? '&' : '?'}${campaignParams}`;
+    return data.webURL;
   } catch (error) {
     console.error('Error constructing affiliate URL:', error);
     return null;
