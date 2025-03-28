@@ -41,7 +41,9 @@ export default function ViewPost() {
 
   console.log('ViewPost: Query state:', { isLoading, post: post?.id });
 
-  if (!post) {
+  import type { BlogPost } from '@shared/schema';
+
+if (!post) {
     console.log('ViewPost: No post found');
     return (
       <div className="container mx-auto py-8">
@@ -51,7 +53,7 @@ export default function ViewPost() {
   }
   
   console.log('ViewPost: Post loaded:', {
-    title: post.title,
+    title: (post as BlogPost).title,
     contentLength: post.content?.length,
     hasImages: post.content?.includes('!['),
     imageCount: (post.content?.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || []).length,
