@@ -39,7 +39,10 @@ export default function ViewPost() {
     return <div className="container mx-auto py-8">Loading...</div>;
   }
 
+  console.log('ViewPost: Query state:', { isLoading, post: post?.id });
+
   if (!post) {
+    console.log('ViewPost: No post found');
     return (
       <div className="container mx-auto py-8">
         Post not found. <Link href="/blogs"><Button>Back to Posts</Button></Link>
