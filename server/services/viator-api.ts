@@ -36,7 +36,7 @@ export function extractProductCode(url: string): string | null {
 /**
  * Fetch product details from Viator API
  */
-async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | null> {
+export async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | null> {
   try {
     const headers = {
       'exp-api-key': process.env.VIATOR_API_KEY!,
