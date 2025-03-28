@@ -12,58 +12,31 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRendererProps) {
   const processedContent = useMemo(() => {
-    // Create a map to track affiliate URL occurrences
-    const urlOccurrences: { [key: string]: number } = {};
-    
-    // First pass: Count affiliate URL occurrences and extract product codes
-    const productCodePattern = /viator\.com\/tours\/[^\/]+\/[^\/]+\/([^\/\-]+)/;
+    let currentImageIndex = 0;
     const lines = content.split('\n');
-    const imagesByProductCode = new Map<string, AffiliateImage>();
     
-    // Map images to product codes from their affiliate URLs
-    affiliateImages.forEach(img => {
-      if (img.affiliateUrl) {
-        const match = img.affiliateUrl.match(productCodePattern);
-        if (match) {
-          imagesByProductCode.set(match[1], img);
-        }
-      }
-    });
-
     // Process content line by line
     const processedLines = lines.map(line => {
-      // Check if line contains a Viator URL
-      const urlMatch = line.match(productCodePattern);
-      if (urlMatch) {
-        const productCode = urlMatch[1];
-        // Increment occurrence counter
-        urlOccurrences[productCode] = (urlOccurrences[productCode] || 0) + 1;
-        
-        // If this is the second occurrence and we have a matching image
-        if (urlOccurrences[productCode] === 2 && imagesByProductCode.has(productCode)) {
-          const image = imagesByProductCode.get(productCode);
-          // Add image after the line with the URL
+      // If line contains a Viator URL
+      if (line.includes('viator.com/tours/')) {
+        currentImageIndex++;
+        // On second occurrence of a Viator URL, add an image
+        if (currentImageIndex % 2 === 0 && affiliateImages[currentImageIndex - 1]) {
+          const image = affiliateImages[currentImageIndex - 1];
           return `${line}\n\n![${image.alt || ''}](${image.url})`;
         }
       }
-      
-      // Return unmodified line if no special handling needed
       return line;
     });
 
-    // Replace remaining unplaced images with cyclic pattern
-    let currentImageIndex = 0;
-    const remainingImages = affiliateImages.filter(img => {
-      const match = img.affiliateUrl?.match(productCodePattern);
-      return !match || !urlOccurrences[match[1]] || urlOccurrences[match[1]] < 2;
+    // Handle any remaining undefined image placeholders
+    const finalContent = processedLines.join('\n').replace(/!\[([^\]]*)\]\(undefined\)/g, () => {
+      const image = affiliateImages[currentImageIndex];
+      currentImageIndex = (currentImageIndex + 1) % affiliateImages.length;
+      return image ? `![${image.alt || ''}](${image.url})` : '';
     });
 
-    return processedLines.join('\n').replace(/!\[([^\]]*)\]\([^)]+\)/g, () => {
-      if (remainingImages.length === 0) return '';
-      const image = remainingImages[currentImageIndex];
-      currentImageIndex = (currentImageIndex + 1) % remainingImages.length;
-      return `![${image.alt || ''}](${image.url})`;
-    });
+    return finalContent;
   }, [content, affiliateImages]);
 
   return (

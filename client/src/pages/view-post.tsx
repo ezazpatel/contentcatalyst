@@ -87,8 +87,12 @@ export default function ViewPost() {
         <CardContent className="pt-6">
           <div className="prose prose-lg max-w-none prose-img:max-w-full prose-img:mx-auto prose-img:rounded-lg">
             <MarkdownRenderer
-              content={post.content.replace(/^#\s+.*\n/, '')}
-              affiliateImages={post.affiliateImages}
+              content={post.content}
+              affiliateImages={post.affiliateImages?.map(img => ({
+                ...img,
+                affiliateUrl: img.affiliateUrl || '',
+                heading: img.heading || ''
+              }))}
             />
           </div>
 
