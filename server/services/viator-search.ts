@@ -92,7 +92,8 @@ export async function getViatorAffiliateUrl(productCode: string): Promise<string
         'exp-api-key': process.env.VIATOR_API_KEY!,
         'Accept': 'application/json;version=2.0',
         'Accept-Language': 'en-US',
-        'campaign-value': process.env.VIATOR_CAMPAIGN_ID || ''
+        'campaign-value': process.env.VIATOR_CAMPAIGN_ID || '',
+        'Content-Type': 'application/json'
       }
     });
 
@@ -102,12 +103,22 @@ export async function getViatorAffiliateUrl(productCode: string): Promise<string
     }
 
     const data = await response.json();
-    if (!data.webURL) {
-      console.error('No webURL found for product:', productCode);
+    
+    // Try to get the webURL from the response
+    const webURL = data.webURL || data.bookingUrl || data.productUrl;
+    
+    if (!webURL) {
+      console.error('No URL found for product:', productCode, 'Response:', JSON.stringify(data));
       return null;
     }
 
-    return data.webURL;
+    // Add campaign value if not already present
+    const url = new URL(webURL);
+    if (!url.searchParams.has('pid')) {
+      url.searchParams.set('pid', process.env.VIATOR_CAMPAIGN_ID || '');
+    }
+
+    return url.toString();
   } catch (error) {
     console.error('Error constructing affiliate URL:', error);
     return null;
