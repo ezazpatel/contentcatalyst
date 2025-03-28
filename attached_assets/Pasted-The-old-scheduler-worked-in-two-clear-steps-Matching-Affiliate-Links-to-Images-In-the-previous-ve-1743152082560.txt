@@ -1,0 +1,29 @@
+The old scheduler worked in two clear steps:
+
+Matching Affiliate Links to Images:
+In the previous version, a function like matchImagesWithHeadings would scan the markdown content for affiliate URLs using regex and then check each occurrence against a mapping (often by product code or a unique identifier) between affiliate links and their images. It counted each time a specific affiliate URL was used. When the second occurrence (or the correct trigger point) of a given affiliate URL was found, it knew that the corresponding image should be injected right after that particular line.
+
+Inserting the Image in the Correct Place:
+Then, the insertImagesIntoContent function would take that mapping and insert the markdown image (using the correct alt text and URL) immediately following the matched affiliate link. This ensured that each image was tied to its corresponding affiliate product, based on its unique identifier (like product code or heading).
+
+In your updated code, however, the logic has changed:
+
+Instead of scanning for individual affiliate URL occurrences and matching them with their corresponding image data, the new code simply splits the entire content by headings (using "## ") and then, for each section, it takes the next image from the aggregated list (allImages) and inserts it at the start of that section.
+
+This positional approach ignores the specific affiliate link (or product code) that should be associated with the image. As a result, it just injects the image based on the section's order—not by matching which affiliate URL appears there.
+
+In short, the old code did it properly by:
+
+Scanning the content for affiliate URLs,
+
+Matching each URL with the correct image via a product code or heading,
+
+And then inserting the image immediately after the appropriate affiliate URL occurrence.
+
+To fix your updated version, you’ll need to reintroduce logic that:
+
+Identifies the specific affiliate link in the content (by matching product code or a unique marker),
+
+Counts how many times each affiliate link has been used,
+
+And then injects the corresponding image right after the correct occurrence, rather than just by section order.
