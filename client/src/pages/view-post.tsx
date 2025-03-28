@@ -82,6 +82,19 @@ export default function ViewPost() {
               affiliateImages={post.affiliateImages}
             />
           </div>
+
+          {post.affiliateImages && post.affiliateImages.length > 0 && (
+            <div className="mt-8 border-t pt-4">
+              <h3 className="text-xl font-semibold mb-2">Affiliate URLs</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                {post.affiliateImages.map((img, index) => (
+                  <li key={index} className="text-sm text-gray-600">
+                    {img.affiliateUrl}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
