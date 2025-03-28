@@ -200,7 +200,7 @@ Format your response:
 
     const introResponse = await client.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 1000,
+      max_tokens: 300,
       temperature: 0.7,
       messages: [{ role: "user", content: introPrompt }]
     });
@@ -308,7 +308,7 @@ ${section.subheadings.map(subheading => `### ${subheading}\n\n[Subheading conten
 
       const sectionResponse = await client.messages.create({
         model: ANTHROPIC_MODEL,
-        max_tokens: 1000,
+        max_tokens: 500,
         temperature: 0.7,
         messages: [{ role: "user", content: sectionPrompt }]
       });
@@ -364,7 +364,7 @@ Use proper markdown:
 
     const conclusionResponse = await client.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 1000,
+      max_tokens: 500,
       temperature: 0.7,
       messages: [{ role: "user", content: conclusionPrompt }]
     });
