@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -10,57 +9,21 @@ interface MarkdownRendererProps {
   affiliateImages?: AffiliateImage[];
 }
 
-interface MarkdownRendererProps {
-  content: string;
-  affiliateImages?: AffiliateImage[];
-  affiliateLinks?: { name: string; url: string }[];
-}
-
-export function MarkdownRenderer({ content, affiliateImages = [], affiliateLinks = [] }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRendererProps) {
   const processedContent = useMemo(() => {
-    // Create maps to track occurrences and images
-    const linkOccurrences: { [url: string]: number } = {};
-    const urlToImage: { [url: string]: AffiliateImage } = {};
-    
-    // Map images to their affiliate URLs using productCode
-    affiliateLinks.forEach(link => {
-      if (link.url) {
-        const match = link.url.match(/viator\.com\/tours\/[^\/]+\/[^\/]+\/([^\/\-]+)/);
-        if (match) {
-          const productCode = match[1];
-          const matchingImage = affiliateImages.find(img => img.productCode === productCode);
-          if (matchingImage) {
-            urlToImage[link.url] = matchingImage;
-          }
-        }
+    let currentImageIndex = 0;
+
+    // Replace markdown image placeholders with actual affiliate images
+    return content.replace(/!\[([^\]]*)\]\([^)]+\)/g, () => {
+      const image = affiliateImages[currentImageIndex];
+      currentImageIndex = (currentImageIndex + 1) % affiliateImages.length;
+
+      if (!image?.url) {
+        return '';
       }
+
+      return `![${image.alt || ''}](${image.url})`;
     });
-
-    const lines = content.split('\n');
-    
-    // Process content line by line
-    const processedLines = lines.map(line => {
-      // Look for affiliate URLs in the line
-      for (const link of affiliateLinks) {
-        if (line.includes(link.url)) {
-          const matchingImage = affiliateImages?.find(img => img.productCode === link.productCode);
-          if (matchingImage) {
-            linkOccurrences[link.url] = (linkOccurrences[link.url] || 0) + 1;
-            
-            // On second occurrence of this URL, add its corresponding image
-            if (linkOccurrences[link.url] === 2) {
-              return `${line}\n\n![${matchingImage.alt || ''}](${matchingImage.url})`;
-            }
-          }
-        }
-      }
-      return line;
-    });
-
-    // Remove any remaining undefined image placeholders
-    const finalContent = processedLines.join('\n').replace(/!\[([^\]]*)\]\(undefined\)/g, '');
-
-    return finalContent;
   }, [content, affiliateImages]);
 
   return (

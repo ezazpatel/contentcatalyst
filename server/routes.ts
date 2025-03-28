@@ -2,7 +2,6 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
-import { fetchViatorProduct, extractProductCode } from "./services/viator-api";
 import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
 
@@ -12,7 +11,7 @@ function convertMarkdownToHTML(markdown: string, affiliateImages?: any[]): strin
   markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt) => {
     const image = affiliateImages?.[imageIndex++];
     if (!image) return '';
-
+    
     return `
 <!-- wp:image {"sizeSlug":"large"} -->
 <figure class="wp-block-image size-large">
@@ -56,12 +55,12 @@ export async function registerRoutes(app: Express) {
       res.status(404).json({ message: "Post not found" });
       return;
     }
-
+    
     // Log image information
     const imageMatches = post.content.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
     // Extract best quality image URLs from variants before sending
     if (post.affiliateImages) {
-      post.affiliateImages = await Promise.all(post.affiliateImages.map(async img => {
+      post.affiliateImages = post.affiliateImages.map(img => {
         // Find variant with highest resolution
         const bestVariant = img.variants?.reduce((best, current) => {
           const currentRes = (current.width || 0) * (current.height || 0);
@@ -75,17 +74,13 @@ export async function registerRoutes(app: Express) {
                         img.url?.replace('-50x50', '') || 
                         img.url || '';
 
-        // Only fetch product details if we have a valid product code from the URL
-        const productCode = extractProductCode(img.url);
-        const productDetails = productCode ? await fetchViatorProduct(productCode) : null;
-
         return {
           url: imageUrl,
           alt: img.caption || '',
-          productCode: productDetails?.productCode || '',
+          affiliateUrl: img.affiliateUrl || '',
           heading: img.heading || '',
         };
-      }));
+      });
     }
 
     console.log('[Image Debug]', {

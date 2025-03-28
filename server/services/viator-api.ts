@@ -20,7 +20,7 @@ interface ViatorProduct {
  * - /3020_VAN7 -> 3020_VAN7
  * - /d817-5518724P7 -> 5518724P7
  */
-export function extractProductCode(url: string): string | null {
+function extractProductCode(url: string): string | null {
   try {
     const urlParts = new URL(url);
     const pathSegments = urlParts.pathname.split('/').filter(Boolean);
@@ -36,7 +36,7 @@ export function extractProductCode(url: string): string | null {
 /**
  * Fetch product details from Viator API
  */
-export async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | null> {
+async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | null> {
   try {
     const headers = {
       'exp-api-key': process.env.VIATOR_API_KEY!,
@@ -119,7 +119,7 @@ export async function getViatorImages(url: string, heading: string): Promise<Aff
   return product.images.map(img => ({
     url: img.url,
     alt: img.alt || product.title,
-    productCode: product.productCode,
+    affiliateUrl: url,
     heading,
     cached: false
   }));

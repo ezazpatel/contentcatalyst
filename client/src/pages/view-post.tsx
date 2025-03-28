@@ -87,12 +87,8 @@ export default function ViewPost() {
         <CardContent className="pt-6">
           <div className="prose prose-lg max-w-none prose-img:max-w-full prose-img:mx-auto prose-img:rounded-lg">
             <MarkdownRenderer
-              content={post.content}
-              affiliateImages={post.affiliateImages?.map(img => ({
-                ...img,
-                heading: img.heading || ''
-              }))}
-              affiliateLinks={post.affiliateLinks}
+              content={post.content.replace(/^#\s+.*\n/, '')}
+              affiliateImages={post.affiliateImages}
             />
           </div>
 
@@ -104,7 +100,7 @@ export default function ViewPost() {
                   <li key={index} className="text-sm text-gray-600">
                     <div className="grid gap-1">
                       <div><strong>Image URL:</strong> {img.url || 'Not available'}</div>
-                      <div><strong>Product Code:</strong> {img.productCode || 'Not available'}</div>
+                      <div><strong>Affiliate URL:</strong> {img.affiliateUrl || 'Not available'}</div>
                       <div><strong>Heading:</strong> {img.heading || 'Not available'}</div>
                       <div><strong>Alt Text:</strong> {img.alt || 'Not available'}</div>
                     </div>

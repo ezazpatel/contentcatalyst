@@ -35,7 +35,7 @@ export const blogPosts = pgTable("blog_posts", {
 const affiliateImageSchema = z.object({
   url: z.string().url("Invalid image URL"),
   alt: z.string(),
-  productCode: z.string(), // Product code to link with affiliate URLs
+  affiliateUrl: z.string().url("Invalid affiliate URL"),
   heading: z.string(), // The heading under which this image should appear
   cached: z.boolean().default(false), // Whether we've cached this image
   cachedUrl: z.string().optional(), // URL to our cached version if we implement it
