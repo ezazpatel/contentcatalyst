@@ -2,53 +2,32 @@ import * as React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import ProductSlideshow from './product-slideshow';
-import { AffiliateImage } from '@shared/schema';
 
 interface Props {
   content: string;
 }
 
 export function MarkdownRenderer({ content }: Props) {
-  // Process content for product slideshows first
   const processedContent = React.useMemo(() => {
-    const lines = content.split('\n');
-    const newLines: string[] = [];
-    let currentSlideshow: AffiliateImage[] = [];
-    let inSlideshow = false;
+    // Split content into sections by H2 headings
+    const sections = content.split(/^##\s+/m);
 
-    for (const line of lines) {
-      if (line.includes('<div class="product-slideshow">')) {
-        inSlideshow = true;
-        currentSlideshow = [];
-        continue;
+    // Process each section (skip the first one as it's the intro)
+    return sections.map((section, index) => {
+      if (index === 0) return section;
+
+      // Find the first image in the section
+      const imgMatch = section.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+
+      if (imgMatch) {
+        // Keep only the first image, remove others
+        const cleanedSection = section.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '');
+        const [heading, ...rest] = cleanedSection.split('\n');
+        return `## ${heading}\n\n![${imgMatch[1]}](${imgMatch[2]})\n\n${rest.join('\n')}`;
       }
 
-      if (line.includes('</div>') && inSlideshow) {
-        inSlideshow = false;
-        if (currentSlideshow.length > 0) {
-          newLines.push(`<ProductSlideshow images={${JSON.stringify(currentSlideshow)}} productCode="inline" />`);
-        }
-        continue;
-      }
-
-      if (inSlideshow) {
-        const imgMatch = line.match(/<img src="([^"]+)" alt="([^"]+)" \/>/);
-        if (imgMatch) {
-          currentSlideshow.push({
-            url: imgMatch[1],
-            alt: imgMatch[2],
-            affiliateUrl: '',
-            heading: '',
-            cached: false
-          });
-        }
-        continue;
-      }
-
-      newLines.push(line);
-    }
-    return newLines.join('\n');
+      return `## ${section}`;
+    }).join('');
   }, [content]);
 
   return (
