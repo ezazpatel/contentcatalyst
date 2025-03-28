@@ -31,3 +31,18 @@ pool.on('error', (err) => {
 });
 
 export const db = drizzle({ client: pool, schema });
+
+// Retry helper for database operations
+export async function withRetry<T>(operation: () => Promise<T>, retries = 3): Promise<T> {
+  try {
+    return await operation();
+  } catch (error: any) {
+    if (retries > 0 && error.code === '57P01') {
+      console.log("Retrying database operation due to error 57P01...");
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return withRetry(operation, retries - 1);
+    }
+    console.error("Database operation failed:", error);
+    throw error;
+  }
+}
