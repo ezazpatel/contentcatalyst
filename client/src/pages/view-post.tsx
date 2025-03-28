@@ -19,7 +19,12 @@ export default function ViewPost() {
       if (!response.ok) {
         throw new Error("Failed to fetch post");
       }
-      return response.json();
+      const data = await response.json();
+      console.log('[View Post Debug] Received post data:', {
+        id: data.id,
+        affiliateImages: data.affiliateImages
+      });
+      return data;
     },
     enabled: !!params?.id,
     onError: (error: Error) => {

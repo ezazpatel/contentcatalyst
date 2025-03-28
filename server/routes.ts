@@ -67,7 +67,8 @@ export async function registerRoutes(app: Express) {
           raw: img
         };
       }).filter(Boolean),
-      affiliateImages: post.affiliateImages?.length || 0
+      affiliateImages: post.affiliateImages?.length || 0,
+      affiliateImagesData: post.affiliateImages // Log full data
     });
 
     res.json(post);
