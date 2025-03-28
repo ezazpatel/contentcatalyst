@@ -69,6 +69,8 @@ export async function registerRoutes(app: Express) {
         }, null);
 
         // Get highest quality URL available
+        // Extract the full product details from the API response
+        const productDetails = await storage.getViatorProduct(post.id);
         const imageUrl = bestVariant?.url || 
                         img.variants?.[0]?.url || 
                         img.url?.replace('-50x50', '') || 
@@ -77,7 +79,7 @@ export async function registerRoutes(app: Express) {
         return {
           url: imageUrl,
           alt: img.caption || '',
-          productCode: img.productCode || '',
+          productCode: productDetails?.productCode || '',
           heading: img.heading || '',
         };
       });
