@@ -52,24 +52,16 @@ export default function ViewPost() {
 
   const imageMatches = post.content?.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
 
-  console.log('[Image Debug]', {
+  console.log('[Affiliate Image URLs]', {
     postId: post.id,
     title: post.title,
-    totalImages: imageMatches.length,
-    images: imageMatches.map(img => {
-      const match = img.match(/!\[([^\]]*)\]\(([^)]*)\)/);
-      if (!match) return null;
-      return {
-        alt: match[1],
-        url: match[2],
-        raw: img
-      };
-    }).filter(Boolean),
-    affiliateImages: post.affiliateImages?.length || 0,
-    affiliateUrls: post.affiliateImages?.map(img => ({
-      url: img.affiliateUrl,
-      alt: img.alt,
-      imageUrl: img.url
+    totalAffiliateImages: post.affiliateImages?.length || 0,
+    affiliateImages: post.affiliateImages?.map((img, index) => ({
+      index: index + 1,
+      heading: img.heading,
+      affiliateUrl: img.affiliateUrl,
+      imageUrl: img.url,
+      alt: img.alt
     }))
   });
 
