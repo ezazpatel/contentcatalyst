@@ -121,9 +121,6 @@ async function generateContent(
     console.log("No valid affiliate links found, generation may be limited");
   }
 
-  // Store all images for later use
-  const allImages = affiliateLinks.flatMap((link) => link.images);
-
   // Filter out products where we couldn't get affiliate URLs
   const validAffiliateLinks = affiliateLinks.filter((link) => link.url);
 
@@ -131,9 +128,10 @@ async function generateContent(
   const allPosts = await storage.getAllBlogPosts();
   const internalLinks = await findRelevantPosts(keywords.join(" "), allPosts);
 
-  // Add the found links to the post object
+  // Add the links to the post object, keeping images within affiliate links
   post.affiliateLinks = validAffiliateLinks;
   post.internalLinks = internalLinks;
+  post.affiliateImages = validAffiliateLinks.flatMap(link => link.images || []);
 
   try {
     console.log("Step 1: Generating title and outline...");
