@@ -59,9 +59,14 @@ export async function registerRoutes(app: Express) {
       title: post.title,
       totalImages: imageMatches.length,
       images: imageMatches.map(img => {
-        const match = img.match(/!\[([^\]]*)\]\(([^)]+)\)/);
-        return match ? { alt: match[1], url: match[2] } : null;
-      }),
+        const match = img.match(/!\[([^\]]*)\]\(([^)]*)\)/);
+        if (!match) return null;
+        return {
+          alt: match[1],
+          url: match[2],
+          raw: img
+        };
+      }).filter(Boolean),
       affiliateImages: post.affiliateImages?.length || 0
     });
 
