@@ -54,14 +54,29 @@ export async function registerRoutes(app: Express) {
     
     // Log image information
     const imageMatches = post.content.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
-    // Extract URLs from variants before sending
+    // Extract best quality image URLs from variants before sending
     if (post.affiliateImages) {
-      post.affiliateImages = post.affiliateImages.map(img => ({
-        url: img.variants?.[0]?.url || '',
-        alt: img.caption || '',
-        affiliateUrl: img.affiliateUrl || '',
-        heading: img.heading || '',
-      }));
+      post.affiliateImages = post.affiliateImages.map(img => {
+        // Find variant with highest resolution
+        const bestVariant = img.variants?.reduce((best, current) => {
+          const currentRes = (current.width || 0) * (current.height || 0);
+          const bestRes = (best?.width || 0) * (best?.height || 0);
+          return currentRes > bestRes ? current : best;
+        }, null);
+
+        // Get highest quality URL available
+        const imageUrl = bestVariant?.url || 
+                        img.variants?.[0]?.url || 
+                        img.url?.replace('-50x50', '') || 
+                        img.url || '';
+
+        return {
+          url: imageUrl,
+          alt: img.caption || '',
+          affiliateUrl: img.affiliateUrl || '',
+          heading: img.heading || '',
+        };
+      });
     }
 
     console.log('[Image Debug]', {
