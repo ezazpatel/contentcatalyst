@@ -1,7 +1,7 @@
 import { Anthropic } from "@anthropic-ai/sdk";
 import { storage } from "./storage";
 import { BlogPost } from "@shared/schema";
-import { crawlAffiliateLink, matchImagesWithHeadings, insertImagesIntoContent } from "./services/image-crawler";
+
 import { searchViatorProducts, getViatorAffiliateUrl } from './services/viator-search';
 
 // Create an Anthropic client
@@ -371,14 +371,18 @@ Use proper markdown:
 
     fullContent += conclusionResponse.content[0].text;
 
-    // Use images from first crawl
+    // Insert images into content
     if (allImages.length > 0) {
-      try {
-        fullContent = insertImagesIntoContent(fullContent, allImages);
-        console.log(`Added ${allImages.length} affiliate product images to the content`);
-      } catch (error) {
-        console.error("Error processing affiliate images:", error);
-      }
+      console.log(`Adding ${allImages.length} affiliate product images to the content`);
+      const sections = fullContent.split(/^## /m);
+      fullContent = sections.map((section, index) => {
+        if (index === 0) return section;
+        const image = allImages[index - 1];
+        if (image) {
+          return `## ${section.split('\n')[0]}\n\n![${image.alt || ''}](${image.url})\n\n${section.split('\n').slice(1).join('\n')}`;
+        }
+        return `## ${section}`;
+      }).join('');
     }
 
     // Calculate word count
