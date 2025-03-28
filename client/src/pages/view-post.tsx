@@ -89,13 +89,16 @@ export default function ViewPost() {
 
           {post.affiliateImages && post.affiliateImages.length > 0 && (
             <div className="mt-8 border-t pt-4">
-              <h3 className="text-xl font-semibold mb-2">Affiliate Image Data</h3>
-              <ul className="list-disc pl-5 space-y-2">
-                {post.affiliateImages.map((img, index) => (
+              <h3 className="text-xl font-semibold mb-2">Affiliate Image Data ({post.affiliateImages.length} images)</h3>
+              <ul className="list-disc pl-5 space-y-4">
+                {post.affiliateImages.map((img: any, index: number) => (
                   <li key={index} className="text-sm text-gray-600">
-                    <div>Image URL: {img.url}</div>
-                    <div>Affiliate URL: {img.affiliateUrl}</div>
-                    <div>Heading: {img.heading}</div>
+                    <div className="grid gap-1">
+                      <div><strong>Image URL:</strong> {img.url || 'Not available'}</div>
+                      <div><strong>Affiliate URL:</strong> {img.affiliateUrl || 'Not available'}</div>
+                      <div><strong>Heading:</strong> {img.heading || 'Not available'}</div>
+                      <div><strong>Alt Text:</strong> {img.alt || 'Not available'}</div>
+                    </div>
                   </li>
                 ))}
               </ul>
