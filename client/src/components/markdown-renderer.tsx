@@ -28,8 +28,16 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
       })
     });
 
+    // Add affiliate images to content
+    let contentWithAffiliateImages = content;
+    if (affiliateImages && affiliateImages.length > 0) {
+      contentWithAffiliateImages = affiliateImages.reduce((acc, img) => {
+        return `${acc}\n\n## ${img.heading}\n\n![${img.alt}](${img.url})\n\n`;
+      }, content);
+    }
+
     // Split content into sections by H2 headings
-    const sections = content.split(/^##\s+/m);
+    const sections = contentWithAffiliateImages.split(/^##\s+/m);
     console.log('MarkdownRenderer: Found sections:', sections.length);
 
     // Process each section (skip the first one as it's the intro)
