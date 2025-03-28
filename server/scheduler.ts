@@ -398,7 +398,7 @@ Use proper markdown:
       content: fullContent,
       title: outlineResult.title,
       description: finalDescription,
-      images, // Return images so they can be stored in the database
+      images: allImages, // Return collected images
     };
   } catch (error) {
     console.error("Error generating content:", error);
