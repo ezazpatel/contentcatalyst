@@ -76,13 +76,15 @@ export async function registerRoutes(app: Express) {
                         img.url?.replace('-50x50', '') || 
                         img.url || '';
 
+        const productDetails = await storage.getViatorProduct(post.id);
+        
         return {
           url: imageUrl,
           alt: img.caption || '',
           productCode: productDetails?.productCode || '',
           heading: img.heading || '',
         };
-      });
+      }));
     }
 
     console.log('[Image Debug]', {
