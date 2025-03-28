@@ -50,17 +50,26 @@ export default function ViewPost() {
     );
   }
 
-  console.log('ViewPost: Post loaded:', {
-    title: (post as BlogPost).title,
-    contentLength: post.content?.length,
-    hasImages: post.content?.includes('!['),
-    imageCount: (post.content?.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || []).length,
-    affiliateImages: post.affiliateImages?.length,
-    affiliateImageDetails: post.affiliateImages?.map(img => ({
-      heading: img.heading,
-      url: img.url,
+  const imageMatches = post.content?.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
+
+  console.log('[Image Debug]', {
+    postId: post.id,
+    title: post.title,
+    totalImages: imageMatches.length,
+    images: imageMatches.map(img => {
+      const match = img.match(/!\[([^\]]*)\]\(([^)]*)\)/);
+      if (!match) return null;
+      return {
+        alt: match[1],
+        url: match[2],
+        raw: img
+      };
+    }).filter(Boolean),
+    affiliateImages: post.affiliateImages?.length || 0,
+    affiliateUrls: post.affiliateImages?.map(img => ({
+      url: img.affiliateUrl,
       alt: img.alt,
-      affiliateUrl: img.affiliateUrl
+      imageUrl: img.url
     }))
   });
 
