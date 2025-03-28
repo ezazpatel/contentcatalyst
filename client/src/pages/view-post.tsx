@@ -104,7 +104,7 @@ export default function ViewPost() {
                   <li key={index} className="text-sm text-gray-600">
                     <div className="grid gap-1">
                       <div><strong>Image URL:</strong> {img.url || 'Not available'}</div>
-                      <div><strong>Affiliate URL:</strong> {img.affiliateUrl || 'Not available'}</div>
+                      <div><strong>Product Code:</strong> {img.productCode || 'Not available'}</div>
                       <div><strong>Heading:</strong> {img.heading || 'Not available'}</div>
                       <div><strong>Alt Text:</strong> {img.alt || 'Not available'}</div>
                     </div>
