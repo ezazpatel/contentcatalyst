@@ -41,9 +41,7 @@ export default function ViewPost() {
 
   console.log('ViewPost: Query state:', { isLoading, post: post?.id });
 
-  import type { BlogPost } from '@shared/schema';
-
-if (!post) {
+  if (!post) {
     console.log('ViewPost: No post found');
     return (
       <div className="container mx-auto py-8">
@@ -51,7 +49,7 @@ if (!post) {
       </div>
     );
   }
-  
+
   console.log('ViewPost: Post loaded:', {
     title: (post as BlogPost).title,
     contentLength: post.content?.length,
@@ -64,7 +62,7 @@ if (!post) {
       alt: img.alt,
       affiliateUrl: img.affiliateUrl
     }))
-      });
+  });
 
   return (
     <div className="container mx-auto py-8">
@@ -78,7 +76,7 @@ if (!post) {
       <Card>
         <CardContent className="pt-6">
           <div className="prose prose-lg max-w-none prose-img:max-w-full prose-img:mx-auto prose-img:rounded-lg">
-            <MarkdownRenderer 
+            <MarkdownRenderer
               content={post.content.replace(/^#\s+.*\n/, '')}
               affiliateImages={post.affiliateImages}
             />
