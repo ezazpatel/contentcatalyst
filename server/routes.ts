@@ -5,14 +5,18 @@ import { insertBlogPostSchema } from "@shared/schema";
 import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
 
-function convertMarkdownToHTML(markdown: string): string {
-  // Convert standard markdown images to WordPress format
-  markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
+function convertMarkdownToHTML(markdown: string, affiliateImages?: any[]): string {
+  let imageIndex = 0;
+  // Convert standard markdown images to WordPress format using affiliate images
+  markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt) => {
+    const image = affiliateImages?.[imageIndex++];
+    if (!image) return '';
+    
     return `
 <!-- wp:image {"sizeSlug":"large"} -->
 <figure class="wp-block-image size-large">
-  <img src="${src}" alt="${alt}"/>
-  <figcaption class="wp-element-caption">${alt}</figcaption>
+  <img src="${image.url}" alt="${image.alt || alt}"/>
+  <figcaption class="wp-element-caption">${image.alt || alt}</figcaption>
 </figure>
 <!-- /wp:image -->`;
   });
@@ -282,7 +286,7 @@ export async function registerRoutes(app: Express) {
         ? `${apiUrl}/wp/v2/posts`
         : `${apiUrl}/wp/v2/posts`;
 
-      const htmlContent = convertMarkdownToHTML(req.body.content);
+      const htmlContent = convertMarkdownToHTML(req.body.content, req.body.affiliateImages);
 
       // Find highest resolution image overall for featured image
       const allImages = req.body.affiliateImages || [];
