@@ -22,25 +22,10 @@ export function MarkdownRenderer({ content, affiliateImages = [], affiliateLinks
     const linkOccurrences: { [url: string]: number } = {};
     const urlToImage: { [url: string]: AffiliateImage } = {};
     
-    // Build a map of affiliateImages keyed by productCode
-    const imagesByProductCode = affiliateImages.reduce((acc, img) => {
-      if (img.productCode) {
-        acc[img.productCode] = img;
-      }
-      return acc;
-    }, {} as Record<string, AffiliateImage>);
-
-    // Match each affiliateLink to its corresponding affiliateImage using productCode
-    affiliateLinks.forEach(link => {
-      if (link.url) {
-        const match = link.url.match(/viator\.com\/tours\/[^\/]+\/[^\/]+\/([^\/\-]+)/);
-        if (match) {
-          const productCode = match[1];
-          const matchingImage = imagesByProductCode[productCode];
-          if (matchingImage) {
-            urlToImage[link.url] = matchingImage;
-          }
-        }
+    // Map images to their affiliate URLs
+    affiliateLinks.forEach((link, index) => {
+      if (link.url && affiliateImages[index]) {
+        urlToImage[link.url] = affiliateImages[index];
       }
     });
 
