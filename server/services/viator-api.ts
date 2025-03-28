@@ -57,6 +57,15 @@ async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | 
     }
 
     const data = JSON.parse(responseText);
+    console.log("Complete Viator product response:", {
+      productCode,
+      status: data.status,
+      images: data.images,
+      mediaSettings: data.mediaSettings, // Some APIs use this field
+      photos: data.photos, // Alternative field name
+      media: data.media, // Another possible field
+      raw: data // Full response for inspection
+    });
 
     // Ensure product is available for sale
     if (data.status !== 'ACTIVE') {
