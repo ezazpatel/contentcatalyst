@@ -51,6 +51,20 @@ export async function registerRoutes(app: Express) {
       res.status(404).json({ message: "Post not found" });
       return;
     }
+    
+    // Log image information
+    const imageMatches = post.content.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
+    console.log('[Image Debug]', {
+      postId: post.id,
+      title: post.title,
+      totalImages: imageMatches.length,
+      images: imageMatches.map(img => {
+        const match = img.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+        return match ? { alt: match[1], url: match[2] } : null;
+      }),
+      affiliateImages: post.affiliateImages?.length || 0
+    });
+
     res.json(post);
   });
 
