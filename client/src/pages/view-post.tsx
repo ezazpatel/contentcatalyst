@@ -55,7 +55,13 @@ export default function ViewPost() {
     contentLength: post.content?.length,
     hasImages: post.content?.includes('!['),
     imageCount: (post.content?.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || []).length,
-    affiliateImages: post.affiliateImages?.length
+    affiliateImages: post.affiliateImages?.length,
+    affiliateImageDetails: post.affiliateImages?.map(img => ({
+      heading: img.heading,
+      url: img.url,
+      alt: img.alt,
+      affiliateUrl: img.affiliateUrl
+    }))
   });
 
   return (

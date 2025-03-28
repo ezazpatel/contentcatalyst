@@ -30,13 +30,23 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
 
       const [heading, ...rest] = section.split('\n');
       const sectionContent = rest.join('\n');
+      console.log(`Processing section with heading: "${heading}"`);
       const sectionImages = imagesByHeading[heading] || [];
+      console.log('Images for this section:', sectionImages);
 
       const imageMarkdown = sectionImages
-        .filter(img => img.url && img.url !== 'undefined')
+        .filter(img => {
+          const isValid = img && typeof img.url === 'string' && img.url.length > 0 && img.url !== 'undefined';
+          if (!isValid) {
+            console.warn('Skipping invalid image:', img);
+          }
+          return isValid;
+        })
         .map(img => {
-          console.log('Processing affiliate image:', img);
-          return `![${img.alt || ''}](${img.url})`;
+          const alt = img.alt?.trim() || '';
+          const url = img.url.trim();
+          console.log('Creating markdown for image:', { alt, url });
+          return `![${alt}](${url})`;
         })
         .join('\n\n');
 
