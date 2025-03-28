@@ -17,7 +17,7 @@ export function MarkdownRenderer({ content }: Props) {
   // Filter out all H1 headings
   const lines = content.split('\n').filter(line => !line.trim().startsWith('# '));
   const newLines: (string | JSX.Element)[] = [];
-  
+
   // Process slideshow divs
   let currentSlideshow: AffiliateImage[] = [];
   let inSlideshow = false;
@@ -65,8 +65,11 @@ export function MarkdownRenderer({ content }: Props) {
         <h2 key={lineKey}>{heading}</h2>
       );
     } else {
+      //Modified to handle images directly within ReactMarkdown
       newLines.push(
-        <ReactMarkdown key={lineKey} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+        <ReactMarkdown key={lineKey} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={{
+          img: ({node, ...props}) => <img {...props} style={{maxWidth: '100%', height: 'auto'}}/>
+        }}>
           {line}
         </ReactMarkdown>
       );
