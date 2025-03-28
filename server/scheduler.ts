@@ -329,7 +329,6 @@ Format your response:
           (l) => l.name === section.affiliate_connection
         );
 
-        let affiliateInstructions = "";
         if (link && urlToProductCode[link.url]) {
           const url = link.url;
           const productCode = urlToProductCode[url];
