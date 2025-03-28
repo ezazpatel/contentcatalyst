@@ -60,7 +60,7 @@ export async function registerRoutes(app: Express) {
     const imageMatches = post.content.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
     // Extract best quality image URLs from variants before sending
     if (post.affiliateImages) {
-      post.affiliateImages = post.affiliateImages.map(img => {
+      post.affiliateImages = await Promise.all(post.affiliateImages.map(async img => {
         // Find variant with highest resolution
         const bestVariant = img.variants?.reduce((best, current) => {
           const currentRes = (current.width || 0) * (current.height || 0);
@@ -69,14 +69,11 @@ export async function registerRoutes(app: Express) {
         }, null);
 
         // Get highest quality URL available
-        // Extract the full product details from the API response
         const productDetails = await storage.getViatorProduct(post.id);
         const imageUrl = bestVariant?.url || 
                         img.variants?.[0]?.url || 
                         img.url?.replace('-50x50', '') || 
                         img.url || '';
-
-        const productDetails = await storage.getViatorProduct(post.id);
         
         return {
           url: imageUrl,
