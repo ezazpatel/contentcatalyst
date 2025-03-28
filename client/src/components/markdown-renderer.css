@@ -1,11 +1,17 @@
 
-.markdown-content img {
-  max-width: 100%;
-  height: auto;
-  margin: 1rem 0;
+.prose img {
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 1rem auto !important;
   border-radius: 0.5rem;
+  display: block;
 }
 
-.markdown-content {
+.prose {
   width: 100%;
+  max-width: none;
+}
+
+.prose p {
+  margin: 1rem 0;
 }
