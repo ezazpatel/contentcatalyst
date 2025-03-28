@@ -6,36 +6,16 @@ import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
 
 function convertMarkdownToHTML(markdown: string): string {
-  // First extract and save product slideshow divs
-  const galleries: string[] = [];
-  markdown = markdown.replace(
-    /<div class="product-slideshow">([\s\S]*?)<\/div>/g,
-    (match) => {
-      const images = match.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/g) || [];
-
-      // Create gallery HTML that WordPress recognizes
-      const galleryHTML = `
-<!-- wp:gallery {"linkTo":"none"} -->
-<figure class="wp-block-gallery has-nested-images columns-default is-cropped">
-${images.map((img) => {
-  const m = img.match(/<img\s+src="([^"]+)"\s+alt="([^"]+)"\s*\/?>/);
-  const src = m ? m[1] : "";
-  const alt = m ? m[2] : "";
-  return `
+  // Convert standard markdown images to WordPress format
+  markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
+    return `
 <!-- wp:image {"sizeSlug":"large"} -->
 <figure class="wp-block-image size-large">
   <img src="${src}" alt="${alt}"/>
   <figcaption class="wp-element-caption">${alt}</figcaption>
 </figure>
 <!-- /wp:image -->`;
-}).join("\n")}
-</figure>
-<!-- /wp:gallery -->`;
-
-      galleries.push(galleryHTML);
-      return `{{GALLERY_PLACEHOLDER_${galleries.length - 1}}}`;
-    }
-  );
+  });
 
   // Convert markdown to HTML
   let html = markdown
