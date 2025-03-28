@@ -47,6 +47,13 @@ export default function ViewPost() {
     );
   }
 
+  console.log('ViewPost: Post loaded:', {
+    title: post.title,
+    contentLength: post.content?.length,
+    hasImages: post.content?.includes('!['),
+    affiliateImages: post.affiliateImages?.length
+  });
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-8">

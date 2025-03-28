@@ -8,9 +8,13 @@ interface Props {
 }
 
 export function MarkdownRenderer({ content }: Props) {
+  console.log('MarkdownRenderer: Content received:', content.substring(0, 100) + '...');
+  
   const processedContent = React.useMemo(() => {
+    console.log('MarkdownRenderer: Processing content');
     // Split content into sections by H2 headings
     const sections = content.split(/^##\s+/m);
+    console.log('MarkdownRenderer: Found sections:', sections.length);
 
     // Process each section (skip the first one as it's the intro)
     return sections.map((section, index) => {
