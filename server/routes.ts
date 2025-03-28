@@ -54,6 +54,16 @@ export async function registerRoutes(app: Express) {
     
     // Log image information
     const imageMatches = post.content.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
+    // Extract URLs from variants before sending
+    if (post.affiliateImages) {
+      post.affiliateImages = post.affiliateImages.map(img => ({
+        url: img.variants?.[0]?.url || '',
+        alt: img.caption || '',
+        affiliateUrl: img.affiliateUrl || '',
+        heading: img.heading || '',
+      }));
+    }
+
     console.log('[Image Debug]', {
       postId: post.id,
       title: post.title,
@@ -68,7 +78,7 @@ export async function registerRoutes(app: Express) {
         };
       }).filter(Boolean),
       affiliateImages: post.affiliateImages?.length || 0,
-      affiliateImagesData: post.affiliateImages // Log full data
+      affiliateImagesData: post.affiliateImages
     });
 
     res.json(post);
