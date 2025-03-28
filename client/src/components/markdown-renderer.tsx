@@ -12,6 +12,17 @@ export function MarkdownRenderer({ content }: Props) {
   
   const processedContent = React.useMemo(() => {
     console.log('MarkdownRenderer: Processing content');
+    
+    // Count all images in content
+    const allImages = content.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
+    console.log('MarkdownRenderer: Found images:', {
+      totalImages: allImages.length,
+      imageUrls: allImages.map(img => {
+        const match = img.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+        return match ? match[2] : null;
+      })
+    });
+    
     // Split content into sections by H2 headings
     const sections = content.split(/^##\s+/m);
     console.log('MarkdownRenderer: Found sections:', sections.length);

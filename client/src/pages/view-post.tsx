@@ -51,6 +51,7 @@ export default function ViewPost() {
     title: post.title,
     contentLength: post.content?.length,
     hasImages: post.content?.includes('!['),
+    imageCount: (post.content?.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || []).length,
     affiliateImages: post.affiliateImages?.length
   });
 
