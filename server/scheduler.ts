@@ -329,17 +329,18 @@ Format your response:
           (l) => l.name === section.affiliate_connection
         );
 
+        let affiliateInstructions = "";
         if (link && urlToProductCode[link.url]) {
           const url = link.url;
           const productCode = urlToProductCode[url];
           const remainingMentions = 2 - (productCodeUsage[productCode] || 0);
-        }
 
           affiliateInstructions = `
 This section MUST clearly and naturally feature [${link.name}](${url}) as an H2 or H3 heading.
 When mentioning this product in the content, ALWAYS use the markdown link format: [${link.name}](${url})
 Do NOT mention this product more than ${remainingMentions} more times in this section.
 Mention specific features or benefits naturally within the content.`;
+        }
       } else if (Object.keys(urlToProductCode).length > 0) {
         const availableLinks = affiliateLinks
           .filter(link => link.url && (productCodeUsage[link.productCode] || 0) < 2)
