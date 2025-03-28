@@ -1,66 +1,42 @@
-import * as React from 'react';
+import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import type { AffiliateImage } from '@shared/schema';
 
 interface MarkdownRendererProps {
   content: string;
-  affiliateImages?: Array<{
-    url: string;
-    alt: string;
-    heading: string;
-  }>;
+  affiliateImages?: AffiliateImage[];
 }
 
-export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRendererProps) {
-  console.log('MarkdownRenderer: Content received:', content.substring(0, 100) + '...');
+export function MarkdownRenderer({ content, affiliateImages }: MarkdownRendererProps) {
+  const processedContent = useMemo(() => {
+    // Remove the title (first heading) from content
+    let processedContent = content.replace(/^#\s+.*\n/, '');
 
-  const processedContent = React.useMemo(() => {
-    console.log('MarkdownRenderer: Processing content');
-
-    // Count all images in content
-    const allImages = content.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
-    console.log('MarkdownRenderer: Found images:', {
-      totalImages: allImages.length,
-      imageUrls: allImages.map(img => {
-        const match = img.match(/!\[([^\]]*)\]\(([^)]+)\)/);
-        return match ? match[2] : null;
-      })
-    });
-
-    // Process sections and add affiliate images
-    let processedContent = content;
-    
     // Split content into sections by H2 headings
     const sections = processedContent.split(/^##\s+/m);
-    console.log('MarkdownRenderer: Found sections:', sections.length);
 
-    // Process each section (skip the first one as it's the intro)
+    // Process each section
     const processedSections = sections.map((section, index) => {
       if (index === 0) return section;
 
-      // Find the first image in the section
-      const imgMatch = section.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+      // Extract the heading and content
+      const [heading, ...contentParts] = section.split('\n');
+      const sectionContent = contentParts.join('\n');
 
-      if (imgMatch) {
-        // Keep only the first image, remove others
-        const cleanedSection = section.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '');
-        const [heading, ...rest] = cleanedSection.split('\n');
-        return `## ${heading}\n\n![${imgMatch[1]}](${imgMatch[2]})\n\n${rest.join('\n')}`;
+      // If there's a matching affiliate image, insert it
+      if (affiliateImages && index <= affiliateImages.length) {
+        const img = affiliateImages[index - 1];
+        if (img) {
+          return `## ${heading}\n\n![${img.alt}](${img.url})\n\n${sectionContent}`;
+        }
       }
 
-      return `## ${section}`;
+      return `## ${heading}\n\n${sectionContent}`;
     });
 
-    // Combine processed sections and add affiliate images
-    processedContent = processedSections.join('');
-    if (affiliateImages && affiliateImages.length > 0) {
-      processedContent = affiliateImages.reduce((acc, img) => {
-        return `${acc}\n\n## ${img.heading}\n\n![${img.alt}](${img.url})\n\n`;
-      }, processedContent);
-    }
-
-    return processedContent;
+    return processedSections.join('\n\n');
   }, [content, affiliateImages]);
 
   return (
