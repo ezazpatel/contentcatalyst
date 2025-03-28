@@ -303,20 +303,37 @@ Format your response:
     for (const section of outlineResult.outline) {
       console.log("Generating content for section:", section.heading);
 
+      // Create URL to product code mapping
+      const urlToProductCode = affiliateLinks.reduce((acc, link) => {
+        if (link.url && link.productCode) {
+          acc[link.url] = link.productCode;
+        }
+        return acc;
+      }, {} as Record<string, string>);
+
+      // Track usage by product code
+      const productCodeUsage: Record<string, number> = {};
+      Object.entries(urlToProductCode).forEach(([url, code]) => {
+        const matches = content.match(new RegExp(`\\[.*?\\]\\(${url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g'));
+        productCodeUsage[code] = (matches || []).length;
+      });
+
       let affiliateInstructions = "";
       if (
         section.affiliate_connection &&
-        affiliateLinksMap[section.affiliate_connection]
+        urlToProductCode[affiliateLinksMap[section.affiliate_connection]]
       ) {
+        const url = affiliateLinksMap[section.affiliate_connection];
+        const productCode = urlToProductCode[url];
         affiliateInstructions = `
-This section MUST clearly and naturally feature [${section.affiliate_connection}](${affiliateLinksMap[section.affiliate_connection]}) as an H2 or H3 heading.
-When mentioning this product in the content, ALWAYS use the markdown link format: [${section.affiliate_connection}](${affiliateLinksMap[section.affiliate_connection]})
-Do NOT mention this product more than ${2 - (affiliateLinkUsage[section.affiliate_connection] || 0)} more times in this section.
+This section MUST clearly and naturally feature [${section.affiliate_connection}](${url}) as an H2 or H3 heading.
+When mentioning this product in the content, ALWAYS use the markdown link format: [${section.affiliate_connection}](${url})
+Do NOT mention this product more than ${2 - (productCodeUsage[productCode] || 0)} more times in this section.
 Mention specific features or benefits naturally within the content.`;
-      } else if (Object.keys(affiliateLinksMap).length > 0) {
-        const availableLinks = Object.entries(affiliateLinksMap)
-          .filter(([name]) => (affiliateLinkUsage[name] || 0) < 2)
-          .map(([name, url]) => `- [${name}](${url})`);
+      } else if (Object.keys(urlToProductCode).length > 0) {
+        const availableLinks = affiliateLinks
+          .filter(link => link.url && (productCodeUsage[link.productCode] || 0) < 2)
+          .map(link => `- [${link.name}](${link.url})`);
 
         if (availableLinks.length > 0) {
           affiliateInstructions = `
