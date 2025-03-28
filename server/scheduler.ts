@@ -121,11 +121,19 @@ async function generateContent(
     console.log("No valid affiliate links found, generation may be limited");
   }
 
-  // Store all images for later use
-  const allImages = affiliateLinks.flatMap((link) => link.images);
-
   // Filter out products where we couldn't get affiliate URLs
   const validAffiliateLinks = affiliateLinks.filter((link) => link.url);
+
+  // Extract affiliate images from valid links, maintaining product code reference
+  const affiliateImages = validAffiliateLinks.flatMap((link) => 
+    link.images.map((img) => ({
+      url: img.url,
+      alt: img.alt || link.name,
+      affiliateUrl: link.url,
+      heading: "", // Will be set during content placement
+      productCode: link.productCode
+    }))
+  );
 
   // Find relevant internal links
   const allPosts = await storage.getAllBlogPosts();
@@ -443,15 +451,15 @@ Use proper markdown:
     fullContent += conclusionResponse.content[0].text;
 
     // Insert images into content
-    if (allImages.length > 0) {
+    if (affiliateImages.length > 0) {
       console.log(
-        `Adding ${allImages.length} affiliate product images to the content`,
+        `Adding ${affiliateImages.length} affiliate product images to the content`,
       );
       const sections = fullContent.split(/^## /m);
       fullContent = sections
         .map((section, index) => {
           if (index === 0) return section;
-          const image = allImages[index - 1];
+          const image = affiliateImages[index - 1];
           if (image) {
             return `## ${section.split("\n")[0]}\n\n![${image.alt || ""}](${image.url})\n\n${section.split("\n").slice(1).join("\n")}`;
           }
@@ -475,7 +483,7 @@ Use proper markdown:
       content: fullContent,
       title: outlineResult.title,
       description: finalDescription,
-      images: allImages, // Return collected images
+      images: affiliateImages, // Return images with product codes
     };
   } catch (error) {
     console.error("Error generating content:", error);
