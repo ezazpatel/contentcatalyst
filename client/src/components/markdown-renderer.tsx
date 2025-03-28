@@ -28,20 +28,15 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
       })
     });
 
-    // Add affiliate images to content
-    let contentWithAffiliateImages = content;
-    if (affiliateImages && affiliateImages.length > 0) {
-      contentWithAffiliateImages = affiliateImages.reduce((acc, img) => {
-        return `${acc}\n\n## ${img.heading}\n\n![${img.alt}](${img.url})\n\n`;
-      }, content);
-    }
-
+    // Process sections and add affiliate images
+    let processedContent = content;
+    
     // Split content into sections by H2 headings
-    const sections = contentWithAffiliateImages.split(/^##\s+/m);
+    const sections = processedContent.split(/^##\s+/m);
     console.log('MarkdownRenderer: Found sections:', sections.length);
 
     // Process each section (skip the first one as it's the intro)
-    const sectionsWithAffiliateImages = sections.map((section, index) => {
+    const processedSections = sections.map((section, index) => {
       if (index === 0) return section;
 
       // Find the first image in the section
@@ -57,14 +52,15 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
       return `## ${section}`;
     });
 
-    // Add affiliate images to the processed content
-    const finalContent = sectionsWithAffiliateImages.join('');
-    const contentWithAffiliateImages = affiliateImages.reduce((acc, img) => {
-      return `${acc}## ${img.heading}\n\n![${img.alt}](${img.url})\n\n`;
-    }, finalContent);
+    // Combine processed sections and add affiliate images
+    processedContent = processedSections.join('');
+    if (affiliateImages && affiliateImages.length > 0) {
+      processedContent = affiliateImages.reduce((acc, img) => {
+        return `${acc}\n\n## ${img.heading}\n\n![${img.alt}](${img.url})\n\n`;
+      }, processedContent);
+    }
 
-
-    return contentWithAffiliateImages;
+    return processedContent;
   }, [content, affiliateImages]);
 
   return (
