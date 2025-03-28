@@ -77,7 +77,7 @@ export async function registerRoutes(app: Express) {
         return {
           url: imageUrl,
           alt: img.caption || '',
-          affiliateUrl: img.affiliateUrl || '',
+          productCode: img.productCode || '',
           heading: img.heading || '',
         };
       });
