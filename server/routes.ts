@@ -12,7 +12,7 @@ function convertMarkdownToHTML(markdown: string, affiliateImages?: any[]): strin
   markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt) => {
     const image = affiliateImages?.[imageIndex++];
     if (!image) return '';
-    
+
     return `
 <!-- wp:image {"sizeSlug":"large"} -->
 <figure class="wp-block-image size-large">
@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express) {
       res.status(404).json({ message: "Post not found" });
       return;
     }
-    
+
     // Log image information
     const imageMatches = post.content.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
     // Extract best quality image URLs from variants before sending
@@ -75,10 +75,9 @@ export async function registerRoutes(app: Express) {
                         img.url?.replace('-50x50', '') || 
                         img.url || '';
 
-        // Extract product code from the URL if available
-        const productCode = img.url ? extractProductCode(img.url) : null;
-        const productDetails = productCode ? await fetchViatorProduct(productCode) : null;
-        
+        // Get product details and its code from Viator
+        const productDetails = await fetchViatorProduct(post.id);
+
         return {
           url: imageUrl,
           alt: img.caption || '',
