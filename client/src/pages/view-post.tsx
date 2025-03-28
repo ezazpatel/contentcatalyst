@@ -90,7 +90,6 @@ export default function ViewPost() {
               content={post.content}
               affiliateImages={post.affiliateImages?.map(img => ({
                 ...img,
-                affiliateUrl: img.affiliateUrl || '',
                 heading: img.heading || ''
               }))}
               affiliateLinks={post.affiliateLinks}
