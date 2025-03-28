@@ -62,18 +62,32 @@ async function generateContent(keywords: string[], description: string = "", pos
   description: string;
   images: any[];
 }> {
-  // Search for relevant Viator products
+  console.log('Searching for Viator products before content generation...');
   const viatorProducts = await searchViatorProducts(keywords.join(' '), 10);
   const validProducts = Array.isArray(viatorProducts) ? viatorProducts : [];
   console.log('Found Viator products:', validProducts.length);
   
+  console.log('Crawling affiliate links...');
   const affiliateLinks = await Promise.all(
-    validProducts.map(async product => ({
-      name: product.title,
-      url: await getViatorAffiliateUrl(product.productCode) || '',
-      description: product.description
-    }))
-  );
+    validProducts.map(async product => {
+      const url = await getViatorAffiliateUrl(product.productCode);
+      if (!url) {
+        console.log(`No affiliate URL found for product ${product.productCode}`);
+        return null;
+      }
+      return {
+        name: product.title,
+        url,
+        description: product.description,
+        images: await crawlAffiliateLink(product.productCode, product.title)
+      };
+    })
+  ).then(links => links.filter(link => link !== null));
+
+  console.log(`Successfully crawled ${affiliateLinks.length} affiliate links`);
+  if (affiliateLinks.length === 0) {
+    console.log('No valid affiliate links found, generation may be limited');
+  }
 
   // Filter out products where we couldn't get affiliate URLs
   const validAffiliateLinks = affiliateLinks.filter(link => link.url);
