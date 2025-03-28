@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
+import { fetchViatorProduct, extractProductCode } from "./services/viator-api";
 import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
 
@@ -69,11 +70,14 @@ export async function registerRoutes(app: Express) {
         }, null);
 
         // Get highest quality URL available
-        const productDetails = await storage.getViatorProduct(post.id);
         const imageUrl = bestVariant?.url || 
                         img.variants?.[0]?.url || 
                         img.url?.replace('-50x50', '') || 
                         img.url || '';
+
+        // Extract product code from the URL if available
+        const productCode = img.url ? extractProductCode(img.url) : null;
+        const productDetails = productCode ? await fetchViatorProduct(productCode) : null;
         
         return {
           url: imageUrl,
