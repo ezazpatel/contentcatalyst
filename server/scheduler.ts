@@ -319,16 +319,20 @@ Format your response:
       });
 
       let affiliateInstructions = "";
-      if (
-        section.affiliate_connection &&
-        urlToProductCode[affiliateLinksMap[section.affiliate_connection]]
-      ) {
-        const url = affiliateLinksMap[section.affiliate_connection];
-        const productCode = urlToProductCode[url];
-        affiliateInstructions = `
-This section MUST clearly and naturally feature [${section.affiliate_connection}](${url}) as an H2 or H3 heading.
-When mentioning this product in the content, ALWAYS use the markdown link format: [${section.affiliate_connection}](${url})
-Do NOT mention this product more than ${2 - (productCodeUsage[productCode] || 0)} more times in this section.
+      if (section.affiliate_connection) {
+        const link = affiliateLinks.find(
+          (l) => l.name === section.affiliate_connection
+        );
+
+        if (link && urlToProductCode[link.url]) {
+          const url = link.url;
+          const productCode = urlToProductCode[url];
+          const remainingMentions = 2 - (productCodeUsage[productCode] || 0);
+
+          affiliateInstructions = `
+This section MUST clearly and naturally feature [${link.name}](${url}) as an H2 or H3 heading.
+When mentioning this product in the content, ALWAYS use the markdown link format: [${link.name}](${url})
+Do NOT mention this product more than ${remainingMentions} more times in this section.
 Mention specific features or benefits naturally within the content.`;
       } else if (Object.keys(urlToProductCode).length > 0) {
         const availableLinks = affiliateLinks
