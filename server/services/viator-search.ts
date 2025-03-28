@@ -85,11 +85,58 @@ export async function getViatorAffiliateUrl(productCode: string): Promise<string
     if (!productCode) {
       return null;
     }
-    // The webURL property from the search results will already include the campaign parameters
-    // because we included campaign-value in the search request headers
-    return productCode;
+
+    // First get the product URL from the product endpoint
+    const productResponse = await fetch(`${VIATOR_BASE_URL}/products/${productCode}`, {
+      headers: {
+        'exp-api-key': process.env.VIATOR_API_KEY!,
+        'Accept': 'application/json;version=2.0',
+        'Accept-Language': 'en-US'
+      }
+    });
+
+    if (!productResponse.ok) {
+      throw new Error(`Failed to fetch product URL (${productResponse.status})`);
+    }
+
+    const productData = await productResponse.json();
+    const productUrl = productData.webURL;
+
+    // Get campaign value from search/freetext endpoint
+    const searchResponse = await fetch(`${VIATOR_BASE_URL}/search/freetext`, {
+      method: 'POST',
+      headers: {
+        'exp-api-key': process.env.VIATOR_API_KEY!,
+        'Accept': 'application/json;version=2.0',
+        'Accept-Language': 'en-US',
+        'Content-Type': 'application/json',
+        'campaign-value': process.env.VIATOR_CAMPAIGN_ID || ''
+      },
+      body: JSON.stringify({
+        searchTerm: productCode,
+        currency: "CAD",
+        searchTypes: [{
+          searchType: "PRODUCTS",
+          pagination: { start: 1, count: 1 }
+        }]
+      })
+    });
+
+    if (!searchResponse.ok) {
+      throw new Error(`Failed to get campaign value (${searchResponse.status})`);
+    }
+
+    const searchData = await searchResponse.json();
+    const campaignValue = searchData.products?.results[0]?.webURL?.split('?')[1];
+
+    if (!productUrl || !campaignValue) {
+      console.error('Missing product URL or campaign value:', { productUrl, campaignValue });
+      return null;
+    }
+
+    return `${productUrl}?${campaignValue}`;
   } catch (error) {
-    console.error('Error with affiliate URL:', error);
+    console.error('Error constructing affiliate URL:', error);
     return null;
   }
 }
