@@ -122,16 +122,16 @@ async function generateContent(
   }
 
   // Filter out products where we couldn't get affiliate URLs
-  const validAffiliateLinks = affiliateLinks.filter((link) => link.url);
+  const validAffiliateLinks = affiliateLinks.filter((link) => !!link.url);
 
   // Extract affiliate images from valid links, maintaining product code reference
-  const affiliateImages = validAffiliateLinks.flatMap((link) => 
-    link.images.map((img) => ({
+  const affiliateImages = validAffiliateLinks.flatMap((link) =>
+    (link.images || []).map((img) => ({
       url: img.url,
       alt: img.alt || link.name,
       affiliateUrl: link.url,
-      heading: "", // Will be set during content placement
-      productCode: link.productCode
+      productCode: link.productCode,
+      heading: "", // To be set during placement if needed
     }))
   );
 
