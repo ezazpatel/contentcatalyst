@@ -104,19 +104,20 @@ export async function getViatorAffiliateUrl(productCode: string): Promise<string
 
     const data = await response.json();
     
-    // Try to get the webURL from the response
-    const webURL = data.webURL || data.bookingUrl || data.productUrl;
+    // Get the product URL and clean it
+    const baseUrl = data.webURL || data.bookingUrl || data.productUrl;
     
-    if (!webURL) {
+    if (!baseUrl) {
       console.error('No URL found for product:', productCode, 'Response:', JSON.stringify(data));
       return null;
     }
 
-    // Add campaign value if not already present
-    const url = new URL(webURL);
-    if (!url.searchParams.has('pid')) {
-      url.searchParams.set('pid', process.env.VIATOR_CAMPAIGN_ID || '');
-    }
+    // Construct URL with campaign parameters
+    const url = new URL(baseUrl);
+    url.searchParams.set('mcid', '42383');
+    url.searchParams.set('pid', process.env.VIATOR_CAMPAIGN_ID || 'P00217628');
+    url.searchParams.set('medium', 'api');
+    url.searchParams.set('api_version', '2.0');
 
     return url.toString();
   } catch (error) {
