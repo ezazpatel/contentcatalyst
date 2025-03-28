@@ -442,23 +442,28 @@ Use proper markdown:
 
     fullContent += conclusionResponse.content[0].text;
 
-    // Insert images into content
-    if (allImages.length > 0) {
-      console.log(
-        `Adding ${allImages.length} affiliate product images to the content`,
-      );
-      const sections = fullContent.split(/^## /m);
-      fullContent = sections
-        .map((section, index) => {
-          if (index === 0) return section;
-          const image = allImages[index - 1];
-          if (image) {
-            return `## ${section.split("\n")[0]}\n\n![${image.alt || ""}](${image.url})\n\n${section.split("\n").slice(1).join("\n")}`;
+    // Match images with affiliate links and track their placement
+    const affiliateUrlToImage = {};
+    affiliateLinks.forEach(link => {
+      if (link.url && link.images && link.images.length > 0) {
+        affiliateUrlToImage[link.url] = link.images[0];
+      }
+    });
+
+    // Insert images after second occurrence of corresponding affiliate link
+    const linkOccurrences = {};
+    const lines = fullContent.split('\n');
+    fullContent = lines.map(line => {
+      for (const [url, image] of Object.entries(affiliateUrlToImage)) {
+        if (line.includes(url)) {
+          linkOccurrences[url] = (linkOccurrences[url] || 0) + 1;
+          if (linkOccurrences[url] === 2) {
+            return `${line}\n\n![${image.alt || ''}](${image.url})`;
           }
-          return `## ${section}`;
-        })
-        .join("");
-    }
+        }
+      }
+      return line;
+    }).join('\n');
 
     // Calculate word count
     const wordCount = fullContent.split(/\s+/).length;

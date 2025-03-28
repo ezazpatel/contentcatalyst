@@ -43,12 +43,14 @@ export function MarkdownRenderer({ content, affiliateImages = [], affiliateLinks
       // Look for affiliate URLs in the line
       for (const link of affiliateLinks) {
         if (line.includes(link.url)) {
-          linkOccurrences[link.url] = (linkOccurrences[link.url] || 0) + 1;
-          
-          // On second occurrence of this URL, add its corresponding image
-          if (linkOccurrences[link.url] === 2 && urlToImage[link.url]) {
-            const image = urlToImage[link.url];
-            return `${line}\n\n![${image.alt || ''}](${image.url})`;
+          const matchingImage = affiliateImages?.find(img => img.productCode === link.productCode);
+          if (matchingImage) {
+            linkOccurrences[link.url] = (linkOccurrences[link.url] || 0) + 1;
+            
+            // On second occurrence of this URL, add its corresponding image
+            if (linkOccurrences[link.url] === 2) {
+              return `${line}\n\n![${matchingImage.alt || ''}](${matchingImage.url})`;
+            }
           }
         }
       }
