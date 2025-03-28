@@ -3,16 +3,21 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 
-interface Props {
+interface MarkdownRendererProps {
   content: string;
+  affiliateImages?: Array<{
+    url: string;
+    alt: string;
+    heading: string;
+  }>;
 }
 
-export function MarkdownRenderer({ content }: Props) {
+export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRendererProps) {
   console.log('MarkdownRenderer: Content received:', content.substring(0, 100) + '...');
-  
+
   const processedContent = React.useMemo(() => {
     console.log('MarkdownRenderer: Processing content');
-    
+
     // Count all images in content
     const allImages = content.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
     console.log('MarkdownRenderer: Found images:', {
@@ -22,13 +27,13 @@ export function MarkdownRenderer({ content }: Props) {
         return match ? match[2] : null;
       })
     });
-    
+
     // Split content into sections by H2 headings
     const sections = content.split(/^##\s+/m);
     console.log('MarkdownRenderer: Found sections:', sections.length);
 
     // Process each section (skip the first one as it's the intro)
-    return sections.map((section, index) => {
+    const sectionsWithAffiliateImages = sections.map((section, index) => {
       if (index === 0) return section;
 
       // Find the first image in the section
@@ -42,8 +47,17 @@ export function MarkdownRenderer({ content }: Props) {
       }
 
       return `## ${section}`;
-    }).join('');
-  }, [content]);
+    });
+
+    // Add affiliate images to the processed content
+    const finalContent = sectionsWithAffiliateImages.join('');
+    const contentWithAffiliateImages = affiliateImages.reduce((acc, img) => {
+      return `${acc}## ${img.heading}\n\n![${img.alt}](${img.url})\n\n`;
+    }, finalContent);
+
+
+    return contentWithAffiliateImages;
+  }, [content, affiliateImages]);
 
   return (
     <div className="prose prose-sm w-full max-w-none dark:prose-invert lg:prose-base">
