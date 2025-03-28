@@ -52,16 +52,16 @@ export default function ViewPost() {
 
   const imageMatches = post.content?.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
 
-  console.log('[Affiliate Image URLs]', {
+  console.log('[Affiliate Images Debug]', {
     postId: post.id,
     title: post.title,
-    totalAffiliateImages: post.affiliateImages?.length || 0,
+    affiliateImagesCount: post.affiliateImages?.length || 0,
     affiliateImages: post.affiliateImages?.map((img, index) => ({
       index: index + 1,
-      heading: img.heading,
-      affiliateUrl: img.affiliateUrl,
       imageUrl: img.url,
-      alt: img.alt
+      affiliateUrl: img.affiliateUrl,
+      alt: img.alt,
+      heading: img.heading
     }))
   });
 
