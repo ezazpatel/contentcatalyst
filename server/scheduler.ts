@@ -66,7 +66,7 @@ async function generateContent(keywords: string[], description: string = "", pos
   const viatorProducts = await searchViatorProducts(keywords.join(' '), 10);
   const validProducts = Array.isArray(viatorProducts) ? viatorProducts : [];
   console.log('Found Viator products:', validProducts.length);
-  
+
   console.log('Crawling affiliate links and images...');
   const affiliateLinks = await Promise.all(
     validProducts.map(async product => {
@@ -75,13 +75,12 @@ async function generateContent(keywords: string[], description: string = "", pos
         console.log(`No affiliate URL found for product ${product.productCode}`);
         return null;
       }
-      const images = await crawlAffiliateLink(product.productCode, product.title);
       return {
         name: product.title,
         url,
         description: product.description,
-        images,
-        productCode: product.productCode // Store product code for later reference
+        images: product.images || [],
+        productCode: product.productCode
       };
     })
   ).then(links => links.filter(link => link !== null));
@@ -93,7 +92,7 @@ async function generateContent(keywords: string[], description: string = "", pos
 
   // Store all images for later use
   const allImages = affiliateLinks.flatMap(link => link.images);
-  
+
   // Filter out products where we couldn't get affiliate URLs
   const validAffiliateLinks = affiliateLinks.filter(link => link.url);
 
