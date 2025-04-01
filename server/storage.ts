@@ -15,44 +15,112 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
-    console.log('[Storage Debug] Creating blog post with affiliate data:', {
-      affiliateLinksCount: post.affiliateLinks?.length || 0,
-      affiliateImagesCount: post.affiliateImages?.length || 0,
-      affiliateData: {
-        links: post.affiliateLinks,
-        images: post.affiliateImages?.map(img => ({
-          url: img.url,
-          affiliateUrl: img.affiliateUrl,
-          heading: img.heading
-        }))
+    console.log('[DB Operation] Initiating blog post creation:', {
+      operation: 'INSERT',
+      table: 'blog_posts',
+      dataStructure: {
+        title: typeof post.title,
+        content: `${post.content?.length || 0} chars`,
+        status: post.status,
+        scheduledDate: post.scheduledDate,
+        keywords: `${post.keywords?.length || 0} keywords`,
+        affiliateLinks: {
+          count: post.affiliateLinks?.length || 0,
+          structure: 'Array<{name: string, url: string}>'
+        },
+        affiliateImages: {
+          count: post.affiliateImages?.length || 0,
+          structure: 'Array<{url, alt, affiliateUrl, heading}>'
+        }
       }
     });
 
-    const [blogPost] = await db.insert(blogPosts).values(post).returning();
-    console.log('[Storage Debug] Created blog post with ID:', blogPost.id, {
-      storedAffiliateLinks: blogPost.affiliateLinks,
-      storedAffiliateImages: blogPost.affiliateImages
-    });
-    return blogPost;
+    try {
+      const [blogPost] = await db.insert(blogPosts).values(post).returning();
+      
+      console.log('[DB Success] Blog post created:', {
+        id: blogPost.id,
+        storedData: {
+          title: blogPost.title,
+          keywordsCount: blogPost.keywords.length,
+          hasContent: !!blogPost.content,
+          affiliateLinksCount: Object.keys(blogPost.affiliateLinks || {}).length,
+          affiliateImagesCount: (blogPost.affiliateImages || []).length,
+          scheduledFor: blogPost.scheduledDate
+        },
+        databaseSchema: {
+          affiliateLinks: 'JSONB DEFAULT {}',
+          affiliateImages: 'JSONB DEFAULT [] NOT NULL',
+          content: 'TEXT DEFAULT ""',
+          status: 'TEXT DEFAULT "draft" NOT NULL'
+        }
+      });
+
+      return blogPost;
+    } catch (error) {
+      console.error('[DB Error] Failed to create blog post:', {
+        error: error.message,
+        code: error.code,
+        detail: error.detail,
+        schema: error.schema,
+        table: error.table
+      });
+      throw error;
+    }
   }
 
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
-    const [blogPost] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    console.log('[DB Query] Fetching blog post:', {
+      operation: 'SELECT',
+      table: 'blog_posts',
+      condition: `id = ${id}`,
+      sql: 'SELECT * FROM blog_posts WHERE id = $1'
+    });
 
-    if (blogPost) {
-      console.log('[Storage Debug] Retrieved blog post affiliate data:', {
-        postId: id,
-        affiliateLinksData: blogPost.affiliateLinks,
-        affiliateImagesCount: (blogPost.affiliateImages || []).length,
-        affiliateImagesSample: (blogPost.affiliateImages || []).slice(0, 2).map(img => ({
-          url: img.url,
-          affiliateUrl: img.affiliateUrl,
-          heading: img.heading
-        }))
+    try {
+      const [blogPost] = await db.select()
+        .from(blogPosts)
+        .where(eq(blogPosts.id, id));
+
+      if (blogPost) {
+        console.log('[DB Success] Blog post retrieved:', {
+          id: blogPost.id,
+          dataStructure: {
+            title: blogPost.title,
+            contentLength: blogPost.content?.length || 0,
+            status: blogPost.status,
+            keywordsArray: `${blogPost.keywords?.length || 0} keywords`,
+            affiliateLinksObject: typeof blogPost.affiliateLinks,
+            affiliateImagesArray: typeof blogPost.affiliateImages
+          },
+          relationships: {
+            affiliateLinks: {
+              type: 'JSONB',
+              count: Object.keys(blogPost.affiliateLinks || {}).length,
+              sample: Object.keys(blogPost.affiliateLinks || {}).slice(0, 2)
+            },
+            affiliateImages: {
+              type: 'JSONB[]',
+              count: (blogPost.affiliateImages || []).length,
+              sampleStructure: (blogPost.affiliateImages || []).slice(0, 1).map(img => ({
+                fields: Object.keys(img || {})
+              }))
+            }
+          }
+        });
+      } else {
+        console.log('[DB Info] No blog post found with ID:', id);
+      }
+
+      return blogPost;
+    } catch (error) {
+      console.error('[DB Error] Failed to fetch blog post:', {
+        error: error.message,
+        code: error.code,
+        detail: error.detail
       });
+      throw error;
     }
-
-    return blogPost;
   }
 
   async getAllBlogPosts(): Promise<BlogPost[]> {
@@ -60,33 +128,69 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost> {
-    console.log('[Storage Debug] Updating blog post affiliate data:', {
-      postId: id,
-      updatedAffiliateLinks: post.affiliateLinks,
-      updatedAffiliateImages: post.affiliateImages?.map(img => ({
-        url: img?.url,
-        affiliateUrl: img?.affiliateUrl,
-        productCode: img?.productCode
-      }))
+    console.log('[DB Operation] Initiating blog post update:', {
+      operation: 'UPDATE',
+      table: 'blog_posts',
+      condition: `id = ${id}`,
+      fieldsToUpdate: Object.keys(post),
+      dataTypes: {
+        affiliateLinks: 'JSONB',
+        affiliateImages: 'JSONB[]',
+        content: 'TEXT',
+        status: 'TEXT',
+        keywords: 'TEXT[]'
+      }
     });
 
-    const [updated] = await db
-      .update(blogPosts)
-      .set(post)
-      .where(eq(blogPosts.id, id))
-      .returning();
+    try {
+      console.log('[DB Update] Processing changes:', {
+        contentDiff: post.content ? `${post.content.length} chars` : 'unchanged',
+        statusChange: post.status || 'unchanged',
+        affiliateChanges: {
+          links: post.affiliateLinks ? {
+            count: post.affiliateLinks.length,
+            structure: 'Array<{name, url}>'
+          } : 'unchanged',
+          images: post.affiliateImages ? {
+            count: post.affiliateImages.length,
+            structure: 'Array<{url, alt, affiliateUrl, heading}>'
+          } : 'unchanged'
+        }
+      });
 
-    console.log('[Storage Debug] Updated blog post:', {
-      postId: updated.id,
-      newAffiliateLinksCount: Object.keys(updated.affiliateLinks || {}).length,
-      newAffiliateImagesCount: (updated.affiliateImages || []).length
-    });
+      const [updated] = await db
+        .update(blogPosts)
+        .set(post)
+        .where(eq(blogPosts.id, id))
+        .returning();
 
-    if (!updated) {
-      throw new Error("Post not found");
+      if (!updated) {
+        console.error('[DB Error] Update failed - post not found:', id);
+        throw new Error("Post not found");
+      }
+
+      console.log('[DB Success] Blog post updated:', {
+        id: updated.id,
+        updatedFields: {
+          content: updated.content?.length || 0,
+          status: updated.status,
+          keywordsCount: updated.keywords?.length || 0,
+          affiliateLinksCount: Object.keys(updated.affiliateLinks || {}).length,
+          affiliateImagesCount: (updated.affiliateImages || []).length
+        },
+        timestamp: new Date().toISOString()
+      });
+
+      return updated;
+    } catch (error) {
+      console.error('[DB Error] Failed to update blog post:', {
+        error: error.message,
+        code: error.code,
+        detail: error.detail,
+        constraint: error.constraint
+      });
+      throw error;
     }
-
-    return updated;
   }
 
   async deleteBlogPost(id: number): Promise<void> {
