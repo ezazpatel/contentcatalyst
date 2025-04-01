@@ -321,8 +321,7 @@ Format your response:
       // Track usage by product code
       const productCodeUsage: Record<string, number> = {};
       Object.entries(urlToProductCode).forEach(([url, code]) => {
-        const matches = content.match(new RegExp(`\\[.*?\\]\\(${url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g'));
-        productCodeUsage[code] = (matches || []).length;
+        productCodeUsage[code] = 0;
       });
 
       let affiliateInstructions = "";
@@ -418,6 +417,14 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Subheading cont
 
       const sectionContent = sectionResponse.content[0].text;
 
+      // Track usage by product code for this section
+      Object.entries(urlToProductCode).forEach(([url, code]) => {
+        const matches = sectionContent.match(new RegExp(`\\[.*?\\]\\(${url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g'));
+        productCodeUsage[code] = (matches || []).length;
+      });
+
+      fullContent += sectionContent + "\n\n";
+
       // Count affiliate link usage in this section
       Object.keys(affiliateLinksMap).forEach((name) => {
         const regex = new RegExp(
@@ -440,8 +447,6 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Subheading cont
             (internalLinksUsage[url] || 0) + matches.length;
         }
       });
-
-      fullContent += sectionContent + "\n\n";
     }
 
     console.log("Step 4: Generating conclusion...");
@@ -891,7 +896,7 @@ export async function checkScheduledPosts() {
             if (!response.ok) {
               const errorText = await response.text();
               throw new Error(
-                `WordPress API error: ${response.statusText} - ${errorText}`,
+                `WordPress API error: ${response.statusText} - ${errorText`,
               );
             }
 
