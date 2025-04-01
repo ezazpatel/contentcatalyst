@@ -75,15 +75,23 @@ async function fetchViatorProduct(productCode: string): Promise<ViatorProduct | 
 
     // Extract high quality image variants
     const productImages = data.images?.map(img => {
-      const bestVariant = img.variants?.reduce((best, current) => {
-        if (!best || (current.width * current.height) > (best.width * best.height)) {
-          return current;
-        }
-        return best;
-      }, null);
+      // Sort variants by resolution (width * height) in descending order
+      const sortedVariants = img.variants?.sort((a, b) => 
+        (b.width * b.height) - (a.width * a.height)
+      ) || [];
+
+      // Get the highest resolution variant or fallback to original URL
+      const bestVariant = sortedVariants[0];
+      const imageUrl = bestVariant?.url || img.url;
+
+      console.log('[Image Debug] Selected variant:', {
+        original: img.url,
+        selected: imageUrl,
+        resolution: bestVariant ? `${bestVariant.width}x${bestVariant.height}` : 'original'
+      });
 
       return {
-        url: bestVariant?.url || img.url,
+        url: imageUrl,
         alt: img.caption || data.title || 'Product Image'
       };
     }) || [];
