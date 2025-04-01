@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,39 +11,19 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRendererProps) {
   const processedContent = useMemo(() => {
-    // Create a map of product codes to their associated images
-    const productCodeToImageMap = new Map();
-    const productCodeOccurrences = new Map();
+    let currentImageIndex = 0;
 
-    affiliateImages.forEach(img => {
-      if (img.productCode && img.url) {
-        productCodeToImageMap.set(img.productCode, img);
-        productCodeOccurrences.set(img.productCode, 0);
+    // Replace markdown image placeholders with actual affiliate images
+    return content.replace(/!\[([^\]]*)\]\([^)]+\)/g, () => {
+      const image = affiliateImages[currentImageIndex];
+      currentImageIndex = (currentImageIndex + 1) % affiliateImages.length;
+
+      if (!image?.url) {
+        return '';
       }
+
+      return `![${image.alt || ''}](${image.url})`;
     });
-
-    // Process the content line by line
-    return content.split('\n').map(line => {
-      // Check for affiliate URL markdown pattern [text](url)
-      const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-      if (linkMatch) {
-        // Find the image that has this affiliate URL
-        const matchingImage = affiliateImages.find(img => img.affiliateUrl === linkMatch[2]);
-        
-        if (matchingImage?.productCode) {
-          const productCode = matchingImage.productCode;
-          const count = productCodeOccurrences.get(productCode) || 0;
-          productCodeOccurrences.set(productCode, count + 1);
-
-          // If this is the second occurrence, add the image
-          if (count === 1) {
-            const image = productCodeToImageMap.get(productCode);
-            return `${line}\n\n![${image.alt || ''}](${image.url})`;
-          }
-        }
-      }
-      return line;
-    }).join('\n');
   }, [content, affiliateImages]);
 
   return (
