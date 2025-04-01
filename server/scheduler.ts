@@ -133,13 +133,34 @@ async function generateContent(
 
   // Extract affiliate images from valid links, maintaining product code reference
   const affiliateImages = validAffiliateLinks.flatMap((link) =>
-    (link.images || []).map((img) => ({
-      url: img.url,
-      alt: img.alt || link.name,
-      affiliateUrl: link.url,
-      productCode: link.productCode,
-      heading: "", // To be set during placement if needed
-    }))
+    (link.images || []).map((img) => {
+      // Sort variants by resolution in descending order
+      const sortedVariants = img.variants?.sort((a, b) => 
+        (b.width * b.height) - (a.width * a.height)
+      ) || [];
+
+      // Get the highest resolution variant or fallback to original URL
+      const bestVariant = sortedVariants[0];
+      const imageUrl = bestVariant?.url || img.url;
+
+      console.log('[Image Variant Processing]', {
+        productCode: link.productCode,
+        variantsCount: sortedVariants.length,
+        selectedVariant: bestVariant ? {
+          url: bestVariant.url,
+          resolution: `${bestVariant.width}x${bestVariant.height}`
+        } : 'none',
+        fallbackUrl: img.url
+      });
+
+      return {
+        url: imageUrl,
+        alt: img.alt || link.name,
+        affiliateUrl: link.url,
+        productCode: link.productCode,
+        heading: "", // To be set during placement if needed
+      };
+    })
   );
 
   // Find relevant internal links
