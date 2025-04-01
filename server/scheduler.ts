@@ -89,9 +89,11 @@ async function generateContent(
   images: any[];
 }> {
   console.log("Searching for Viator products before content generation...");
+  let validProducts: any[] = [];
+
   try {
     const viatorProducts = await searchViatorProducts(keywords.join(" "), 10);
-    const validProducts = Array.isArray(viatorProducts) ? viatorProducts : [];
+    validProducts = Array.isArray(viatorProducts) ? viatorProducts : [];
     console.log("Found Viator products:", validProducts.length);
   } catch (error) {
     console.error("Error searching Viator products:", error);
