@@ -488,16 +488,47 @@ Use proper markdown:
         `Adding ${affiliateImages.length} affiliate product images to the content`,
       );
       const sections = fullContent.split(/^## /m);
+      console.log('[Image Insertion Debug] Original sections:', {
+        totalSections: sections.length,
+        sectionHeadings: sections.map(s => s.split('\n')[0])
+      });
+
       fullContent = sections
         .map((section, index) => {
-          if (index === 0) return section;
-          const image = affiliateImages[index - 1];
-          if (image) {
-            return `## ${section.split("\n")[0]}\n\n![${image.alt || ""}](${image.url})\n\n${section.split("\n").slice(1).join("\n")}`;
+          if (index === 0) {
+            console.log('[Image Insertion Debug] Skipping intro section');
+            return section;
           }
+
+          const image = affiliateImages[index - 1];
+          console.log('[Image Insertion Debug] Processing section:', {
+            sectionIndex: index,
+            sectionHeading: section.split('\n')[0],
+            imageData: image ? {
+              url: image.url,
+              alt: image.alt,
+              affiliateUrl: image.affiliateUrl
+            } : 'No image available'
+          });
+
+          if (image) {
+            const modifiedSection = `## ${section.split("\n")[0]}\n\n![${image.alt || ""}](${image.url})\n\n${section.split("\n").slice(1).join("\n")}`;
+            console.log('[Image Insertion Debug] Added image to section:', {
+              heading: section.split("\n")[0],
+              imageMarkdown: `![${image.alt || ""}](${image.url})`
+            });
+            return modifiedSection;
+          }
+          
+          console.log('[Image Insertion Debug] No image available for section:', section.split("\n")[0]);
           return `## ${section}`;
         })
         .join("");
+
+      console.log('[Image Insertion Debug] Final content structure:', {
+        totalImages: (fullContent.match(/!\[.*?\]\(.*?\)/g) || []).length,
+        totalSections: fullContent.split(/^## /m).length
+      });
     }
 
     // Calculate word count
