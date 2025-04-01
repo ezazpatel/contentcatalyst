@@ -15,12 +15,43 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
+    console.log('[Storage Debug] Creating blog post with affiliate data:', {
+      affiliateLinksCount: post.affiliateLinks?.length || 0,
+      affiliateImagesCount: post.affiliateImages?.length || 0,
+      affiliateData: {
+        links: post.affiliateLinks,
+        images: post.affiliateImages?.map(img => ({
+          url: img.url,
+          affiliateUrl: img.affiliateUrl,
+          heading: img.heading
+        }))
+      }
+    });
+
     const [blogPost] = await db.insert(blogPosts).values(post).returning();
+    console.log('[Storage Debug] Created blog post with ID:', blogPost.id, {
+      storedAffiliateLinks: blogPost.affiliateLinks,
+      storedAffiliateImages: blogPost.affiliateImages
+    });
     return blogPost;
   }
 
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
     const [blogPost] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+
+    if (blogPost) {
+      console.log('[Storage Debug] Retrieved blog post affiliate data:', {
+        postId: id,
+        affiliateLinksData: blogPost.affiliateLinks,
+        affiliateImagesCount: (blogPost.affiliateImages || []).length,
+        affiliateImagesSample: (blogPost.affiliateImages || []).slice(0, 2).map(img => ({
+          url: img.url,
+          affiliateUrl: img.affiliateUrl,
+          heading: img.heading
+        }))
+      });
+    }
+
     return blogPost;
   }
 
@@ -29,11 +60,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost> {
+    console.log('[Storage Debug] Updating blog post affiliate data:', {
+      postId: id,
+      updatedAffiliateLinks: post.affiliateLinks,
+      updatedAffiliateImages: post.affiliateImages?.map(img => ({
+        url: img?.url,
+        affiliateUrl: img?.affiliateUrl,
+        productCode: img?.productCode
+      }))
+    });
+
     const [updated] = await db
       .update(blogPosts)
       .set(post)
       .where(eq(blogPosts.id, id))
       .returning();
+
+    console.log('[Storage Debug] Updated blog post:', {
+      postId: updated.id,
+      newAffiliateLinksCount: Object.keys(updated.affiliateLinks || {}).length,
+      newAffiliateImagesCount: (updated.affiliateImages || []).length
+    });
 
     if (!updated) {
       throw new Error("Post not found");
