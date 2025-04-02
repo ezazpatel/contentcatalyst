@@ -29,10 +29,12 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
       if (linkMatch) {
         const [_, linkText, affiliateUrl] = linkMatch;
 
-        // Find matching image by product code
-        const matchingImage = affiliateImages.find(img => 
-          img.affiliateUrl === affiliateUrl && img.productCode
-        );
+        // Find image with matching product code
+        const matchingImage = affiliateImages.find(img => {
+          if (!img.productCode) return false;
+          // Match product code from the affiliate URL
+          return affiliateUrl.includes(img.productCode);
+        });
 
         if (matchingImage?.productCode) {
           const count = productCodeOccurrences.get(matchingImage.productCode) || 0;
