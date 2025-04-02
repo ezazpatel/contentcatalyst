@@ -81,17 +81,23 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
               );
 
               if (matchingImage) {
-                console.log('[MarkdownRenderer] Found matching image:', {
+                console.log('[Image Placement] Found matching image for product:', {
                   productCode,
                   imageUrl: matchingImage.url,
-                  alt: matchingImage.alt
+                  alt: matchingImage.alt,
+                  currentHeading: line.match(/^#{1,6}\s+(.+)$/)?.[1] || 'No heading'
                 });
 
                 const count = productCodeOccurrences.get(productCode) || 0;
-                console.log('[MarkdownRenderer] Current occurrence count:', {
+                console.log('[Image Placement] Occurrence analysis:', {
                   productCode,
                   previousCount: count,
-                  newCount: count + 1
+                  newCount: count + 1,
+                  willInsertImage: count >= 1,
+                  surroundingContext: {
+                    currentLine: line,
+                    placement: count >= 1 ? 'After current line' : 'Waiting for second occurrence'
+                  }
                 });
 
                 productCodeOccurrences.set(productCode, count + 1);
