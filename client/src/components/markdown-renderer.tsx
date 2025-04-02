@@ -45,14 +45,16 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
     }
 
     // Process content line by line
-    let modifiedContent = content;
-
+    let modifiedContent = '';
+    let lastIndex = 0;
     const matches = [...content.matchAll(/\[([^\]]+)\]\((https?:\/\/[^\)]+viator\.com[^\)]*)\)/g)];
-    
+
     console.log('[DEBUG: All Viator Matches]', matches.map(m => m[2]));
 
-    for (const match of matches) {
+    matches.forEach(match => {
       const [fullMatch, linkText, url] = match;
+      const start = match.index!;
+      const end = start + fullMatch.length;
 
       try {
         const urlObj = new URL(url);
@@ -61,38 +63,29 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
         const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
         const productCode = codeMatch ? codeMatch[1] : null;
 
-        if (!productCode) continue;
+        if (!productCode) {
+          modifiedContent += content.slice(lastIndex, end);
+          lastIndex = end;
+          return;
+        }
 
         const count = productCodeOccurrences.get(productCode) || 0;
         productCodeOccurrences.set(productCode, count + 1);
 
-        console.log('[DEBUG: Link Match]', {
-          fullMatch,
-          linkText,
-          url
-        });
+        const imageToInsert = (count === 1 && productCodeToImage.has(productCode))
+          ? `\n\n![${productCodeToImage.get(productCode)!.alt || linkText}](${productCodeToImage.get(productCode)!.url})\n\n`
+          : '';
 
-        if (count === 1) { // skip first, inject after second
-          const matchingImage = affiliateImages.find(img => img.productCode === productCode);
-          const imageMarkdown = matchingImage ? `\n\n![${matchingImage.alt || linkText}](${matchingImage.url})\n\n` : '';
-          
-          console.log('[DEBUG: Image Insertion]', {
-            productCode,
-            currentOccurrence: count,
-            shouldInsert: count === 1,
-            imageUrl: matchingImage?.url,
-            imageMarkdown: imageMarkdown
-          });
-
-          if (matchingImage) {
-            // insert image *after* the second link
-            modifiedContent = modifiedContent.replace(fullMatch, `${fullMatch}${imageMarkdown}`);
-          }
-        }
+        modifiedContent += content.slice(lastIndex, end) + imageToInsert;
+        lastIndex = end;
       } catch (err) {
-        console.error('[Image Insertion Error]', err);
+        console.error('Error processing link:', err);
+        modifiedContent += content.slice(lastIndex, end);
+        lastIndex = end;
       }
-    }
+    });
+
+    modifiedContent += content.slice(lastIndex); // add remaining content
 
     console.log('[DEBUG] Final processedContent snippet:');
     console.log(modifiedContent.slice(0, 1000));
