@@ -1,6 +1,7 @@
 import { Anthropic } from "@anthropic-ai/sdk";
 import { storage } from "./storage";
 import { BlogPost } from "@shared/schema";
+import { convertMarkdownToHTML } from "src/utils/convertMarkdownToHTML";
 
 import {
   searchViatorProducts,
@@ -15,40 +16,6 @@ const client = new Anthropic({
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const ANTHROPIC_MODEL = "claude-3-7-sonnet-20250219";
 
-// Add a function to convert markdown to HTML
-function convertMarkdownToHTML(content: string): string {
-  // Convert headings, but skip h1 as it's reserved for the title
-  content = content.replace(/^## (.+)$/gm, "<h2>$1</h2>");
-  content = content.replace(/^### (.+)$/gm, "<h3>$1</h3>");
-
-  // Convert images
-  content = content.replace(
-    /!\[([^\]]*)\]\(([^)]+)\)/g,
-    '<img src="$2" alt="$1">',
-  );
-
-  // Convert links - matches [text](url) pattern
-  content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-
-  // Convert paragraphs - add proper spacing
-  content = content
-    .split("\n\n")
-    .map((para) => {
-      if (!para.trim()) return "";
-      if (
-        para.startsWith("<h") ||
-        para.startsWith("<img") ||
-        para.startsWith("<ul") ||
-        para.startsWith("<ol")
-      ) {
-        return para;
-      }
-      return `<p>${para}</p>`;
-    })
-    .join("\n\n");
-
-  return content;
-}
 
 async function findRelevantPosts(
   keyword: string,
@@ -872,12 +839,13 @@ export async function checkScheduledPosts() {
               ? `${apiUrl}/wp/v2/posts`
               : `${apiUrl}/wp/v2/posts`;
 
-            // Use the updatedPost data for WordPress
+            // Send raw markdown (let WordPress handle formatting or keep MarkdownRenderer in sync)
             const postData = {
               title: { raw: updatedPost.title },
               content: {
-                raw: convertMarkdownToHTML(updatedPost.content),
+                raw: convertMarkdownToHTML(updatedPost.content, updatedPost.affiliateImages),
               },
+
               status: "publish",
               excerpt: { raw: updatedPost.description || "" },
               meta: {
