@@ -98,13 +98,7 @@ export default function ViewPost() {
             })}
             <MarkdownRenderer
               content={post.content.replace(/^#\s+.*\n/, '')}
-              affiliateImages={post.affiliateImages?.map(img => ({
-                url: img.url,
-                alt: img.alt,
-                affiliateUrl: img.affiliateUrl,
-                heading: img.heading,
-                productCode: img.productCode // Explicitly include productCode
-              }))}
+              affiliateImages={post.affiliateImages}
             />
           </div>
 

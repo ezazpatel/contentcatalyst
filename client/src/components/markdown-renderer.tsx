@@ -16,37 +16,83 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRendererProps) {
   const processedContent = useMemo(() => {
-    if (!content || !affiliateImages?.length) return content;
+    console.log('[MarkdownRenderer] Starting content processing', {
+      contentLength: content?.length || 0,
+      availableImages: affiliateImages?.length || 0
+    });
 
-    // Create image lookup map
-    const imagesByCode = new Map(
-      affiliateImages.filter(isValidAffiliateImage).map(img => [img.productCode, img])
-    );
+    // Create maps to track product codes and their images
+    const productCodeToImage = new Map();
+    const productCodeOccurrences = new Map();
 
+    // Map product codes to their images
+    console.log('[MarkdownRenderer] Processing affiliate images:', affiliateImages);
+    affiliateImages.forEach(img => {
+      console.log('[MarkdownRenderer] Processing image:', {
+        productCode: img.productCode,
+        imageUrl: img.url,
+        alt: img.alt
+      });
+      if (img.productCode) {
+        productCodeToImage.set(img.productCode, img);
+      }
+    });
+
+    const availableCodes = Array.from(productCodeToImage.keys());
+    console.log('[MarkdownRenderer] Available product codes:', availableCodes);
+    if (availableCodes.length === 0) {
+      console.warn('[MarkdownRenderer] No product codes found in affiliate images');
+    }
+
+    // Process content line by line
     let modifiedContent = content;
-    const viatorLinks = [...content.matchAll(/\[([^\]]+)\]\((https?:\/\/[^\)]+viator\.com[^\)]*)\)/g)];
-    const occurrences = new Map<string, number>();
 
-    viatorLinks.forEach(([fullMatch, linkText, url]) => {
+    const matches = [...content.matchAll(/\[([^\]]+)\]\((https?:\/\/[^\)]+viator\.com[^\)]*)\)/g)];
+    
+    console.log('[DEBUG: All Viator Matches]', matches.map(m => m[2]));
+
+    for (const match of matches) {
+      const [fullMatch, linkText, url] = match;
+
       try {
         const urlObj = new URL(url);
-        const productCode = urlObj.pathname.split('/').pop()?.split('?')[0];
-        if (!productCode) return;
+        const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+        const lastSegment = pathSegments[pathSegments.length - 1];
+        const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
+        const productCode = codeMatch ? codeMatch[1] : null;
 
-        const count = occurrences.get(productCode) || 0;
-        occurrences.set(productCode, count + 1);
+        if (!productCode) continue;
 
-        if (count === 1) { // insert after 2nd appearance
-          const matchingImage = imagesByCode.get(productCode);
+        const count = productCodeOccurrences.get(productCode) || 0;
+        productCodeOccurrences.set(productCode, count + 1);
+
+        console.log('[DEBUG: Link Match]', {
+          fullMatch,
+          linkText,
+          url
+        });
+
+        if (count === 1) { // skip first, inject after second
+          const matchingImage = affiliateImages.find(img => img.productCode === productCode);
+          const imageMarkdown = matchingImage ? `\n\n![${matchingImage.alt || linkText}](${matchingImage.url})\n\n` : '';
+          
+          console.log('[DEBUG: Image Insertion]', {
+            productCode,
+            currentOccurrence: count,
+            shouldInsert: count === 1,
+            imageUrl: matchingImage?.url,
+            imageMarkdown: imageMarkdown
+          });
+
           if (matchingImage) {
-            const imageMarkdown = `\n\n![${matchingImage.alt || linkText}](${matchingImage.url})\n\n`;
+            // insert image *after* the second link
             modifiedContent = modifiedContent.replace(fullMatch, `${fullMatch}${imageMarkdown}`);
           }
         }
       } catch (err) {
-        console.error('Error processing link:', err);
+        console.error('[Image Insertion Error]', err);
       }
-    });
+    }
 
     console.log('[DEBUG] Final processedContent snippet:');
     console.log(modifiedContent.slice(0, 1000));
