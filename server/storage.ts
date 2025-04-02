@@ -38,23 +38,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const [blogPost] = await db.insert(blogPosts).values(post).returning();
       
-      console.log('[DB Success] Blog post created:', {
-        id: blogPost.id,
-        storedData: {
-          title: blogPost.title,
-          keywordsCount: blogPost.keywords.length,
-          hasContent: !!blogPost.content,
-          affiliateLinksCount: Object.keys(blogPost.affiliateLinks || {}).length,
-          affiliateImagesCount: (blogPost.affiliateImages || []).length,
-          scheduledFor: blogPost.scheduledDate
-        },
-        databaseSchema: {
-          affiliateLinks: 'JSONB DEFAULT {}',
-          affiliateImages: 'JSONB DEFAULT [] NOT NULL',
-          content: 'TEXT DEFAULT ""',
-          status: 'TEXT DEFAULT "draft" NOT NULL'
-        }
-      });
+      
 
       return blogPost;
     } catch (error) {

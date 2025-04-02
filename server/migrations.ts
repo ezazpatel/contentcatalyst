@@ -1,4 +1,3 @@
-
 import { db } from './db';
 import { blogPosts } from '@shared/schema';
 import { neon } from '@neondatabase/serverless';
@@ -37,7 +36,6 @@ export async function runMigrations() {
       `);
       console.log('Table created successfully');
     } else {
-      console.log('Table blog_posts already exists');
 
       // Check if wordpress_url column exists, and add it if it doesn't
       const wordpressUrlExists = await db.execute(`
@@ -57,7 +55,7 @@ export async function runMigrations() {
       } else {
         console.log('Column wordpress_url already exists');
       }
-      
+
       // Check if affiliate_links column exists, and add it if it doesn't
       const affiliateLinksExists = await db.execute(`
         SELECT EXISTS (
@@ -74,7 +72,6 @@ export async function runMigrations() {
         `);
         console.log('Column added successfully');
       } else {
-        console.log('Column affiliate_links already exists');
       }
     }
 
