@@ -66,8 +66,7 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
     });
 
     const modifiedContent = modifiedParagraphs.join('\n\n');
-    console.log('[DEBUG] Final processedContent snippet:');
-    console.log(modifiedContent.slice(0, 1000));
+    console.log('[IN-APP CONTENT]', modifiedContent.slice(0, 500));
     return modifiedContent;
   }, [content, affiliateImages]);
 

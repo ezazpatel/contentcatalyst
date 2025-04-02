@@ -287,6 +287,8 @@ export async function registerRoutes(app: Express) {
         content: req.body.content.slice(0, 500) + '...' // Log first 500 chars to avoid console flood
       });
 
+      console.log('[WORDPRESS FINAL CONTENT]', convertMarkdownToHTML(req.body.content).slice(0, 500));
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
