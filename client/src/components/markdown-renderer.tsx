@@ -82,13 +82,12 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
   }, [content, affiliateImages]);
 
   return (
-    <div className="prose prose-lg max-w-none">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw]}
-      >
-        {processedContent}
-      </ReactMarkdown>
-    </div>
+    <ReactMarkdown
+      className="prose prose-lg max-w-none prose-img:max-w-full prose-img:mx-auto"
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeRaw]}
+    >
+      {processedContent}
+    </ReactMarkdown>
   );
 }
