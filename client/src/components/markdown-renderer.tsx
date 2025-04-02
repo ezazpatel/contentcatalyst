@@ -46,6 +46,12 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
             });
 
             if (productCode) {
+              console.log(`[MarkdownRenderer Debug] Processing productCode:`, {
+                productCode,
+                matchingImages: affiliateImages.filter(img => img.productCode === productCode).length,
+                totalImages: affiliateImages.length
+              });
+
               // Find matching image by product code from our stored affiliateImages
               const matchingImage = affiliateImages.find(img => 
                 img.productCode === productCode
@@ -55,8 +61,11 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
                 const count = productCodeOccurrences.get(productCode) || 0;
                 productCodeOccurrences.set(productCode, count + 1);
 
+                console.log(`[MarkdownRenderer] Found productCode: ${productCode}, occurrence: ${count + 1}`);
+
                 // Add image after second occurrence of affiliate link
                 if (count >= 1) {
+                  console.log(`[MarkdownRenderer] Inserting image for productCode: ${productCode}`);
                   return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
                 }
               }
