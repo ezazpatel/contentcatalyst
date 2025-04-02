@@ -55,6 +55,12 @@ export default function ViewPost() {
     );
   }
 
+  console.log('[DEBUG: Post Data]', {
+    id: post?.id,
+    title: post?.title,
+    affiliateImages: post?.affiliateImages
+  });
+
   const imageMatches = post.content?.match(/!\[([^\]]*)\]\(([^)]+)\)/g) || [];
 
   console.log('[Image Debug]', {
