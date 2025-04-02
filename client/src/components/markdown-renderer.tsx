@@ -4,6 +4,11 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import type { AffiliateImage } from '@shared/schema';
 
+// Verify affiliate image structure
+const isValidAffiliateImage = (img: AffiliateImage): boolean => {
+  return !!img && typeof img === 'object' && 'productCode' in img && !!img.productCode;
+};
+
 interface MarkdownRendererProps {
   content: string;
   affiliateImages?: AffiliateImage[];
@@ -21,21 +26,23 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
     const productCodeOccurrences = new Map();
 
     // Map product codes to their images
-    console.log('[MarkdownRenderer] Processing affiliate images');
+    console.log('[MarkdownRenderer] Processing affiliate images:', affiliateImages);
     affiliateImages.forEach(img => {
+      console.log('[MarkdownRenderer] Processing image:', {
+        productCode: img.productCode,
+        imageUrl: img.url,
+        alt: img.alt
+      });
       if (img.productCode) {
-        console.log('[MarkdownRenderer] Mapping image to product code:', {
-          productCode: img.productCode,
-          imageUrl: img.url,
-          alt: img.alt
-        });
         productCodeToImage.set(img.productCode, img);
       }
     });
 
-    console.log('[MarkdownRenderer] Available product codes:', 
-      Array.from(productCodeToImage.keys())
-    );
+    const availableCodes = Array.from(productCodeToImage.keys());
+    console.log('[MarkdownRenderer] Available product codes:', availableCodes);
+    if (availableCodes.length === 0) {
+      console.warn('[MarkdownRenderer] No product codes found in affiliate images');
+    }
 
     // Process content line by line
     let modifiedContent = content;
