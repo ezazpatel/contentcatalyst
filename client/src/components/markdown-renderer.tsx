@@ -11,13 +11,13 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRendererProps) {
   const processedContent = useMemo(() => {
-    // Create maps for product codes
+    // Create maps to track product codes and their images
     const productCodeToImage = new Map();
     const productCodeOccurrences = new Map();
 
     // Map product codes to their images
     affiliateImages.forEach(img => {
-      if (img.productCode && img.url) {
+      if (img.productCode) {
         productCodeToImage.set(img.productCode, img);
       }
     });
@@ -38,8 +38,8 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
           const count = productCodeOccurrences.get(matchingImage.productCode) || 0;
           productCodeOccurrences.set(matchingImage.productCode, count + 1);
 
-          // Only add image after second occurrence (skip first)
-          if (count === 1) {
+          // Skip the first occurrence of each product code
+          if (count >= 1) {
             return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
           }
         }
