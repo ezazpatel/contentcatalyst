@@ -57,15 +57,25 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
         const count = productCodeOccurrences.get(productCode) || 0;
         productCodeOccurrences.set(productCode, count + 1);
 
+        console.log('[DEBUG: Link Match]', {
+          fullMatch,
+          linkText,
+          url
+        });
+
         if (count === 1) { // skip first, inject after second
           const matchingImage = affiliateImages.find(img => img.productCode === productCode);
+          const imageMarkdown = matchingImage ? `\n\n![${matchingImage.alt || linkText}](${matchingImage.url})\n\n` : '';
+          
+          console.log('[DEBUG: Image Insertion]', {
+            productCode,
+            currentOccurrence: count,
+            shouldInsert: count === 1,
+            imageUrl: matchingImage?.url,
+            imageMarkdown: imageMarkdown
+          });
+
           if (matchingImage) {
-            console.log('[Image Placement] Inserting image after second occurrence:', {
-              productCode,
-              imageUrl: matchingImage.url,
-              alt: matchingImage.alt
-            });
-            const imageMarkdown = `\n\n![${matchingImage.alt || linkText}](${matchingImage.url})\n\n`;
             // insert image *after* the second link
             modifiedContent = modifiedContent.replace(fullMatch, `${fullMatch}${imageMarkdown}`);
           }
