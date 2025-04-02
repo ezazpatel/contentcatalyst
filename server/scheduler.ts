@@ -130,13 +130,23 @@ async function generateContent(
     })
   );
 
-  // Find relevant internal links
+  // Find relevant published posts with WordPress URLs
   const allPosts = await storage.getAllBlogPosts();
-  const internalLinks = await findRelevantPosts(keywords.join(" "), allPosts);
+  const publishedPosts = allPosts.filter(post => 
+    post.status === "published" && 
+    post.wordpressUrl &&
+    post.keywords.some(k => keywords.some(keyword => 
+      k.toLowerCase().includes(keyword.toLowerCase()) ||
+      keyword.toLowerCase().includes(k.toLowerCase())
+    ))
+  ).slice(0, 3);
 
-  // Add the found links to the post object
+  // Add only affiliate links to post object
   post.affiliateLinks = validAffiliateLinks;
-  post.internalLinks = internalLinks;
+  post.relatedPosts = publishedPosts.map(p => ({
+    title: p.title,
+    url: p.wordpressUrl
+  }));
 
   try {
     console.log("Step 1: Generating title and outline...");
@@ -151,10 +161,12 @@ ${post.description}`
 }
 
 ${
-  Array.isArray(post.internalLinks) && post.internalLinks.length > 0
+  Array.isArray(post.relatedPosts) && post.relatedPosts.length > 0
     ? `
-Important: This article should reference these related articles from our blog:
-${post.internalLinks.map((link) => `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ""}`).join("\n")}`
+Important: This article should reference these related published articles:
+${post.relatedPosts.map((link) => `- [${link.title}](${link.url})`).join("\n")}
+- Include these links naturally within the content where relevant
+- Present them as "related reading" or "learn more" references`
     : ""
 }
 
