@@ -54,48 +54,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getBlogPost(id: number): Promise<BlogPost | undefined> {
-    console.log('[DB Query] Fetching blog post:', {
-      operation: 'SELECT',
-      table: 'blog_posts',
-      condition: `id = ${id}`,
-      sql: 'SELECT * FROM blog_posts WHERE id = $1'
-    });
-
     try {
       const [blogPost] = await db.select()
         .from(blogPosts)
         .where(eq(blogPosts.id, id));
-
-      if (blogPost) {
-        console.log('[DB Success] Blog post retrieved:', {
-          id: blogPost.id,
-          dataStructure: {
-            title: blogPost.title,
-            contentLength: blogPost.content?.length || 0,
-            status: blogPost.status,
-            keywordsArray: `${blogPost.keywords?.length || 0} keywords`,
-            affiliateLinksObject: typeof blogPost.affiliateLinks,
-            affiliateImagesArray: typeof blogPost.affiliateImages
-          },
-          relationships: {
-            affiliateLinks: {
-              type: 'JSONB',
-              count: Object.keys(blogPost.affiliateLinks || {}).length,
-              sample: Object.keys(blogPost.affiliateLinks || {}).slice(0, 2)
-            },
-            affiliateImages: {
-              type: 'JSONB[]',
-              count: (blogPost.affiliateImages || []).length,
-              sampleStructure: (blogPost.affiliateImages || []).slice(0, 1).map(img => ({
-                fields: Object.keys(img || {})
-              }))
-            }
-          }
-        });
-      } else {
-        console.log('[DB Info] No blog post found with ID:', id);
-      }
-
       return blogPost;
     } catch (error) {
       console.error('[DB Error] Failed to fetch blog post:', {
