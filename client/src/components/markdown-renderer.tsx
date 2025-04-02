@@ -20,7 +20,7 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
 
     // Create image lookup map
     const imagesByCode = new Map(
-      affiliateImages.map(img => [img.productCode, img])
+      affiliateImages.filter(isValidAffiliateImage).map(img => [img.productCode, img])
     );
 
     let modifiedContent = content;
