@@ -59,7 +59,7 @@ async function generateContent(
   let validProducts: any[] = [];
 
   try {
-    const viatorProducts = await searchViatorProducts(keywords.join(" "), 10);
+    const viatorProducts = await searchViatorProducts(keywords.join(" "), 7);
     validProducts = Array.isArray(viatorProducts) ? viatorProducts : [];
     console.log("Found Viator products:", validProducts.length);
   } catch (error) {

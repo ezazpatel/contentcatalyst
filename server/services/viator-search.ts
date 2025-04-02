@@ -32,6 +32,9 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         pagination: {
           start: 1,
           count: Math.min(limit, 50)
+        },
+        filters: {
+          destinations: ["Canada"]
         }
       }]
     };
