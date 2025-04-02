@@ -1,0 +1,65 @@
+There is a mismatch between logic and result
+According to the logs:
+
+The logic is correctly identifying when it's the second occurrence of a product code.
+
+It builds the right image markdown and even logs the correct image URL + productCode + imageMarkdown.
+
+But... images are showing up after the first occurrence instead of the second — or not at all.
+
+This suggests one of two likely causes:
+
+🔍 Possibility 1: String.prototype.replace replaces only the first matching instance
+In your current logic:
+
+ts
+Copy
+Edit
+modifiedContent = modifiedContent.replace(fullMatch, `${fullMatch}${imageMarkdown}`);
+This replaces only the first occurrence of fullMatch in the entire content string — even if the match object came from a later occurrence.
+
+That would explain:
+
+Why images sometimes show after the first match, not the second.
+
+Why some images don't appear at all — because .replace() already modified the first and doesn’t touch later ones (especially if fullMatch appears identically again).
+
+🛠 Fix Suggestion
+To correctly insert the image after the second occurrence, you need to:
+
+Track the position (index) of each match in the string.
+
+Use something like split + join or reconstruct the string manually rather than doing .replace() on fullMatch.
+
+Here’s a rough idea:
+
+ts
+Copy
+Edit
+let modifiedContent = '';
+let lastIndex = 0;
+
+matches.forEach(match => {
+  const [fullMatch, linkText, url] = match;
+  const start = match.index!;
+  const end = start + fullMatch.length;
+
+  const urlObj = new URL(url);
+  const productCode = urlObj.pathname.split('/').pop()?.split('?')[0];
+  if (!productCode) return;
+
+  const count = occurrences.get(productCode) || 0;
+  occurrences.set(productCode, count + 1);
+
+  const imageToInsert = (count === 1 && imagesByCode.has(productCode))
+    ? `\n\n![${linkText}](${imagesByCode.get(productCode)!.url})\n\n`
+    : '';
+
+  // append chunk from lastIndex to current match
+  modifiedContent += content.slice(lastIndex, end) + imageToInsert;
+  lastIndex = end;
+});
+
+modifiedContent += content.slice(lastIndex); // add the rest
+This guarantees image insertion is tied to position, not content-based .replace(), which is where you're likely running into unexpected behavior.
+
