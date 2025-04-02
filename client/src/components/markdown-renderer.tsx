@@ -32,6 +32,7 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
         
         // Only process Viator affiliate URLs
         if (url.includes('viator.com')) {
+          // Extract product code from URL using the same logic as viator-api.ts
           try {
             const urlObj = new URL(url);
             const pathSegments = urlObj.pathname.split('/').filter(Boolean);
@@ -39,27 +40,26 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
             const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
             const productCode = codeMatch ? codeMatch[1] : null;
 
-            console.log('[Product Code Debug]', {
-              url,
-              lastSegment,
-              extractedCode: productCode,
-              matchResult: codeMatch
-            });
+          console.log('[Product Code Debug]', {
+            url,
+            lastSegment,
+            extractedCode: productCode,
+            matchResult: codeMatch
+          });
 
-            if (productCode) {
-              // Find matching image by exact product code
-              const matchingImage = affiliateImages.find(img => 
-                img.productCode && img.productCode === productCode
-              );
+          if (productCode) {
+            // Find matching image by exact product code
+            const matchingImage = affiliateImages.find(img => 
+              img.productCode && img.productCode === productCode
+            );
 
-              if (matchingImage) {
-                const count = productCodeOccurrences.get(productCode) || 0;
-                productCodeOccurrences.set(productCode, count + 1);
+            if (matchingImage) {
+              const count = productCodeOccurrences.get(productCode) || 0;
+              productCodeOccurrences.set(productCode, count + 1);
 
-                // Add image after second occurrence of affiliate link
-                if (count >= 1) {
-                  return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
-                }
+              // Add image after second occurrence of affiliate link
+              if (count >= 1) {
+                return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
               }
             }
           } catch (error) {
