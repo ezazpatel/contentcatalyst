@@ -56,36 +56,36 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
       const start = match.index!;
       const end = start + fullMatch.length;
 
+      // Extract product code
+      let productCode = '';
       try {
         const urlObj = new URL(url);
-        const pathSegments = urlObj.pathname.split('/').filter(Boolean);
-        const lastSegment = pathSegments[pathSegments.length - 1];
+        const lastSegment = urlObj.pathname.split('/').filter(Boolean).pop() || '';
         const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
-        const productCode = codeMatch ? codeMatch[1] : null;
+        productCode = codeMatch?.[1] || '';
+      } catch (e) {
+        console.warn('Skipping bad URL:', url);
+      }
 
-        if (!productCode) {
-          modifiedContent += content.slice(lastIndex, end);
-          lastIndex = end;
-          return;
-        }
+      // Always include the current chunk
+      modifiedContent += content.slice(lastIndex, end);
 
+      // Image insertion logic
+      if (productCode) {
         const count = productCodeOccurrences.get(productCode) || 0;
         productCodeOccurrences.set(productCode, count + 1);
 
-        const imageToInsert = (count === 1 && productCodeToImage.has(productCode))
-          ? `\n\n![${productCodeToImage.get(productCode)!.alt || linkText}](${productCodeToImage.get(productCode)!.url})\n\n`
-          : '';
-
-        modifiedContent += content.slice(lastIndex, end) + imageToInsert;
-        lastIndex = end;
-      } catch (err) {
-        console.error('Error processing link:', err);
-        modifiedContent += content.slice(lastIndex, end);
-        lastIndex = end;
+        if (count === 1 && productCodeToImage.has(productCode)) {
+          const image = productCodeToImage.get(productCode)!;
+          const imageMarkdown = `\n\n![${image.alt || linkText}](${image.url})\n\n`;
+          modifiedContent += imageMarkdown;
+        }
       }
+
+      lastIndex = end;
     });
 
-    modifiedContent += content.slice(lastIndex); // add remaining content
+    modifiedContent += content.slice(lastIndex);
 
     console.log('[DEBUG] Final processedContent snippet:');
     console.log(modifiedContent.slice(0, 1000));
