@@ -110,16 +110,6 @@ async function generateContent(
       const bestVariant = sortedVariants[0];
       const imageUrl = bestVariant?.url || img.url;
 
-      console.log('[Image Variant Processing]', {
-        productCode: link.productCode,
-        variantsCount: sortedVariants.length,
-        selectedVariant: bestVariant ? {
-          url: bestVariant.url,
-          resolution: `${bestVariant.width}x${bestVariant.height}`
-        } : 'none',
-        fallbackUrl: img.url
-      });
-
       return {
         url: imageUrl,
         alt: img.alt || link.name,
@@ -889,6 +879,7 @@ export async function checkScheduledPosts() {
             console.log(
               `✅ Successfully published post ID ${post.id} to WordPress: ${result.link}`,
             );
+            console.log(`WordPress URL for post ID ${post.id}: ${result.link}`); // Added logging
 
             // Update the post with WordPress URL
             if (result.link) {
