@@ -32,11 +32,13 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
         
         // Only process Viator affiliate URLs
         if (url.includes('viator.com')) {
-          // Extract product code using consistent logic
-          const urlParts = url.split('/').filter(Boolean);
-          const lastSegment = urlParts[urlParts.length - 1];
-          const codeMatch = lastSegment.match(/(?:d\d+-)?(.+?)(?:\.html)?$/);
-          const productCode = codeMatch?.[1];
+          // Extract product code from URL using the same logic as viator-api.ts
+          try {
+            const urlObj = new URL(url);
+            const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+            const lastSegment = pathSegments[pathSegments.length - 1];
+            const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
+            const productCode = codeMatch ? codeMatch[1] : null;
 
           console.log('[Product Code Debug]', {
             url,
@@ -60,6 +62,8 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
                 return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
               }
             }
+          } catch (error) {
+            console.error('Error parsing URL:', error);
           }
         }
       }
