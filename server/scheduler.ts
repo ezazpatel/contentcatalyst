@@ -879,13 +879,20 @@ export async function checkScheduledPosts() {
             console.log(
               `✅ Successfully published post ID ${post.id} to WordPress: ${result.link}`,
             );
-            console.log(`WordPress URL for post ID ${post.id}: ${result.link}`); // Added logging
+            console.log('WordPress URL Details:', {
+              postId: post.id,
+              title: post.title,
+              url: result.link,
+              timestamp: new Date().toISOString()
+            });
 
             // Update the post with WordPress URL
             if (result.link) {
+              console.log(`[WordPress URL Update] Starting database update for post ${post.id}`);
               await storage.updateBlogPost(post.id, {
                 wordpressUrl: result.link,
               });
+              console.log(`[WordPress URL Update] Successfully saved URL ${result.link} for post ${post.id}`);
             }
           } catch (wpError) {
             console.error(
