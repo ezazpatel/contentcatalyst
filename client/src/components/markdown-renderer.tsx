@@ -38,98 +38,45 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
     );
 
     // Process content line by line
-    return content.split('\n').map(line => {
-      // Check for affiliate URL markdown pattern [text](url)
-      const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-      if (linkMatch) {
-        const [_, linkText, url] = linkMatch;
+    let modifiedContent = content;
+    const productCodeOccurrences = new Map();
 
-        // Only process Viator affiliate URLs
-        if (url.includes('viator.com')) {
-          try {
-            console.log('[MarkdownRenderer] Processing URL:', url);
-            const urlObj = new URL(url);
-            const pathSegments = urlObj.pathname.split('/').filter(Boolean);
-            console.log('[MarkdownRenderer] URL segments:', pathSegments);
-            
-            const lastSegment = pathSegments[pathSegments.length - 1];
-            console.log('[MarkdownRenderer] Last segment:', lastSegment);
-            
-            const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
-            console.log('[MarkdownRenderer] Code match result:', codeMatch);
-            
-            const productCode = codeMatch ? codeMatch[1] : null;
-            console.log('[MarkdownRenderer] Extracted product code:', productCode);
+    const matches = [...content.matchAll(/\[([^\]]+)\]\((https?:\/\/[^\)]+viator\.com[^\)]*)\)/g)];
 
-            console.log('[Product Code Debug]', {
-              url,
-              lastSegment,
-              extractedCode: productCode,
-              matchResult: codeMatch
+    for (const match of matches) {
+      const [fullMatch, linkText, url] = match;
+
+      try {
+        const urlObj = new URL(url);
+        const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+        const lastSegment = pathSegments[pathSegments.length - 1];
+        const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
+        const productCode = codeMatch ? codeMatch[1] : null;
+
+        if (!productCode) continue;
+
+        const count = productCodeOccurrences.get(productCode) || 0;
+        productCodeOccurrences.set(productCode, count + 1);
+
+        if (count === 1) { // skip first, inject after second
+          const matchingImage = affiliateImages.find(img => img.productCode === productCode);
+          if (matchingImage) {
+            console.log('[Image Placement] Inserting image after second occurrence:', {
+              productCode,
+              imageUrl: matchingImage.url,
+              alt: matchingImage.alt
             });
-
-            if (productCode) {
-              console.log(`[MarkdownRenderer Debug] Processing productCode:`, {
-                productCode,
-                matchingImages: affiliateImages.filter(img => img.productCode === productCode).length,
-                totalImages: affiliateImages.length
-              });
-
-              // Find matching image by product code from our stored affiliateImages
-              const matchingImage = affiliateImages.find(img => 
-                img.productCode === productCode
-              );
-
-              if (matchingImage) {
-                console.log('[Image Placement] Found matching image for product:', {
-                  productCode,
-                  imageUrl: matchingImage.url,
-                  alt: matchingImage.alt,
-                  currentHeading: line.match(/^#{1,6}\s+(.+)$/)?.[1] || 'No heading'
-                });
-
-                const count = productCodeOccurrences.get(productCode) || 0;
-                console.log('[Image Placement] Occurrence analysis:', {
-                  productCode,
-                  previousCount: count,
-                  newCount: count + 1,
-                  willInsertImage: count >= 1,
-                  surroundingContext: {
-                    currentLine: line,
-                    placement: count >= 1 ? 'After current line' : 'Waiting for second occurrence'
-                  }
-                });
-
-                productCodeOccurrences.set(productCode, count + 1);
-
-                if (count >= 1) {
-                  console.log('[MarkdownRenderer] Inserting image:', {
-                    productCode,
-                    occurrence: count + 1,
-                    line: line,
-                    imageMarkdown: `![${matchingImage.alt || linkText}](${matchingImage.url})`
-                  });
-                  return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
-                } else {
-                  console.log('[MarkdownRenderer] Skipping image insertion:', {
-                    productCode,
-                    occurrence: count + 1,
-                    reason: 'Not second occurrence yet'
-                  });
-                }
-              } else {
-                console.log('[MarkdownRenderer] No matching image found for product code:', productCode);
-              }
-            }
-          } catch (error) {
-            console.error('Error processing affiliate URL:', error);
-          } finally {
-            // Always continue processing the next line even if there's an error
+            const imageMarkdown = `\n\n![${matchingImage.alt || linkText}](${matchingImage.url})\n\n`;
+            // insert image *after* the second link
+            modifiedContent = modifiedContent.replace(fullMatch, `${fullMatch}${imageMarkdown}`);
           }
         }
+      } catch (err) {
+        console.error('[Image Insertion Error]', err);
       }
-      return line;
-    }).join('\n');
+    }
+
+    return modifiedContent;
   }, [content, affiliateImages]);
 
   return (
