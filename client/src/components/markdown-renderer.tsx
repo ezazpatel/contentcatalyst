@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -58,15 +59,6 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
               if (count >= 1) {
                 return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
               }
-            }
-          }
-        }
-      }
-      return line;
-
-            // Add image after second occurrence of affiliate link
-            if (count >= 1) {
-              return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
             }
           }
         }
