@@ -46,3 +46,15 @@ export async function withRetry<T>(operation: () => Promise<T>, retries = 3): Pr
     throw error;
   }
 }
+
+async getBlogPost(id: number): Promise<BlogPost | undefined> {
+    try {
+      const [blogPost] = await db.select()
+        .from(blogPosts)
+        .where(eq(blogPosts.id, id));
+      return blogPost;
+    } catch (error) {
+        console.error("Error fetching blog post:", error);
+        throw error;
+    }
+}
