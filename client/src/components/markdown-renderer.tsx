@@ -32,6 +32,12 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
         // Extract product code from URL
         const productCodeMatch = affiliateUrl.match(/[-/]([A-Z0-9]+)(?:\.html|$)/);
         const productCode = productCodeMatch?.[1];
+        
+        console.log('[Product Code Debug]', {
+          affiliateUrl,
+          extractedCode: productCode,
+          matchResult: productCodeMatch
+        });
 
         if (productCode) {
           // Find matching image by exact product code
