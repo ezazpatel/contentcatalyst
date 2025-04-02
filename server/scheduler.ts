@@ -836,6 +836,7 @@ export async function checkScheduledPosts() {
         );
 
         // Update the post with generated content and images
+        console.log("Saving images with product codes:", generated.images);
         const updatedPost = await storage.updateBlogPost(post.id, {
           title: generated.title,
           content: generated.content,
