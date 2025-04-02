@@ -28,7 +28,7 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
       const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
       if (linkMatch) {
         const [_, linkText, url] = linkMatch;
-        
+
         // Only process Viator affiliate URLs
         if (url.includes('viator.com')) {
           try {
@@ -40,25 +40,31 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
 
             console.log('[Product Code Debug]', {
               url,
-            lastSegment,
-            extractedCode: productCode,
-            matchResult: codeMatch
-          });
+              lastSegment,
+              extractedCode: productCode,
+              matchResult: codeMatch
+            });
 
-          if (productCode) {
-            // Find matching image by exact product code
-            const matchingImage = affiliateImages.find(img => 
-              img.productCode && img.productCode === productCode
-            );
+            if (productCode) {
+              // Find matching image by exact product code
+              const matchingImage = affiliateImages.find(img => 
+                img.productCode && img.productCode === productCode
+              );
 
-            if (matchingImage) {
-            const count = productCodeOccurrences.get(productCode) || 0;
-            productCodeOccurrences.set(productCode, count + 1);
+              if (matchingImage) {
+                const count = productCodeOccurrences.get(productCode) || 0;
+                productCodeOccurrences.set(productCode, count + 1);
 
-            // Add image after second occurrence of affiliate link
-            if (count >= 1) {
-              return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
+                // Add image after second occurrence of affiliate link
+                if (count >= 1) {
+                  return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
+                }
+              }
             }
+          } catch (error) {
+            console.error('Error processing affiliate URL:', error);
+          } finally {
+            // Always continue processing the next line even if there's an error
           }
         }
       }
