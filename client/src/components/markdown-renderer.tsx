@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,10 +11,11 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRendererProps) {
   const processedContent = useMemo(() => {
-    // Create a map of product codes to their images
+    // Create maps for product codes
     const productCodeToImage = new Map();
     const productCodeOccurrences = new Map();
 
+    // Map product codes to their images
     affiliateImages.forEach(img => {
       if (img.productCode && img.url) {
         productCodeToImage.set(img.productCode, img);
@@ -27,16 +27,18 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
       // Check for affiliate URL markdown pattern [text](url)
       const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
       if (linkMatch) {
-        const [fullMatch, linkText, affiliateUrl] = linkMatch;
-        
-        // Find the image that has this affiliate URL
-        const matchingImage = affiliateImages.find(img => img.affiliateUrl === affiliateUrl);
-        
+        const [_, linkText, affiliateUrl] = linkMatch;
+
+        // Find matching image by product code
+        const matchingImage = affiliateImages.find(img => 
+          img.affiliateUrl === affiliateUrl && img.productCode
+        );
+
         if (matchingImage?.productCode) {
           const count = productCodeOccurrences.get(matchingImage.productCode) || 0;
           productCodeOccurrences.set(matchingImage.productCode, count + 1);
 
-          // If this is the second occurrence of this product code
+          // Only add image after second occurrence (skip first)
           if (count === 1) {
             return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
           }
