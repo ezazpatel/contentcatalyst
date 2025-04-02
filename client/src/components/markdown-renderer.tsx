@@ -29,20 +29,22 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
       if (linkMatch) {
         const [_, linkText, affiliateUrl] = linkMatch;
 
-        // Find image with matching product code
-        const matchingImage = affiliateImages.find(img => {
-          if (!img.productCode) return false;
-          // Match product code from the affiliate URL
-          return affiliateUrl.includes(img.productCode);
-        });
+        // Extract product code from URL
+        const productCodeMatch = affiliateUrl.match(/[-/]([A-Z0-9]+)(?:\.html|$)/);
+        const productCode = productCodeMatch?.[1];
 
-        if (matchingImage?.productCode) {
-          const count = productCodeOccurrences.get(matchingImage.productCode) || 0;
-          productCodeOccurrences.set(matchingImage.productCode, count + 1);
+        if (productCode) {
+          // Find matching image by exact product code
+          const matchingImage = affiliateImages.find(img => img.productCode === productCode);
 
-          // Skip the first occurrence of each product code
-          if (count >= 1) {
-            return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
+          if (matchingImage) {
+            const count = productCodeOccurrences.get(productCode) || 0;
+            productCodeOccurrences.set(productCode, count + 1);
+
+            // Add image after second occurrence of affiliate link
+            if (count >= 1) {
+              return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
+            }
           }
         }
       }
