@@ -92,6 +92,10 @@ export default function ViewPost() {
       <Card>
         <CardContent className="pt-6">
           <div className="prose prose-lg max-w-none prose-img:max-w-full prose-img:mx-auto prose-img:rounded-lg">
+            {console.log('[DEBUG: Props to MarkdownRenderer]', {
+              content: post.content?.slice(0, 500),
+              affiliateImages: post.affiliateImages
+            })}
             <MarkdownRenderer
               content={post.content.replace(/^#\s+.*\n/, '')}
               affiliateImages={post.affiliateImages}
