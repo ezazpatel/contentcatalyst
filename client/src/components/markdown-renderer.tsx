@@ -51,8 +51,18 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
             );
 
             if (matchingImage) {
-            const count = productCodeOccurrences.get(productCode) || 0;
-            productCodeOccurrences.set(productCode, count + 1);
+              const count = productCodeOccurrences.get(productCode) || 0;
+              productCodeOccurrences.set(productCode, count + 1);
+
+              // Add image after second occurrence of affiliate link
+              if (count >= 1) {
+                return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
+              }
+            }
+          }
+        }
+      }
+      return line;
 
             // Add image after second occurrence of affiliate link
             if (count >= 1) {
