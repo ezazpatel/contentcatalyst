@@ -74,6 +74,7 @@ export async function registerRoutes(app: Express) {
           alt: img.caption || '',
           affiliateUrl: img.affiliateUrl || '',
           heading: img.heading || '',
+          productCode: img.productCode || '',
         };
       });
     }
