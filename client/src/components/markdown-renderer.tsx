@@ -75,6 +75,8 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
       }
     }
 
+    console.log('[DEBUG] Final processedContent snippet:');
+    console.log(modifiedContent.slice(0, 1000));
     return modifiedContent;
   }, [content, affiliateImages]);
 
