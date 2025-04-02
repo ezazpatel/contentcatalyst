@@ -282,6 +282,11 @@ export async function registerRoutes(app: Express) {
         }
       });
 
+      console.log('[Publish Debug] Content being published:', {
+        title: req.body.title,
+        content: req.body.content.slice(0, 500) + '...' // Log first 500 chars to avoid console flood
+      });
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
