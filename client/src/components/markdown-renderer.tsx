@@ -39,7 +39,6 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
 
     // Process content line by line
     let modifiedContent = content;
-    const productCodeOccurrences = new Map();
 
     const matches = [...content.matchAll(/\[([^\]]+)\]\((https?:\/\/[^\)]+viator\.com[^\)]*)\)/g)];
 
