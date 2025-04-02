@@ -47,7 +47,7 @@ export async function withRetry<T>(operation: () => Promise<T>, retries = 3): Pr
   }
 }
 
-async getBlogPost(id: number): Promise<BlogPost | undefined> {
+const getBlogPost = async (id: number): Promise<BlogPost | undefined> => {
     try {
       const [blogPost] = await db.select()
         .from(blogPosts)
@@ -57,4 +57,4 @@ async getBlogPost(id: number): Promise<BlogPost | undefined> {
         console.error("Error fetching blog post:", error);
         throw error;
     }
-}
+};
