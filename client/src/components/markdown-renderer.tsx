@@ -46,10 +46,9 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
             });
 
             if (productCode) {
-              // Find matching image by exact product code and affiliate URL
+              // Find matching image by product code from our stored affiliateImages
               const matchingImage = affiliateImages.find(img => 
-                img.affiliateUrl && 
-                img.affiliateUrl.includes(productCode)
+                img.productCode === productCode
               );
 
               if (matchingImage) {
