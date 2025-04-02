@@ -31,14 +31,15 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
         
         // Only process Viator affiliate URLs
         if (url.includes('viator.com')) {
-          // Extract product code using consistent logic
-          const urlParts = url.split('/').filter(Boolean);
-          const lastSegment = urlParts[urlParts.length - 1];
-          const codeMatch = lastSegment.match(/(?:d\d+-)?(.+?)(?:\.html)?$/);
-          const productCode = codeMatch?.[1];
+          try {
+            const urlObj = new URL(url);
+            const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+            const lastSegment = pathSegments[pathSegments.length - 1];
+            const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
+            const productCode = codeMatch ? codeMatch[1] : null;
 
-          console.log('[Product Code Debug]', {
-            url,
+            console.log('[Product Code Debug]', {
+              url,
             lastSegment,
             extractedCode: productCode,
             matchResult: codeMatch
