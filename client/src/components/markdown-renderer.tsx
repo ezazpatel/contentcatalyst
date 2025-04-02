@@ -4,11 +4,6 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import type { AffiliateImage } from '@shared/schema';
 
-// Verify affiliate image structure
-const isValidAffiliateImage = (img: AffiliateImage): boolean => {
-  return !!img && typeof img === 'object' && 'productCode' in img && !!img.productCode;
-};
-
 interface MarkdownRendererProps {
   content: string;
   affiliateImages?: AffiliateImage[];
@@ -21,72 +16,56 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
       availableImages: affiliateImages?.length || 0
     });
 
-    // Create maps to track product codes and their images
-    const productCodeToImage = new Map();
-    const productCodeOccurrences = new Map();
-
-    // Map product codes to their images
-    console.log('[MarkdownRenderer] Processing affiliate images:', affiliateImages);
+    const productCodeToImage = new Map<string, AffiliateImage>();
     affiliateImages.forEach(img => {
-      console.log('[MarkdownRenderer] Processing image:', {
-        productCode: img.productCode,
-        imageUrl: img.url,
-        alt: img.alt
-      });
       if (img.productCode) {
         productCodeToImage.set(img.productCode, img);
       }
     });
 
-    const availableCodes = Array.from(productCodeToImage.keys());
-    console.log('[MarkdownRenderer] Available product codes:', availableCodes);
-    if (availableCodes.length === 0) {
-      console.warn('[MarkdownRenderer] No product codes found in affiliate images');
-    }
+    const productCodeOccurrences = new Map<string, number>();
+    const paragraphs = content.split(/\n{2,}/);
+    const modifiedParagraphs: string[] = [];
 
-    // Process content line by line
-    let modifiedContent = '';
-    let lastIndex = 0;
-    const matches = [...content.matchAll(/\[([^\]]+)\]\((https?:\/\/[^\)]+viator\.com[^\)]*)\)/g)];
+    paragraphs.forEach((paragraph) => {
+      const matches = [...paragraph.matchAll(/\[([^\]]+)\]\((https?:\/\/[^\)]+viator\.com[^\)]*)\)/g)];
+      let modifiedPara = paragraph;
+      let imagesToInsert: string[] = [];
 
-    console.log('[DEBUG: All Viator Matches]', matches.map(m => m[2]));
+      matches.forEach(([fullMatch, linkText, url]) => {
+        try {
+          const urlObj = new URL(url);
+          const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+          const lastSegment = pathSegments[pathSegments.length - 1];
+          const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
+          const productCode = codeMatch ? codeMatch[1] : null;
 
-    matches.forEach(match => {
-      const [fullMatch, linkText, url] = match;
-      const start = match.index!;
-      const end = start + fullMatch.length;
+          if (!productCode) return;
 
-      // Extract product code
-      let productCode = '';
-      try {
-        const urlObj = new URL(url);
-        const lastSegment = urlObj.pathname.split('/').filter(Boolean).pop() || '';
-        const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
-        productCode = codeMatch?.[1] || '';
-      } catch (e) {
-        console.warn('Skipping bad URL:', url);
-      }
+          const count = productCodeOccurrences.get(productCode) || 0;
 
-      // Always include the current chunk
-      modifiedContent += content.slice(lastIndex, end);
-
-      // Image insertion logic
-      if (productCode) {
-        const count = productCodeOccurrences.get(productCode) || 0;
-        productCodeOccurrences.set(productCode, count + 1);
-
-        if (count === 1 && productCodeToImage.has(productCode)) {
-          const image = productCodeToImage.get(productCode)!;
-          const imageMarkdown = `\n\n![${image.alt || linkText}](${image.url})\n\n`;
-          modifiedContent += imageMarkdown;
+          if (count === 0) {
+            productCodeOccurrences.set(productCode, 1); // keep first appearance
+          } else if (count === 1) {
+            productCodeOccurrences.set(productCode, 2); // keep second + insert image
+            const img = productCodeToImage.get(productCode);
+            if (img) {
+              const imageMarkdown = `\n\n![${img.alt || linkText}](${img.url})\n\n`;
+              imagesToInsert.push(imageMarkdown);
+            }
+          } else {
+            // remove 3rd+ appearances
+            modifiedPara = modifiedPara.replace(fullMatch, '');
+          }
+        } catch (err) {
+          console.error('Error processing URL in paragraph:', err);
         }
-      }
+      });
 
-      lastIndex = end;
+      modifiedParagraphs.push(modifiedPara + imagesToInsert.join(''));
     });
 
-    modifiedContent += content.slice(lastIndex);
-
+    const modifiedContent = modifiedParagraphs.join('\n\n');
     console.log('[DEBUG] Final processedContent snippet:');
     console.log(modifiedContent.slice(0, 1000));
     return modifiedContent;
