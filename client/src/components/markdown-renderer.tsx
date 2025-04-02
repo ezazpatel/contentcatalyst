@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -32,13 +31,11 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
         
         // Only process Viator affiliate URLs
         if (url.includes('viator.com')) {
-          // Extract product code from URL using the same logic as viator-api.ts
-          try {
-            const urlObj = new URL(url);
-            const pathSegments = urlObj.pathname.split('/').filter(Boolean);
-            const lastSegment = pathSegments[pathSegments.length - 1];
-            const codeMatch = lastSegment.match(/(?:d\d+-)?(.+)/);
-            const productCode = codeMatch ? codeMatch[1] : null;
+          // Extract product code using consistent logic
+          const urlParts = url.split('/').filter(Boolean);
+          const lastSegment = urlParts[urlParts.length - 1];
+          const codeMatch = lastSegment.match(/(?:d\d+-)?(.+?)(?:\.html)?$/);
+          const productCode = codeMatch?.[1];
 
           console.log('[Product Code Debug]', {
             url,
@@ -54,16 +51,13 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
             );
 
             if (matchingImage) {
-              const count = productCodeOccurrences.get(productCode) || 0;
-              productCodeOccurrences.set(productCode, count + 1);
+            const count = productCodeOccurrences.get(productCode) || 0;
+            productCodeOccurrences.set(productCode, count + 1);
 
-              // Add image after second occurrence of affiliate link
-              if (count >= 1) {
-                return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
-              }
+            // Add image after second occurrence of affiliate link
+            if (count >= 1) {
+              return `${line}\n\n![${matchingImage.alt || linkText}](${matchingImage.url})`;
             }
-          } catch (error) {
-            console.error('Error parsing URL:', error);
           }
         }
       }
