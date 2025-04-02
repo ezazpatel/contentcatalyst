@@ -27,23 +27,30 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
       // Check for affiliate URL markdown pattern [text](url)
       const linkMatch = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
       if (linkMatch) {
-        const [_, linkText, affiliateUrl] = linkMatch;
-
-        // Extract product code from URL
-        const productCodeMatch = affiliateUrl.match(/[-/]([A-Z0-9]+)(?:\.html|$)/);
-        const productCode = productCodeMatch?.[1];
+        const [_, linkText, url] = linkMatch;
         
-        console.log('[Product Code Debug]', {
-          affiliateUrl,
-          extractedCode: productCode,
-          matchResult: productCodeMatch
-        });
+        // Only process Viator affiliate URLs
+        if (url.includes('viator.com')) {
+          // Extract product code using consistent logic
+          const urlParts = url.split('/').filter(Boolean);
+          const lastSegment = urlParts[urlParts.length - 1];
+          const codeMatch = lastSegment.match(/(?:d\d+-)?(.+?)(?:\.html)?$/);
+          const productCode = codeMatch?.[1];
 
-        if (productCode) {
-          // Find matching image by exact product code
-          const matchingImage = affiliateImages.find(img => img.productCode === productCode);
+          console.log('[Product Code Debug]', {
+            url,
+            lastSegment,
+            extractedCode: productCode,
+            matchResult: codeMatch
+          });
 
-          if (matchingImage) {
+          if (productCode) {
+            // Find matching image by exact product code
+            const matchingImage = affiliateImages.find(img => 
+              img.productCode && img.productCode === productCode
+            );
+
+            if (matchingImage) {
             const count = productCodeOccurrences.get(productCode) || 0;
             productCodeOccurrences.set(productCode, count + 1);
 
