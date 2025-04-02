@@ -41,6 +41,8 @@ export function MarkdownRenderer({ content, affiliateImages = [] }: MarkdownRend
     let modifiedContent = content;
 
     const matches = [...content.matchAll(/\[([^\]]+)\]\((https?:\/\/[^\)]+viator\.com[^\)]*)\)/g)];
+    
+    console.log('[DEBUG: All Viator Matches]', matches.map(m => m[2]));
 
     for (const match of matches) {
       const [fullMatch, linkText, url] = match;
