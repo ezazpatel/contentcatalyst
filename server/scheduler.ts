@@ -119,10 +119,14 @@ async function generateContent(
       
       const productData = await productResponse.json();
       // Access destinations array from the correct path in response
-      const destinations = productData.destinations || productData.destination || [];
+      const destinations = productData.destinations?.map(d => ({
+        name: d.destinationName,
+        id: d.destinationId
+      })) || [];
+      
       console.log(`Product: "${product.title}"
 Product Code: ${product.productCode}
-Destinations: ${Array.isArray(destinations) ? destinations.map(d => `${d.name || d.destinationName} (${d.destinationId})`).join(', ') : 'None found'}
+Destinations: ${destinations.length > 0 ? destinations.map(d => `${d.name} (${d.id})`).join(', ') : 'None found'}
 Affiliate URL: ${url || 'Not generated'}\n`);
       
       return {
