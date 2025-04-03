@@ -106,7 +106,22 @@ async function generateContent(
   const affiliateLinks = await Promise.all(
     validProducts.map(async (product) => {
       const url = await getViatorAffiliateUrl(product.productCode);
-      console.log(`Product: "${product.title}"\nAffiliate URL: ${url || 'Not generated'}\n`);
+      
+      // Fetch product details to get destination info
+      const productResponse = await fetch(`${VIATOR_BASE_URL}/products/${product.productCode}`, {
+        headers: {
+          'exp-api-key': process.env.VIATOR_API_KEY!,
+          'Accept': 'application/json;version=2.0',
+          'Accept-Language': 'en-US'
+        }
+      });
+      
+      const productData = await productResponse.json();
+      console.log(`Product: "${product.title}"
+Product Code: ${product.productCode}
+Destinations: ${productData.destinations?.map(d => `${d.name} (${d.destinationId})`).join(', ') || 'None found'}
+Affiliate URL: ${url || 'Not generated'}\n`);
+      
       return {
         name: product.title,
         url,
