@@ -100,7 +100,7 @@ export async function searchViatorProducts(
       searchTerm: keyword,
       currency: "CAD",
       productFiltering: {
-        ancestorDestinationIds: [75], // Canada only
+        ancestorDestinationIds: CANADA_DESTINATION_IDS,
       },
       searchTypes: [
         {
