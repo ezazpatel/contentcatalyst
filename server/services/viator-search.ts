@@ -1,5 +1,10 @@
 import { VIATOR_BASE_URL } from "./viator-api";
 
+interface ViatorDestination {
+  ref: string; // The destination identifier as a string
+  primary: boolean;
+}
+
 interface ViatorSearchResult {
   productCode: string;
   title: string;
@@ -8,6 +13,7 @@ interface ViatorSearchResult {
   reviewCount: number;
   thumbnailUrl: string;
   webURL: string;
+  destinations?: ViatorDestination[];
 }
 
 interface ViatorSearchResponse {
@@ -20,66 +26,66 @@ interface ViatorSearchResponse {
 // Hardcoded list of all known Canadian destination IDs
 const CANADA_DESTINATION_IDS = [
   75, // Canada
-  25871,
-  28792,
-  4413,
-  22870,
-  51622,
-  22871,
-  5643,
-  4401,
-  5419,
-  5420,
-  260,
-  50891,
-  5421,
-  28470,
-  817,
-  611,
-  262,
-  50645,
-  50647,
-  4403,
-  25663,
-  50494,
-  25664,
-  23636,
-  23637,
-  261,
-  50914,
-  23789,
-  22363,
-  22366,
-  22562,
-  617,
-  618,
-  22365,
-  50579,
-  4408,
-  616,
-  30423,
-  29722,
-  263,
-  50915,
-  51539,
-  51561,
-  51749,
-  28610,
-  622,
-  50495,
-  50908,
-  623,
-  51581,
-  28773,
-  773,
-  50582,
-  50648,
-  264,
-  28611,
-  50497,
-  625,
-  626,
-  4808,
+  25871, // Newfoundland & Labrador
+  28792, // St John's
+  4413, // Sydney
+  22870, // New Brunswick
+  51622, // Hopewell Cape
+  22871, // Saint John
+  5643, // Prince Edward Island
+  4401, // Charlottetown
+  5419, // Yukon
+  5420, // Whitehorse
+  260, // Alberta (region)
+  50891, // Canmore
+  5421, // Jasper
+  28470, // Edmonton
+  817, // Calgary
+  611, // Banff
+  262, // Nova Scotia
+  50645, // Kejimkujik National Park
+  50647, // Cape Breton Island
+  4403, // Halifax
+  25663, // Manitoba
+  50494, // Winnipeg
+  25664, // Churchill
+  23636, // Northwest Territories
+  23637, // Yellowknife
+  261, // British Columbia (region)
+  50914, // Revelstoke
+  23789, // Sunshine Coast
+  22363, // Kootenay Rockies
+  22366, // Kelowna & Okanagan Valley
+  22562, // Kamloops
+  617, // Victoria
+  618, // Whistler
+  22365, // Squamish
+  50579, // Pemberton
+  4408, // Prince Rupert
+  616, // Vancouver
+  30423, // Vancouver Island
+  29722, // Fraser Valley
+  263, // Ontario (region)
+  50915, // Collingwood
+  51539, // Huntsville
+  51561, // Orillia
+  51749, // Muskoka Lakes
+  28610, // Peterborough & the Kawarthas
+  622, // Ottawa
+  50495, // Kingston
+  50908, // Barrie
+  623, // Toronto
+  51581, // Muskoka District
+  28773, // Windsor
+  773, // Niagara Falls & Around
+  50582, // Algonquin Provincial Park
+  50648, // London
+  264, // Quebec (region)
+  28611, // Mont Tremblant
+  50497, // Tadoussac
+  625, // Montreal
+  626, // Quebec City
+  4808, // Trois-Rivieres
 ];
 
 export async function searchViatorProducts(
@@ -100,9 +106,7 @@ export async function searchViatorProducts(
       searchTerm: keyword,
       currency: "CAD",
       productFiltering: {
-        ancestorDestinationIds: CANADA_DESTINATION_IDS, // Keep original functionality
-        destination: 75, // Direct Canada products
-        destinationTitleContains: "Canada", // Products with Canada in destination name
+        ancestorDestinationIds: CANADA_DESTINATION_IDS,
       },
       searchTypes: [
         {
@@ -145,7 +149,24 @@ export async function searchViatorProducts(
       return [];
     }
 
-    return data.products.results;
+    // Filter results: only keep products whose primary destination (from destinations.primary) is in the Canada list.
+    const filteredResults = data.products.results.filter((product) => {
+      if (!product.destinations || product.destinations.length === 0) {
+        return false;
+      }
+      const primaryDestination = product.destinations.find((d) => d.primary);
+      if (!primaryDestination) {
+        return false;
+      }
+      // Convert the ref string to a number
+      const destId = Number(primaryDestination.ref);
+      return CANADA_DESTINATION_IDS.includes(destId);
+    });
+
+    console.log(
+      `Filtered products count: ${filteredResults.length} out of ${data.products.results.length}`,
+    );
+    return filteredResults;
   } catch (error) {
     console.error("Error searching Viator products:", error);
     return [];

@@ -2,7 +2,7 @@ import { Anthropic } from "@anthropic-ai/sdk";
 import { storage } from "./storage";
 import { BlogPost } from "@shared/schema";
 
-import { VIATOR_BASE_URL } from './services/viator-api';
+import { VIATOR_BASE_URL } from "./services/viator-api";
 import {
   searchViatorProducts,
   getViatorAffiliateUrl,
@@ -89,46 +89,50 @@ async function generateContent(
   description: string;
   images: any[];
 }> {
-
   let validProducts: any[] = [];
 
   try {
-    console.log(`Searching Viator products for keywords: ${keywords.join(" ")}`);
-    const viatorProducts = await searchViatorProducts(keywords.join(" "), 10);
+    console.log(
+      `Searching Viator products for keywords: ${keywords.join(" ")}`,
+    );
+    const viatorProducts = await searchViatorProducts(keywords.join(" "), 100);
     validProducts = Array.isArray(viatorProducts) ? viatorProducts : [];
     console.log(`Found ${validProducts.length} initial Viator products`);
-   
   } catch (error) {
     console.error("Error searching Viator products:", error);
     return null;
   }
 
-  console.log('Generating affiliate URLs for products...');
+  console.log("Generating affiliate URLs for products...");
   const affiliateLinks = await Promise.all(
     validProducts.map(async (product) => {
       const url = await getViatorAffiliateUrl(product.productCode);
-      
+
       // Fetch product details to get destination info
-      const productResponse = await fetch(`${VIATOR_BASE_URL}/products/${product.productCode}`, {
-        headers: {
-          'exp-api-key': process.env.VIATOR_API_KEY!,
-          'Accept': 'application/json;version=2.0',
-          'Accept-Language': 'en-US'
-        }
-      });
-      
+      const productResponse = await fetch(
+        `${VIATOR_BASE_URL}/products/${product.productCode}`,
+        {
+          headers: {
+            "exp-api-key": process.env.VIATOR_API_KEY!,
+            Accept: "application/json;version=2.0",
+            "Accept-Language": "en-US",
+          },
+        },
+      );
+
       const productData = await productResponse.json();
       // Access destinations array from the correct path in response
-      const destinations = productData.destinations?.map(d => ({
-        name: d.destinationName,
-        id: d.destinationId
-      })) || [];
-      
+      const destinations =
+        productData.destinations?.map((d) => ({
+          name: d.destinationName,
+          id: d.destinationId,
+        })) || [];
+
       console.log(`Product: "${product.title}"
 Product Code: ${product.productCode}
-Destinations: ${destinations.length > 0 ? destinations.map(d => `${d.name} (${d.id})`).join(', ') : 'None found'}
-Affiliate URL: ${url || 'Not generated'}\n`);
-      
+Destinations: ${destinations.length > 0 ? destinations.map((d) => `${d.name} (${d.id})`).join(", ") : "None found"}
+Affiliate URL: ${url || "Not generated"}\n`);
+
       return {
         name: product.title,
         url,
@@ -144,9 +148,9 @@ Affiliate URL: ${url || 'Not generated'}\n`);
     - Initial products found: ${validProducts.length}
     - Products with valid affiliate URLs: ${affiliateLinks.length}
     - Total images collected: ${affiliateLinks.reduce((sum, link) => sum + (link.images?.length || 0), 0)}
-    `
+    `,
   );
-  
+
   if (affiliateLinks.length === 0) {
     console.log("⚠️ No valid affiliate links found - possible reasons:");
     console.log("- No matching products for the given keywords");
@@ -162,15 +166,13 @@ Affiliate URL: ${url || 'Not generated'}\n`);
   const affiliateImages = validAffiliateLinks.flatMap((link) =>
     (link.images || []).map((img) => {
       // Sort variants by resolution in descending order
-      const sortedVariants = img.variants?.sort((a, b) => 
-        (b.width * b.height) - (a.width * a.height)
-      ) || [];
+      const sortedVariants =
+        img.variants?.sort((a, b) => b.width * b.height - a.width * a.height) ||
+        [];
 
       // Get the highest resolution variant or fallback to original URL
       const bestVariant = sortedVariants[0];
       const imageUrl = bestVariant?.url || img.url;
-
-
 
       return {
         url: imageUrl,
@@ -179,7 +181,7 @@ Affiliate URL: ${url || 'Not generated'}\n`);
         productCode: link.productCode,
         heading: "", // To be set during placement if needed
       };
-    })
+    }),
   );
 
   // Find relevant internal links
@@ -351,12 +353,15 @@ Format your response:
       console.log("Generating content for section:", section.heading);
 
       // Create URL to product code mapping
-      const urlToProductCode = affiliateLinks.reduce((acc, link) => {
-        if (link.url && link.productCode) {
-          acc[link.url] = link.productCode;
-        }
-        return acc;
-      }, {} as Record<string, string>);
+      const urlToProductCode = affiliateLinks.reduce(
+        (acc, link) => {
+          if (link.url && link.productCode) {
+            acc[link.url] = link.productCode;
+          }
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
 
       // Track usage by product code
       const productCodeUsage: Record<string, number> = {};
@@ -366,7 +371,7 @@ Format your response:
 
       let affiliateInstructions = "";
       const link = affiliateLinks.find(
-        (l) => l.name === section.affiliate_connection
+        (l) => l.name === section.affiliate_connection,
       );
 
       if (link && urlToProductCode[link.url]) {
@@ -381,8 +386,10 @@ Do NOT mention this product more than ${remainingMentions} more times in this se
 Mention specific features or benefits naturally within the content.`;
       } else if (Object.keys(urlToProductCode).length > 0) {
         const availableLinks = affiliateLinks
-          .filter(link => link.url && (productCodeUsage[link.productCode] || 0) < 2)
-          .map(link => `- [${link.name}](${link.url})`);
+          .filter(
+            (link) => link.url && (productCodeUsage[link.productCode] || 0) < 2,
+          )
+          .map((link) => `- [${link.name}](${link.url})`);
 
         if (availableLinks.length > 0) {
           affiliateInstructions = `
@@ -457,7 +464,12 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Subheading cont
 
       // Track usage by product code for this section
       Object.entries(urlToProductCode).forEach(([url, code]) => {
-        const matches = sectionContent.match(new RegExp(`\\[.*?\\]\\(${url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g'));
+        const matches = sectionContent.match(
+          new RegExp(
+            `\\[.*?\\]\\(${url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\)`,
+            "g",
+          ),
+        );
         productCodeUsage[code] = (matches || []).length;
       });
 
@@ -523,7 +535,6 @@ Use proper markdown:
     fullContent += conclusionResponse.content[0].text;
 
     // Images will be handled by the MarkdownRenderer component based on affiliate link placement
-
 
     // Calculate word count
     const wordCount = fullContent.split(/\s+/).length;
@@ -819,7 +830,6 @@ Use proper markdown:
 }
 
 export async function checkScheduledPosts() {
-
   try {
     // First check if we're in test mode
     const settings = await storage.getSettings();
