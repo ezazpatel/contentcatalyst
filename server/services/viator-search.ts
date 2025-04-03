@@ -103,7 +103,7 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
       searchTerm: keyword,
       currency: "CAD",
       productFiltering: {
-        destinationIds: allDestinationIds
+        ancestorDestinationIds: allDestinationIds
       },
       searchTypes: [{
         searchType: "PRODUCTS",
