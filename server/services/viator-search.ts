@@ -17,11 +17,8 @@ interface ViatorSearchResponse {
 
 export async function searchViatorProducts(keyword: string, limit: number = 10): Promise<ViatorSearchResult[]> {
   if (!process.env.VIATOR_API_KEY) {
-    console.log('No Viator API key configured');
     return [];
   }
-
-  console.log('Searching Viator products:', { keyword, limit, apiKey: !!process.env.VIATOR_API_KEY });
 
   try {
     const requestBody = {
@@ -36,17 +33,6 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
       }]
     };
 
-    console.log('Viator search request:', {
-      url: `${VIATOR_BASE_URL}/search/freetext`,
-      headers: {
-        'exp-api-key': 'HIDDEN',
-        'Accept': 'application/json;version=2.0',
-        'Accept-Language': 'en-US',
-        'Content-Type': 'application/json'
-      },
-      body: requestBody
-    });
-
     const response = await fetch(`${VIATOR_BASE_URL}/search/freetext`, {
       method: 'POST',
       headers: {
@@ -59,21 +45,24 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
       body: JSON.stringify(requestBody)
     });
 
+    const responseText = await response.text();
 
     if (!response.ok) {
-      const errorText = await response.text();
       console.error('Viator API response:', {
         status: response.status,
         statusText: response.statusText,
-        body: errorText
+        body: responseText
       });
-      console.error(`Viator search failed with invalid URL: ${response.url}`); //Added logging for invalid URL
-      throw new Error(`Viator search failed (${response.status}): ${errorText}`);
+      return [];
     }
 
-    const responseText = await response.text();
     const data = JSON.parse(responseText);
-    return data.products?.results || [];
+
+    if (!data.products || !Array.isArray(data.products.results)) {
+      return [];
+    }
+
+    return data.products.results;
   } catch (error) {
     console.error('Error searching Viator products:', error);
     return [];
@@ -103,10 +92,10 @@ export async function getViatorAffiliateUrl(productCode: string): Promise<string
     }
 
     const data = await response.json();
-    
+
     // Get the product URL and clean it
     const baseUrl = data.webURL || data.bookingUrl || data.productUrl;
-    
+
     if (!baseUrl) {
       console.error('No URL found for product:', productCode, 'Response:', JSON.stringify(data));
       return null;

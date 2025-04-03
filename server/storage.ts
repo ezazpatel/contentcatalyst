@@ -15,31 +15,9 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
-    console.log('[DB Operation] Initiating blog post creation:', {
-      operation: 'INSERT',
-      table: 'blog_posts',
-      dataStructure: {
-        title: typeof post.title,
-        content: `${post.content?.length || 0} chars`,
-        status: post.status,
-        scheduledDate: post.scheduledDate,
-        keywords: `${post.keywords?.length || 0} keywords`,
-        affiliateLinks: {
-          count: post.affiliateLinks?.length || 0,
-          structure: 'Array<{name: string, url: string}>'
-        },
-        affiliateImages: {
-          count: post.affiliateImages?.length || 0,
-          structure: 'Array<{url, alt, affiliateUrl, heading}>'
-        }
-      }
-    });
 
     try {
       const [blogPost] = await db.insert(blogPosts).values(post).returning();
-      
-      
-
       return blogPost;
     } catch (error) {
       console.error('[DB Error] Failed to create blog post:', {
@@ -74,35 +52,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateBlogPost(id: number, post: Partial<InsertBlogPost>): Promise<BlogPost> {
-    console.log('[DB Operation] Initiating blog post update:', {
-      operation: 'UPDATE',
-      table: 'blog_posts',
-      condition: `id = ${id}`,
-      fieldsToUpdate: Object.keys(post),
-      dataTypes: {
-        affiliateLinks: 'JSONB',
-        affiliateImages: 'JSONB[]',
-        content: 'TEXT',
-        status: 'TEXT',
-        keywords: 'TEXT[]'
-      }
-    });
+
 
     try {
-      console.log('[DB Update] Processing changes:', {
-        contentDiff: post.content ? `${post.content.length} chars` : 'unchanged',
-        statusChange: post.status || 'unchanged',
-        affiliateChanges: {
-          links: post.affiliateLinks ? {
-            count: post.affiliateLinks.length,
-            structure: 'Array<{name, url}>'
-          } : 'unchanged',
-          images: post.affiliateImages ? {
-            count: post.affiliateImages.length,
-            structure: 'Array<{url, alt, affiliateUrl, heading}>'
-          } : 'unchanged'
-        }
-      });
 
       const [updated] = await db
         .update(blogPosts)
@@ -115,17 +67,6 @@ export class DatabaseStorage implements IStorage {
         throw new Error("Post not found");
       }
 
-      console.log('[DB Success] Blog post updated:', {
-        id: updated.id,
-        updatedFields: {
-          content: updated.content?.length || 0,
-          status: updated.status,
-          keywordsCount: updated.keywords?.length || 0,
-          affiliateLinksCount: Object.keys(updated.affiliateLinks || {}).length,
-          affiliateImagesCount: (updated.affiliateImages || []).length
-        },
-        timestamp: new Date().toISOString()
-      });
 
       return updated;
     } catch (error) {

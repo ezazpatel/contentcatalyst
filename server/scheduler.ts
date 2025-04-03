@@ -88,28 +88,21 @@ async function generateContent(
   description: string;
   images: any[];
 }> {
-  console.log("Searching for Viator products before content generation...");
+
   let validProducts: any[] = [];
 
   try {
     const viatorProducts = await searchViatorProducts(keywords.join(" "), 10);
     validProducts = Array.isArray(viatorProducts) ? viatorProducts : [];
-    console.log("Found Viator products:", validProducts.length);
+   
   } catch (error) {
     console.error("Error searching Viator products:", error);
     return null;
   }
 
-  console.log("Crawling affiliate links and images...");
   const affiliateLinks = await Promise.all(
     validProducts.map(async (product) => {
       const url = await getViatorAffiliateUrl(product.productCode);
-      if (!url) {
-        console.log(
-          `No affiliate URL found for product ${product.productCode}`,
-        );
-        return null;
-      }
       return {
         name: product.title,
         url,
@@ -123,7 +116,7 @@ async function generateContent(
   console.log(
     `Successfully crawled ${affiliateLinks.length} affiliate links with images`,
   );
-  console.log('Affiliate Links and Images Data:', JSON.stringify(affiliateLinks, null, 2));
+  console.log(`✅ Collected ${affiliateLinks.length} affiliate links with image data.`);
   if (affiliateLinks.length === 0) {
     console.log("No valid affiliate links found, generation may be limited");
   }
@@ -143,15 +136,7 @@ async function generateContent(
       const bestVariant = sortedVariants[0];
       const imageUrl = bestVariant?.url || img.url;
 
-      console.log('[Image Variant Processing]', {
-        productCode: link.productCode,
-        variantsCount: sortedVariants.length,
-        selectedVariant: bestVariant ? {
-          url: bestVariant.url,
-          resolution: `${bestVariant.width}x${bestVariant.height}`
-        } : 'none',
-        fallbackUrl: img.url
-      });
+
 
       return {
         url: imageUrl,
@@ -504,7 +489,7 @@ Use proper markdown:
     fullContent += conclusionResponse.content[0].text;
 
     // Images will be handled by the MarkdownRenderer component based on affiliate link placement
-    console.log(`Content generated with ${affiliateImages.length} available affiliate images`);
+
 
     // Calculate word count
     const wordCount = fullContent.split(/\s+/).length;
@@ -800,8 +785,6 @@ Use proper markdown:
 }
 
 export async function checkScheduledPosts() {
-  console.log("Checking for scheduled posts at " + new Date().toLocaleString());
-  const now = new Date();
 
   try {
     // First check if we're in test mode
@@ -812,12 +795,14 @@ export async function checkScheduledPosts() {
     const posts = await storage.getAllBlogPosts();
 
     // Filter for posts that need processing (scheduled or draft with scheduledDate in the past and content is empty)
+    const now = new Date();
+
     const postsToProcess = posts.filter((post) => {
       return (
         (post.status === "scheduled" || post.status === "draft") &&
         post.scheduledDate &&
         new Date(post.scheduledDate) <= now &&
-        (!post.content || post.content.length < 100) // Only generate if content is empty or very short
+        (!post.content || post.content.length < 100)
       );
     });
 
