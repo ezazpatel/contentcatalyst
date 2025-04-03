@@ -1,4 +1,3 @@
-
 import { VIATOR_BASE_URL } from '../services/viator-api';
 
 interface ViatorDestination {
@@ -15,7 +14,7 @@ async function analyzeDestinations() {
       return;
     }
 
-    // First fetch all destinations
+    // Fetch all destinations
     const response = await fetch(`${VIATOR_BASE_URL}/destinations`, {
       headers: {
         'exp-api-key': process.env.VIATOR_API_KEY,
@@ -32,11 +31,22 @@ async function analyzeDestinations() {
     const data = await response.json();
     const destinations = data.destinations as ViatorDestination[];
 
-    // Get Canada and its descendants
+    // Canada is known to have destinationId 75
     const CANADA_ID = 75;
     const canada = destinations.find(d => d.destinationId === CANADA_ID);
-    
-    async function getProductCount(destId: number): Promise<number> {
+    if (!canada) {
+      console.error('Could not find Canada in destinations list');
+      return;
+    }
+
+    // Helper: Get product count for a destination using the appropriate filter
+    async function getProductCount(dest: ViatorDestination): Promise<number> {
+      // If the destination is a country, use ancestorDestinationIds,
+      // otherwise use the direct destination filter.
+      const productFiltering = dest.type === 'COUNTRY'
+        ? { ancestorDestinationIds: [dest.destinationId] }
+        : { destination: dest.destinationId };
+
       const searchResponse = await fetch(`${VIATOR_BASE_URL}/search/freetext`, {
         method: 'POST',
         headers: {
@@ -46,9 +56,9 @@ async function analyzeDestinations() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          productFiltering: {
-            ancestorDestinationIds: [destId]
-          },
+          searchTerm: 'tour', // broad term to capture most products
+          currency: 'CAD',
+          productFiltering,
           searchTypes: [{
             searchType: 'PRODUCTS',
             pagination: {
@@ -64,24 +74,24 @@ async function analyzeDestinations() {
       return searchData.products?.totalCount || 0;
     }
 
-    // Print Canada's product count
-    const canadaCount = await getProductCount(CANADA_ID);
-    console.log(`\n🍁 ${canada?.name} (ID: ${CANADA_ID}) - ${canadaCount} products`);
+    // Get product count for Canada (country-level; using ancestorDestinationIds)
+    const canadaCount = await getProductCount(canada);
+    console.log(`\n🍁 ${canada.name} (ID: ${CANADA_ID}) - ${canadaCount} products`);
 
-    // Get provinces (direct children of Canada)
+    // Get provinces: direct children of Canada (type REGION)
     const provinces = destinations.filter(d => d.parentDestinationId === CANADA_ID);
     for (const province of provinces) {
-      const provinceCount = await getProductCount(province.destinationId);
+      // For regions, use the direct destination filter (not ancestor)
+      const provinceCount = await getProductCount(province);
       console.log(`  └─ ${province.name} (ID: ${province.destinationId}) - ${provinceCount} products`);
-      
-      // Get cities in each province
+
+      // Get cities in each province (type CITY)
       const cities = destinations.filter(d => d.parentDestinationId === province.destinationId);
       for (const city of cities) {
-        const cityCount = await getProductCount(city.destinationId);
+        const cityCount = await getProductCount(city);
         console.log(`     └─ ${city.name} (ID: ${city.destinationId}) - ${cityCount} products`);
       }
     }
-
   } catch (error) {
     console.error('Error analyzing destinations:', error);
   }
