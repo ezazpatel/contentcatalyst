@@ -1,7 +1,6 @@
 import { Anthropic } from "@anthropic-ai/sdk";
 import { storage } from "./storage";
 import { BlogPost } from "@shared/schema";
-import { convertMarkdownToHTML } from "src/utils/convertMarkdownToHTML";
 
 import {
   searchViatorProducts,
@@ -16,6 +15,40 @@ const client = new Anthropic({
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const ANTHROPIC_MODEL = "claude-3-7-sonnet-20250219";
 
+// Add a function to convert markdown to HTML
+function convertMarkdownToHTML(content: string): string {
+  // Convert headings, but skip h1 as it's reserved for the title
+  content = content.replace(/^## (.+)$/gm, "<h2>$1</h2>");
+  content = content.replace(/^### (.+)$/gm, "<h3>$1</h3>");
+
+  // Convert images
+  content = content.replace(
+    /!\[([^\]]*)\]\(([^)]+)\)/g,
+    '<img src="$2" alt="$1">',
+  );
+
+  // Convert links - matches [text](url) pattern
+  content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+  // Convert paragraphs - add proper spacing
+  content = content
+    .split("\n\n")
+    .map((para) => {
+      if (!para.trim()) return "";
+      if (
+        para.startsWith("<h") ||
+        para.startsWith("<img") ||
+        para.startsWith("<ul") ||
+        para.startsWith("<ol")
+      ) {
+        return para;
+      }
+      return `<p>${para}</p>`;
+    })
+    .join("\n\n");
+
+  return content;
+}
 
 async function findRelevantPosts(
   keyword: string,
@@ -59,7 +92,7 @@ async function generateContent(
   let validProducts: any[] = [];
 
   try {
-    const viatorProducts = await searchViatorProducts(keywords.join(" "), 7);
+    const viatorProducts = await searchViatorProducts(keywords.join(" "), 10);
     validProducts = Array.isArray(viatorProducts) ? viatorProducts : [];
     console.log("Found Viator products:", validProducts.length);
   } catch (error) {
@@ -110,6 +143,16 @@ async function generateContent(
       const bestVariant = sortedVariants[0];
       const imageUrl = bestVariant?.url || img.url;
 
+      console.log('[Image Variant Processing]', {
+        productCode: link.productCode,
+        variantsCount: sortedVariants.length,
+        selectedVariant: bestVariant ? {
+          url: bestVariant.url,
+          resolution: `${bestVariant.width}x${bestVariant.height}`
+        } : 'none',
+        fallbackUrl: img.url
+      });
+
       return {
         url: imageUrl,
         alt: img.alt || link.name,
@@ -120,23 +163,13 @@ async function generateContent(
     })
   );
 
-  // Find relevant published posts with WordPress URLs
+  // Find relevant internal links
   const allPosts = await storage.getAllBlogPosts();
-  const publishedPosts = allPosts.filter(post => 
-    post.status === "published" && 
-    post.wordpressUrl &&
-    post.keywords.some(k => keywords.some(keyword => 
-      k.toLowerCase().includes(keyword.toLowerCase()) ||
-      keyword.toLowerCase().includes(k.toLowerCase())
-    ))
-  ).slice(0, 3);
+  const internalLinks = await findRelevantPosts(keywords.join(" "), allPosts);
 
-  // Add only affiliate links to post object
+  // Add the found links to the post object
   post.affiliateLinks = validAffiliateLinks;
-  post.relatedPosts = publishedPosts.map(p => ({
-    title: p.title,
-    url: p.wordpressUrl
-  }));
+  post.internalLinks = internalLinks;
 
   try {
     console.log("Step 1: Generating title and outline...");
@@ -151,12 +184,10 @@ ${post.description}`
 }
 
 ${
-  Array.isArray(post.relatedPosts) && post.relatedPosts.length > 0
+  Array.isArray(post.internalLinks) && post.internalLinks.length > 0
     ? `
-Important: This article should reference these related published articles:
-${post.relatedPosts.map((link) => `- [${link.title}](${link.url})`).join("\n")}
-- Include these links naturally within the content where relevant
-- Present them as "related reading" or "learn more" references`
+Important: This article should reference these related articles from our blog:
+${post.internalLinks.map((link) => `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ""}`).join("\n")}`
     : ""
 }
 
@@ -841,13 +872,12 @@ export async function checkScheduledPosts() {
               ? `${apiUrl}/wp/v2/posts`
               : `${apiUrl}/wp/v2/posts`;
 
-            // Send raw markdown (let WordPress handle formatting or keep MarkdownRenderer in sync)
+            // Use the updatedPost data for WordPress
             const postData = {
               title: { raw: updatedPost.title },
               content: {
-                raw: convertMarkdownToHTML(updatedPost.content, updatedPost.affiliateImages),
+                raw: convertMarkdownToHTML(updatedPost.content),
               },
-
               status: "publish",
               excerpt: { raw: updatedPost.description || "" },
               meta: {
@@ -879,20 +909,12 @@ export async function checkScheduledPosts() {
             console.log(
               `✅ Successfully published post ID ${post.id} to WordPress: ${result.link}`,
             );
-            console.log('WordPress URL Details:', {
-              postId: post.id,
-              title: post.title,
-              url: result.link,
-              timestamp: new Date().toISOString()
-            });
 
             // Update the post with WordPress URL
             if (result.link) {
-              console.log(`[WordPress URL Update] Starting database update for post ${post.id}`);
               await storage.updateBlogPost(post.id, {
                 wordpressUrl: result.link,
               });
-              console.log(`[WordPress URL Update] Successfully saved URL ${result.link} for post ${post.id}`);
             }
           } catch (wpError) {
             console.error(
