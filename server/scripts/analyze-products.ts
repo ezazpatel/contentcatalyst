@@ -80,15 +80,15 @@ async function analyzeProducts() {
       console.log(`Product: ${productData.title}`);
       console.log(`Code: ${productData.productCode}`);
       console.log(`Status: ${productData.status}`);
-      console.log('Destinations:', productData.destinations?.map(d => 
-        `\n  - ${d.destinationName} (ID: ${d.destinationId}, Type: ${d.destinationType})`
+      console.log('Destinations:', productData.location?.destinations?.map(d => 
+        `\n  - ${d.name} (ID: ${d.id}, Type: ${d.type})`
       ).join('') || 'None');
-      console.log(`Price: ${productData.priceFormatted?.fromPrice} ${productData.priceFormatted?.currencyCode}`);
-      console.log(`Booking URL: ${productData.bookingConfiguration?.bookingUrl || productData.webURL}`);
-      console.log(`Description: ${productData.description?.substring(0, 100)}...`);
-      console.log(`Duration: ${productData.duration?.original}`);
-      console.log(`Inclusions:`, productData.includes?.map(inc => inc.description).join(', ') || 'None');
-      console.log(`Exclusions:`, productData.excludes?.map(exc => exc.description).join(', ') || 'None');
+      console.log(`Price: ${productData.price?.fromPrice} ${productData.price?.currency}`);
+      console.log(`Booking URL: ${productData.bookingLinks?.bookingUrl || productData.webUrl}`);
+      console.log(`Description: ${productData.shortDescription?.substring(0, 100)}...`);
+      console.log(`Duration: ${productData.duration?.duration} ${productData.duration?.unit}`);
+      console.log(`Inclusions:`, productData.inclusions?.map(inc => inc.text).join(', ') || 'None');
+      console.log(`Exclusions:`, productData.exclusions?.map(exc => exc.text).join(', ') || 'None');
       console.log('\n---\n');
 
       // Add a small delay to avoid rate limiting
