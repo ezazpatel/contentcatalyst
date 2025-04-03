@@ -44,7 +44,7 @@ async function analyzeProducts() {
           searchType: 'PRODUCTS',
           pagination: {
             start: 1,
-            count: 10
+            count: 5
           }
         }]
       })
@@ -75,8 +75,8 @@ async function analyzeProducts() {
         continue;
       }
 
-      const productData: ViatorProduct = await productResponse.json();
-
+      const productData = await productResponse.json();
+      
       console.log(`Product: ${productData.title}`);
       console.log(`Code: ${productData.productCode}`);
       console.log(`Status: ${productData.status}`);
@@ -85,6 +85,10 @@ async function analyzeProducts() {
       ).join('') || 'None');
       console.log(`Price: ${productData.price?.fromPrice} ${productData.price?.currencyCode}`);
       console.log(`Booking URL: ${productData.bookingUrl || productData.webURL}`);
+      console.log(`Description: ${productData.description?.substring(0, 100)}...`);
+      console.log(`Duration: ${productData.duration?.duration} ${productData.duration?.unit}`);
+      console.log(`Inclusions: ${productData.inclusions?.join(', ')}`);
+      console.log(`Exclusions: ${productData.exclusions?.join(', ')}`);
       console.log('\n---\n');
 
       // Add a small delay to avoid rate limiting
