@@ -81,7 +81,7 @@ async function analyzeProducts() {
       console.log(`Code: ${productData.productCode}`);
       console.log(`Status: ${productData.status}`);
       console.log('Destinations:', productData.destinations?.map(d => 
-        `\n  - ${d.ref} (${d.primary ? 'Primary' : 'Secondary'})`
+        `\n  - ${d.destinationName || d.ref} (ID: ${d.destinationId}, Primary: ${d.primary ? 'Yes' : 'No'})`
       ).join('') || 'None');
       console.log(`Price: ${productData.price?.fromPrice} ${productData.price?.currency}`);
       console.log(`Booking URL: ${productData.bookingLinks?.bookingUrl || productData.webUrl}`);
