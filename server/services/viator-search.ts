@@ -56,12 +56,30 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
 
     console.log('✅ Found Canada destination ID:', canadaDestId);
 
-    // Use destination ID in product filtering
+    // Get all child destinations
+    const childrenResponse = await fetch(`${VIATOR_BASE_URL}/destinations/${canadaDestId}/children`, {
+      headers: {
+        'exp-api-key': process.env.VIATOR_API_KEY!,
+        'Accept': 'application/json;version=2.0',
+        'Accept-Language': 'en-US'
+      }
+    });
+
+    const childrenData = await childrenResponse.json();
+    const allDestinationIds = [canadaDestId];
+    
+    if (childrenData.destinations) {
+      const childIds = childrenData.destinations.map((dest: any) => dest.destinationId);
+      allDestinationIds.push(...childIds);
+      console.log(`📍 Found ${childIds.length} child destinations under Canada`);
+    }
+
+    // Use destination IDs in product filtering
     const requestBody = {
       searchTerm: keyword,
       currency: "CAD",
       productFiltering: {
-        destination: canadaDestId.toString()
+        destinationIds: allDestinationIds
       },
       searchTypes: [{
         searchType: "PRODUCTS",
