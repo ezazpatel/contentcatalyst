@@ -92,8 +92,10 @@ async function generateContent(
   let validProducts: any[] = [];
 
   try {
+    console.log(`Searching Viator products for keywords: ${keywords.join(" ")}`);
     const viatorProducts = await searchViatorProducts(keywords.join(" "), 10);
     validProducts = Array.isArray(viatorProducts) ? viatorProducts : [];
+    console.log(`Found ${validProducts.length} initial Viator products`);
    
   } catch (error) {
     console.error("Error searching Viator products:", error);
@@ -114,11 +116,19 @@ async function generateContent(
   ).then((links) => links.filter((link) => link !== null));
 
   console.log(
-    `Successfully crawled ${affiliateLinks.length} affiliate links with images`,
+    `Processing Results:
+    - Initial products found: ${validProducts.length}
+    - Products with valid affiliate URLs: ${affiliateLinks.length}
+    - Total images collected: ${affiliateLinks.reduce((sum, link) => sum + (link.images?.length || 0), 0)}
+    `
   );
-  console.log(`✅ Collected ${affiliateLinks.length} affiliate links with image data.`);
+  
   if (affiliateLinks.length === 0) {
-    console.log("No valid affiliate links found, generation may be limited");
+    console.log("⚠️ No valid affiliate links found - possible reasons:");
+    console.log("- No matching products for the given keywords");
+    console.log("- Products found but affiliate URLs could not be generated");
+    console.log("- API rate limits or temporary service issues");
+    console.log("\nContent generation will continue without affiliate content");
   }
 
   // Filter out products where we couldn't get affiliate URLs
