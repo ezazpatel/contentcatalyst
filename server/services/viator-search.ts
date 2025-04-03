@@ -1,3 +1,4 @@
+
 import { VIATOR_BASE_URL } from './viator-api';
 
 interface ViatorSearchResult {
@@ -7,12 +8,51 @@ interface ViatorSearchResult {
   rating: number;
   reviewCount: number;
   thumbnailUrl: string;
-  webURL: string; // Added webURL to the interface
+  webURL: string;
+}
+
+interface ViatorDestination {
+  destinationId: number;
+  name: string;
+  type: string;
+  parentDestinationId?: number;
 }
 
 interface ViatorSearchResponse {
-  products: ViatorSearchResult[];
+  products: {
+    results: ViatorSearchResult[];
+  };
   totalCount: number;
+}
+
+async function getDestinationChildren(destinationId: number): Promise<number[]> {
+  try {
+    const response = await fetch(`${VIATOR_BASE_URL}/destinations/${destinationId}/children`, {
+      headers: {
+        'exp-api-key': process.env.VIATOR_API_KEY!,
+        'Accept': 'application/json;version=2.0',
+        'Accept-Language': 'en-US'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to fetch children for destination ${destinationId}`);
+      return [];
+    }
+
+    const data = await response.json();
+    const immediateChildren = data.destinations?.map((dest: ViatorDestination) => dest.destinationId) || [];
+    
+    // Recursively get children of children
+    const childrenOfChildren = await Promise.all(
+      immediateChildren.map(childId => getDestinationChildren(childId))
+    );
+
+    return [...immediateChildren, ...childrenOfChildren.flat()];
+  } catch (error) {
+    console.error(`Error fetching children for destination ${destinationId}:`, error);
+    return [];
+  }
 }
 
 export async function searchViatorProducts(keyword: string, limit: number = 10): Promise<ViatorSearchResult[]> {
@@ -21,8 +61,8 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
   }
 
   try {
-    console.log('🔍 Starting destination ID lookup for Canada...');
-    
+    console.log('🔍 Starting destination lookup for Canada...');
+
     // First get Canada's destination ID
     const destResponse = await fetch(`${VIATOR_BASE_URL}/destinations?query=Canada`, {
       headers: {
@@ -34,34 +74,36 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
 
     console.log('📡 Destination API Response Status:', destResponse.status);
     const destData = await destResponse.json();
-    const canadaDestination = destData.destinations?.find(dest => 
+
+    // Find the Canada destination
+    const canadaDestination: ViatorDestination | undefined = destData.destinations?.find((dest: ViatorDestination) =>
       dest.name.toLowerCase() === 'canada' && dest.type === 'COUNTRY'
     );
-    
-    console.log('🗺️ Destination API Response:', {
-      totalDestinations: destData.destinations?.length || 0,
-      foundCanada: canadaDestination ? {
-        name: canadaDestination.name,
-        type: canadaDestination.type,
-        id: canadaDestination.destinationId
-      } : null
-    });
 
-    const canadaDestId = canadaDestination?.destinationId;
-
-    if (!canadaDestId) {
-      console.error('❌ Could not find destination ID for Canada');
+    if (!canadaDestination) {
+      console.error('❌ Could not find Canada destination');
       return [];
     }
 
-    console.log('✅ Found Canada destination ID:', canadaDestId);
+    console.log('✅ Found Canada destination:', {
+      name: canadaDestination.name,
+      id: canadaDestination.destinationId
+    });
 
-    // Use ancestorDestinationIds in product filtering to capture all Canadian experiences
+    // Get all descendant destinations recursively
+    const descendantIds = await getDestinationChildren(canadaDestination.destinationId);
+    const allDestinationIds = [canadaDestination.destinationId, ...descendantIds];
+
+    console.log('🗺️ Using destination IDs for filtering:', {
+      total: allDestinationIds.length,
+      ids: allDestinationIds
+    });
+
     const requestBody = {
       searchTerm: keyword,
       currency: "CAD",
       productFiltering: {
-        ancestorDestinationIds: [canadaDestId]
+        destinationIds: allDestinationIds
       },
       searchTypes: [{
         searchType: "PRODUCTS",
@@ -71,12 +113,6 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
         }
       }]
     };
-
-    console.log('🔍 Searching products with filters:', {
-      searchTerm: keyword,
-      destinationId: canadaDestId,
-      limit
-    });
 
     const response = await fetch(`${VIATOR_BASE_URL}/search/freetext`, {
       method: 'POST',
@@ -95,7 +131,7 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
     const responseText = await response.text();
 
     if (!response.ok) {
-      console.error('Viator API response:', {
+      console.error('Viator API response error:', {
         status: response.status,
         statusText: response.statusText,
         body: responseText
@@ -103,8 +139,7 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
       return [];
     }
 
-    const data = JSON.parse(responseText);
-
+    const data: ViatorSearchResponse = JSON.parse(responseText);
     if (!data.products || !Array.isArray(data.products.results)) {
       return [];
     }
@@ -122,7 +157,6 @@ export async function getViatorAffiliateUrl(productCode: string): Promise<string
       return null;
     }
 
-    // Get the product URL with campaign value from the product endpoint
     const response = await fetch(`${VIATOR_BASE_URL}/products/${productCode}`, {
       headers: {
         'exp-api-key': process.env.VIATOR_API_KEY!,
@@ -139,8 +173,6 @@ export async function getViatorAffiliateUrl(productCode: string): Promise<string
     }
 
     const data = await response.json();
-
-    // Get the product URL and clean it
     const baseUrl = data.webURL || data.bookingUrl || data.productUrl;
 
     if (!baseUrl) {
@@ -148,7 +180,6 @@ export async function getViatorAffiliateUrl(productCode: string): Promise<string
       return null;
     }
 
-    // Construct URL with campaign parameters
     const url = new URL(baseUrl);
     url.searchParams.set('mcid', '42383');
     url.searchParams.set('pid', process.env.VIATOR_CAMPAIGN_ID || 'P00217628');
