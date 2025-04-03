@@ -102,9 +102,11 @@ async function generateContent(
     return null;
   }
 
+  console.log('Generating affiliate URLs for products...');
   const affiliateLinks = await Promise.all(
     validProducts.map(async (product) => {
       const url = await getViatorAffiliateUrl(product.productCode);
+      console.log(`Product: "${product.title}"\nAffiliate URL: ${url || 'Not generated'}\n`);
       return {
         name: product.title,
         url,
