@@ -21,9 +21,27 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
   }
 
   try {
+    // First get Canada's destination ID
+    const destResponse = await fetch(`${VIATOR_BASE_URL}/destinations?query=Canada`, {
+      headers: {
+        'exp-api-key': process.env.VIATOR_API_KEY!,
+        'Accept': 'application/json;version=2.0',
+        'Accept-Language': 'en-US'
+      }
+    });
+
+    const destData = await destResponse.json();
+    const canadaDestId = destData.destinations?.[0]?.destinationId;
+
+    if (!canadaDestId) {
+      console.error('Could not find destination ID for Canada');
+      return [];
+    }
+
     const requestBody = {
       searchTerm: keyword,
       currency: "CAD",
+      destinationIds: [canadaDestId],
       searchTypes: [{
         searchType: "PRODUCTS",
         pagination: {
