@@ -56,12 +56,12 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
 
     console.log('✅ Found Canada destination ID:', canadaDestId);
 
-    // Use destination ID in product filtering
+    // Use ancestorDestinationIds in product filtering to capture all Canadian experiences
     const requestBody = {
       searchTerm: keyword,
       currency: "CAD",
       productFiltering: {
-        destination: canadaDestId.toString()
+        ancestorDestinationIds: [canadaDestId]
       },
       searchTypes: [{
         searchType: "PRODUCTS",
