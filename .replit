@@ -58,3 +58,12 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "tsx server/scripts/analyze-destinations.ts"
+
+[[workflows.workflow]]
+name = "Analyze Products"
+author = 13297522
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "tsx server/scripts/analyze-products.ts"
