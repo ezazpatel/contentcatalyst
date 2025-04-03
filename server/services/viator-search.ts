@@ -57,24 +57,11 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
     console.log('✅ Found Canada destination ID:', canadaDestId);
 
     // Use ancestorDestinationIds in product filtering to capture all Canadian experiences
-    // Get Canadian cities/regions first
-    const canadianDestResponse = await fetch(`${VIATOR_BASE_URL}/destinations/${canadaDestId}/children`, {
-      headers: {
-        'exp-api-key': process.env.VIATOR_API_KEY!,
-        'Accept': 'application/json;version=2.0',
-        'Accept-Language': 'en-US'
-      }
-    });
-    
-    const canadianDests = await canadianDestResponse.json();
-    const canadianDestIds = canadianDests.destinations?.map(d => d.destinationId) || [];
-    
     const requestBody = {
       searchTerm: keyword,
       currency: "CAD",
       productFiltering: {
-        ancestorDestinationIds: [canadaDestId],
-        destinationIds: canadianDestIds
+        ancestorDestinationIds: [canadaDestId]
       },
       searchTypes: [{
         searchType: "PRODUCTS",
