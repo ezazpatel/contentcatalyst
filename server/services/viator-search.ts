@@ -34,12 +34,20 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
 
     console.log('📡 Destination API Response Status:', destResponse.status);
     const destData = await destResponse.json();
+    const canadaDestination = destData.destinations?.find(dest => 
+      dest.name.toLowerCase() === 'canada' && dest.type === 'COUNTRY'
+    );
+    
     console.log('🗺️ Destination API Response:', {
       totalDestinations: destData.destinations?.length || 0,
-      firstDestination: destData.destinations?.[0] || null
+      foundCanada: canadaDestination ? {
+        name: canadaDestination.name,
+        type: canadaDestination.type,
+        id: canadaDestination.destinationId
+      } : null
     });
 
-    const canadaDestId = destData.destinations?.[0]?.destinationId;
+    const canadaDestId = canadaDestination?.destinationId;
 
     if (!canadaDestId) {
       console.error('❌ Could not find destination ID for Canada');
