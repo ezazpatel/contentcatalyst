@@ -90,7 +90,8 @@ const CANADA_DESTINATION_IDS = [
 
 export async function searchViatorProducts(
   keyword: string,
-  limit: number = 10,
+  limit: number = 100,
+  finalLimit: number = 10,
 ): Promise<ViatorSearchResult[]> {
   if (!process.env.VIATOR_API_KEY) {
     return [];
@@ -166,7 +167,15 @@ export async function searchViatorProducts(
     console.log(
       `Filtered products count: ${filteredResults.length} out of ${data.products.results.length}`,
     );
-    return filteredResults;
+    // Sort products by rating and review count to get the best matches
+    const sortedResults = filteredResults.sort((a, b) => {
+      const scoreA = (a.rating || 0) * Math.log(a.reviewCount || 1);
+      const scoreB = (b.rating || 0) * Math.log(b.reviewCount || 1);
+      return scoreB - scoreA;
+    });
+
+    // Return only the top N results (default 10)
+    return sortedResults.slice(0, finalLimit);
   } catch (error) {
     console.error("Error searching Viator products:", error);
     return [];
