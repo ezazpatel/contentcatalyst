@@ -118,9 +118,11 @@ async function generateContent(
       });
       
       const productData = await productResponse.json();
+      // Access destinations array from the correct path in response
+      const destinations = productData.destinations || productData.destination || [];
       console.log(`Product: "${product.title}"
 Product Code: ${product.productCode}
-Destinations: ${productData.destinations?.map(d => `${d.name} (${d.destinationId})`).join(', ') || 'None found'}
+Destinations: ${Array.isArray(destinations) ? destinations.map(d => `${d.name || d.destinationName} (${d.destinationId})`).join(', ') : 'None found'}
 Affiliate URL: ${url || 'Not generated'}\n`);
       
       return {
