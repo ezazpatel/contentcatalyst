@@ -80,8 +80,8 @@ async function analyzeProducts() {
       console.log(`Product: ${productData.title}`);
       console.log(`Code: ${productData.productCode}`);
       console.log(`Status: ${productData.status}`);
-      console.log('Destinations:', productData.location?.destinations?.map(d => 
-        `\n  - ${d.name} (ID: ${d.id}, Type: ${d.type})`
+      console.log('Destinations:', productData.destinations?.map(d => 
+        `\n  - ${d.ref} (${d.primary ? 'Primary' : 'Secondary'})`
       ).join('') || 'None');
       console.log(`Price: ${productData.price?.fromPrice} ${productData.price?.currency}`);
       console.log(`Booking URL: ${productData.bookingLinks?.bookingUrl || productData.webUrl}`);
