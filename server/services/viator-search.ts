@@ -21,6 +21,8 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
   }
 
   try {
+    console.log('🔍 Starting destination ID lookup for Canada...');
+    
     // First get Canada's destination ID
     const destResponse = await fetch(`${VIATOR_BASE_URL}/destinations?query=Canada`, {
       headers: {
@@ -30,13 +32,21 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
       }
     });
 
+    console.log('📡 Destination API Response Status:', destResponse.status);
     const destData = await destResponse.json();
+    console.log('🗺️ Destination API Response:', {
+      totalDestinations: destData.destinations?.length || 0,
+      firstDestination: destData.destinations?.[0] || null
+    });
+
     const canadaDestId = destData.destinations?.[0]?.destinationId;
 
     if (!canadaDestId) {
-      console.error('Could not find destination ID for Canada');
+      console.error('❌ Could not find destination ID for Canada');
       return [];
     }
+
+    console.log('✅ Found Canada destination ID:', canadaDestId);
 
     // Use destination ID in product filtering
     const requestBody = {
@@ -54,6 +64,12 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
       }]
     };
 
+    console.log('🔍 Searching products with filters:', {
+      searchTerm: keyword,
+      destinationId: canadaDestId,
+      limit
+    });
+
     const response = await fetch(`${VIATOR_BASE_URL}/search/freetext`, {
       method: 'POST',
       headers: {
@@ -65,6 +81,8 @@ export async function searchViatorProducts(keyword: string, limit: number = 10):
       },
       body: JSON.stringify(requestBody)
     });
+
+    console.log('📡 Search API Response Status:', response.status);
 
     const responseText = await response.text();
 
