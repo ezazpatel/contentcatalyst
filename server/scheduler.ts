@@ -1,7 +1,6 @@
 import { Anthropic } from "@anthropic-ai/sdk";
 import { storage } from "./storage";
 import { BlogPost } from "@shared/schema";
-
 import { VIATOR_BASE_URL } from "./services/viator-api";
 import {
   searchViatorProducts,
