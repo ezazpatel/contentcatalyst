@@ -6,19 +6,34 @@ import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
 
 function convertMarkdownToHTML(markdown: string, affiliateImages?: any[]): string {
-  let imageIndex = 0;
+  // Create image lookup by product code
+  const imagesByCode = new Map();
+  affiliateImages?.forEach(img => {
+    if (img.productCode) {
+      imagesByCode.set(img.productCode, img);
+    }
+  });
+
   // Convert standard markdown images to WordPress format using affiliate images
-  markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt) => {
-    const image = affiliateImages?.[imageIndex++];
+  markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt, url) => {
+    // Extract product code from URL
+    const codeMatch = url.match(/\/([^\/]+)\?/);
+    const productCode = codeMatch ? codeMatch[1] : null;
+    const image = productCode ? imagesByCode.get(productCode) : null;
+    
     if (!image) return '';
     
     return `
-<!-- wp:image {"sizeSlug":"large"} -->
+<!-- wp:image {"sizeSlug":"large","className":"wp-block-image"} -->
 <figure class="wp-block-image size-large">
-  <img src="${image.url}" alt="${image.alt || alt}"/>
+  <a href="${image.affiliateUrl}">
+    <img src="${image.url}" alt="${image.alt || alt}" class="wp-image"/>
+  </a>
   <figcaption class="wp-element-caption">${image.alt || alt}</figcaption>
 </figure>
-<!-- /wp:image -->`;
+<!-- /wp:image -->
+
+`;
   });
 
   // Convert markdown to HTML
