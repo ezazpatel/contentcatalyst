@@ -349,19 +349,17 @@ Format your response:
       });
     }
 
+    // Updated Section Prompt: Minimal change to remove new post style greeting.
     for (const section of outlineResult.outline) {
       console.log("Generating content for section:", section.heading);
 
       // Create URL to product code mapping
-      const urlToProductCode = affiliateLinks.reduce(
-        (acc, link) => {
-          if (link.url && link.productCode) {
-            acc[link.url] = link.productCode;
-          }
-          return acc;
-        },
-        {} as Record<string, string>,
-      );
+      const urlToProductCode = affiliateLinks.reduce((acc, link) => {
+        if (link.url && link.productCode) {
+          acc[link.url] = link.productCode;
+        }
+        return acc;
+      }, {} as Record<string, string>);
 
       // Track usage by product code
       const productCodeUsage: Record<string, number> = {};
@@ -386,10 +384,8 @@ Do NOT mention this product more than ${remainingMentions} more times in this se
 Mention specific features or benefits naturally within the content.`;
       } else if (Object.keys(urlToProductCode).length > 0) {
         const availableLinks = affiliateLinks
-          .filter(
-            (link) => link.url && (productCodeUsage[link.productCode] || 0) < 2,
-          )
-          .map((link) => `- [${link.name}](${link.url})`);
+          .filter(link => link.url && (productCodeUsage[link.productCode] || 0) < 2)
+          .map(link => `- [${link.name}](${link.url})`);
 
         if (availableLinks.length > 0) {
           affiliateInstructions = `
@@ -403,12 +399,13 @@ ${availableLinks.join("\n")}
         }
       }
 
-      const sectionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
+      // Minimal change: Replace the original greeting with a "continue" instruction.
+      const sectionPrompt = `Continue the blog post for the section titled "${section.heading}" as part of the article "${outlineResult.title}".
 Instructions:
-1. Use grade 5-6 level Canadian English
-2. Write naturally and conversationally
-3. Focus on providing valuable information
-4. Keep emoji usage minimal
+1. Use grade 5-6 level Canadian English.
+2. Write naturally and conversationally.
+3. Focus on providing valuable information.
+4. Keep emoji usage minimal.
 ${affiliateInstructions}
 
 ${
@@ -424,16 +421,16 @@ ${
     ? `
 Important: Consider including these relevant internal links where appropriate:
 ${post.internalLinks
-  .filter((link) => !internalLinksUsage[link.url]) // Only show unused links
+  .filter((link) => !internalLinksUsage[link.url])
   .map(
     (link) =>
       `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ""}`,
   )
   .join("\n")}
 
-- Each internal link should only be used once
-- Place them naturally where they add value to the content
-- Present them as "related reading" or "learn more" references`
+- Each internal link should only be used once.
+- Place them naturally where they add value to the content.
+- Present them as "related reading" or "learn more" references.`
     : ""
 }
 
@@ -443,19 +440,19 @@ Focus on providing valuable information and real experiences, using keywords onl
 Also create content for these subheadings:
 ${section.subheadings.map((subheading) => `- ## ${subheading}`).join("\n")}
 
-Each subheading section should be 100-150 words with specific, useful information.
+Each subheading section should be 100-150 words with specific, useful information related to the subheading topic.
 
 Format with proper markdown:
 
 ## ${section.heading}
 
-[Main section content]
+[Content for main section]
 
-${section.subheadings.map((subheading) => `### ${subheading}\n\n[Subheading content]`).join("\n\n")}`;
+${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for this subheading]`).join("\n\n")}`;
 
       const sectionResponse = await client.messages.create({
-        model: ANTHROPIC_MODEL,
-        max_tokens: 500,
+        model: "claude-3-opus-20240229",
+        max_tokens: 400,
         temperature: 0.7,
         messages: [{ role: "user", content: sectionPrompt }],
       });
@@ -501,33 +498,25 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Subheading cont
 
     console.log("Step 4: Generating conclusion...");
     const conclusionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. 
+- Use grade 5-6 level Canadian English. 
+- Use a casual, friendly tone like you're talking to a friend.
+- Only include factual information. Do not make up any details.
 
-Instructions:
-1. Use grade 5-6 level Canadian English
-2. Keep the tone professional but warm
-3. Avoid emoji usage
-
-Write a conclusion (150-200 words) for "${outlineResult.title}" about ${keywords.join(", ")}.
+Write a conclusion (150-200 words) for a blog post titled "${outlineResult.title}" about ${keywords.join(", ")}.
 Include:
 - Summary of key points
-- Value provided to the reader
-- Call to action that encourages trying the recommendations
-
-When mentioning any products, use these markdown links:
-${Object.entries(affiliateLinksMap)
-  .filter(([name]) => (affiliateLinkUsage[name] || 0) < 2)
-  .map(([name, url]) => `- [${name}](${url})`)
-  .join("\n")}
+- Include a personal reflection or takeaway
+- End with a call to action or question for the reader
 
 Use proper markdown:
 
-## Final Thoughts
+## Wrapping Up
 
 [Your conclusion here]`;
 
     const conclusionResponse = await client.messages.create({
-      model: ANTHROPIC_MODEL,
-      max_tokens: 500,
+      model: "claude-3-opus-20240229",
+      max_tokens: 300,
       temperature: 0.7,
       messages: [{ role: "user", content: conclusionPrompt }],
     });
@@ -535,6 +524,13 @@ Use proper markdown:
     fullContent += conclusionResponse.content[0].text;
 
     // Images will be handled by the MarkdownRenderer component based on affiliate link placement
+
+    if (affiliateImages.length > 0) {
+      const imagesMarkdown = affiliateImages
+        .map(img => `![${img.alt}](${img.url})`)
+        .join("\n\n");
+      fullContent += "\n\n" + imagesMarkdown;
+    }
 
     // Calculate word count
     const wordCount = fullContent.split(/\s+/).length;
@@ -650,9 +646,9 @@ Ensure JSON is properly formatted with no trailing commas.`;
 - Use a casual, friendly tone like you're talking to a friend.
 - Only include factual information. Do not make up any details.
 
-Write an engaging introduction (150-200 words) for a blog post titled "${outlineResult.title}". 
-The introduction should:
-- Hook the reader with something interesting
+Write an engaging introduction (150-200 words) for a blog post titled "${outlineResult.title}".
+Include:
+- A hook that grabs attention
 - Include the keywords naturally
 - Give an overview of what the article will cover
 - End with a transition to the first section: "${outlineResult.outline[0]?.heading || "First Section"}"
@@ -737,22 +733,49 @@ ${validAffiliateLinks
         }
       }
 
-      const sectionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
-- Use grade 5-6 level Canadian English. 
-- Vary sentence lengths and structure to mimic human writing
-- Write in a casual, friendly tone like you're talking to a friend. Use simple words that everyone can understand.
-- Only include factual information. Do not make up any details.
+      const sectionPrompt = `Continue the blog post for the section titled "${section.heading}" as part of the article "${outlineResult.title}".
+Instructions:
+1. Use grade 5-6 level Canadian English.
+2. Write naturally and conversationally.
+3. Focus on providing valuable information.
+4. Keep emoji usage minimal.
 ${affiliateLinksInstruction}
 
-Write a detailed section (200-300 words) for the heading "${section.heading}" that's part of an article titled "${outlineResult.title}".
-Include rich details, examples, personal anecdotes, and naturally place affiliate links where relevant.
+${
+  post.description
+    ? `
+Important: Review this context from the user and naturally incorporate any URLs or specific instructions:
+${post.description}`
+    : ""
+}
+
+${
+  Array.isArray(post.internalLinks) && post.internalLinks.length > 0
+    ? `
+Important: Consider including these relevant internal links where appropriate:
+${post.internalLinks
+  .filter((link) => !internalLinksUsage[link.url])
+  .map(
+    (link) =>
+      `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ""}`,
+  )
+  .join("\n")}
+
+- Each internal link should only be used once.
+- Place them naturally where they add value to the content.
+- Present them as "related reading" or "learn more" references.`
+    : ""
+}
+
+Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
+Focus on providing valuable information and real experiences, using keywords only where they naturally fit into the narrative. Prioritize reader engagement over keyword placement.
 
 Also create content for these subheadings:
 ${section.subheadings.map((subheading) => `- ## ${subheading}`).join("\n")}
 
-Each subheading section should be 100-150 words and provide specific, useful information related to the subheading topic.
+Each subheading section should be 100-150 words with specific, useful information related to the subheading topic.
 
-Format your response with proper markdown headings:
+Format with proper markdown:
 
 ## ${section.heading}
 
@@ -764,15 +787,46 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
         model: "claude-3-opus-20240229",
         max_tokens: 400,
         temperature: 0.7,
-        messages: [
-          {
-            role: "user",
-            content: sectionPrompt,
-          },
-        ],
+        messages: [{ role: "user", content: sectionPrompt }],
       });
 
-      fullContent += sectionResponse.content[0].text + "\n\n";
+      const sectionContent = sectionResponse.content[0].text;
+
+      // Track usage by product code for this section
+      Object.entries(urlToProductCode).forEach(([url, code]) => {
+        const matches = sectionContent.match(
+          new RegExp(
+            `\\[.*?\\]\\(${url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\)`,
+            "g",
+          ),
+        );
+        productCodeUsage[code] = (matches || []).length;
+      });
+
+      fullContent += sectionContent + "\n\n";
+
+      // Count affiliate link usage in this section
+      Object.keys(affiliateLinksMap).forEach((name) => {
+        const regex = new RegExp(
+          `\\[${name}\\]\\(${affiliateLinksMap[name]}\\)`,
+          "g",
+        );
+        const matches = sectionContent.match(regex);
+        if (matches) {
+          affiliateLinkUsage[name] =
+            (affiliateLinkUsage[name] || 0) + matches.length;
+        }
+      });
+
+      // Track internal link usage similar to affiliate links
+      Object.keys(internalLinksUsage).forEach((url) => {
+        const regex = new RegExp(`\\[.*?\\]\\(${url}\\)`, "g");
+        const matches = sectionContent.match(regex);
+        if (matches) {
+          internalLinksUsage[url] =
+            (internalLinksUsage[url] || 0) + matches.length;
+        }
+      });
     }
 
     console.log("Step 4: Generating conclusion...");
@@ -782,8 +836,8 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
 - Only include factual information. Do not make up any details.
 
 Write a conclusion (150-200 words) for a blog post titled "${outlineResult.title}" about ${keywords.join(", ")}.
-The conclusion should:
-- Summarize the key points from the article
+Include:
+- Summary of key points
 - Include a personal reflection or takeaway
 - End with a call to action or question for the reader
 
@@ -797,15 +851,12 @@ Use proper markdown:
       model: "claude-3-opus-20240229",
       max_tokens: 300,
       temperature: 0.7,
-      messages: [
-        {
-          role: "user",
-          content: conclusionPrompt,
-        },
-      ],
+      messages: [{ role: "user", content: conclusionPrompt }],
     });
 
     fullContent += conclusionResponse.content[0].text;
+
+    // Images will be handled by the MarkdownRenderer component based on affiliate link placement
 
     // Calculate word count
     const wordCount = fullContent.split(/\s+/).length;
@@ -822,6 +873,7 @@ Use proper markdown:
       content: fullContent,
       title: outlineResult.title,
       description: finalDescription,
+      images: affiliateImages, // Return images with product codes
     };
   } catch (error) {
     console.error("Error generating content:", error);
