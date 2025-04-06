@@ -22,6 +22,7 @@ async function findRelevantPosts(
   limit: number = 3,
 ): Promise<any[]> {
   const keywordWords = keyword.toLowerCase().split(/\s+/);
+  
   return posts
     .filter((post) => post.status === "published" && post.wordpressUrl)
     .map((post) => ({
