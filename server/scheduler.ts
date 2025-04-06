@@ -8,6 +8,39 @@ import {
 } from "./services/viator-search";
 import { convertMarkdownToHTML } from "./src/utils/convertMarkdownToHTML";
 
+function trimToCompleteSentence(text) {
+  // If the text already ends with a sentence-ending punctuation, return as is
+  if (text.endsWith('.') || text.endsWith('!') || text.endsWith('?')) {
+    return text;
+  }
+
+  // Find the last occurrence of sentence-ending punctuation
+  const lastSentenceEnd = Math.max(
+    text.lastIndexOf('. '), // Note the space after period to avoid cutting at abbreviations
+    text.lastIndexOf('! '),
+    text.lastIndexOf('? ')
+  );
+
+  // If we found a valid endpoint, trim to that point plus the punctuation mark
+  if (lastSentenceEnd > 0) {
+    return text.substring(0, lastSentenceEnd + 1); // Include the period
+  }
+
+  // Fallback: if no sentence endings were found with spaces after, try without spaces
+  const absoluteLastEnd = Math.max(
+    text.lastIndexOf('.'),
+    text.lastIndexOf('!'),
+    text.lastIndexOf('?')
+  );
+
+  if (absoluteLastEnd > 0) {
+    return text.substring(0, absoluteLastEnd + 1);
+  }
+
+  // If no sentence endings are found at all, return the original text
+  return text;
+}
+
 // Create an Anthropic client
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -22,7 +55,7 @@ async function findRelevantPosts(
   limit: number = 3,
 ): Promise<any[]> {
   const keywordWords = keyword.toLowerCase().split(/\s+/);
-  
+
   return posts
     .filter((post) => post.status === "published" && post.wordpressUrl)
     .map((post) => ({
@@ -43,6 +76,32 @@ async function findRelevantPosts(
       url: post.wordpressUrl,
       description: post.description,
     }));
+}
+
+async function uploadImageToWordPress(imageUrl: string): Promise<number> {
+  const imageResponse = await fetch(imageUrl);
+  const imageBuffer = await imageResponse.arrayBuffer();
+  const authToken = Buffer.from(
+    `${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`
+  ).toString("base64");
+
+  const uploadResponse = await fetch(`${process.env.WORDPRESS_API_URL}/wp/v2/media`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${authToken}`,
+      "Content-Disposition": `attachment; filename="featured.jpg"`,
+      "Content-Type": "image/jpeg", // you can make this dynamic based on the file type if needed
+    },
+    body: Buffer.from(imageBuffer),
+  });
+
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    throw new Error(`❌ Error uploading image to WordPress: ${errorText}`);
+  }
+
+  const data = await uploadResponse.json();
+  return data.id; // This is the media ID to use as featured_media
 }
 
 async function generateContent(
@@ -180,11 +239,11 @@ ${post.internalLinks.map((link) => `- [${link.title}](${link.url})${link.descrip
 
 Instructions:
 1. Write in grade 5-6 level Canadian English
-2. Create an engaging but SEO-friendly title (60-70 characters)
-3. Create a detailed outline with 4-6 main sections
+2. Create an engaging and SEO-friendly title (60-70 characters)
+3. Create a detailed outline with 2-3 main sections
 4. For each section, include:
    - A clear H2 heading that's topically relevant
-   - 2-3 H3 subheadings under each main section
+   - 1-2 H3 subheadings under each main section
    - If any of these affiliate products/resources fit naturally as section topics, use them:
      ${Array.isArray(post.affiliateLinks) ? post.affiliateLinks.map((link) => `- ${link.name}`).join("\n     ") : ""}
 
@@ -250,39 +309,34 @@ Format your response as JSON:
     }
 
     console.log("Step 2: Generating introduction...");
-    const introPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
-Instructions:
-1. Use grade 5-6 level Canadian English
-2. Write in a professional but friendly tone
-3. Keep emoji usage minimal - only if absolutely necessary
-4. Include keywords naturally
-5. Give a clear overview of what readers will learn
-
-${
-  post.description
-    ? `
-Important: Review this context from the user and incorporate any URLs or specific instructions:
-${post.description}`
-    : ""
-}
-
-Write an engaging introduction (150-200 words) for "${outlineResult.title}".
+    const introPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write an engaging introduction for "${outlineResult.title}".
 Include:
 - A hook that grabs attention
 - Brief mention of key benefits readers will get
 - Natural transition to the first section: "${outlineResult.outline[0]?.heading || "First Section"}"
+Instructions:
+1. Use grade 5-6 level Canadian English
+2. Keep emoji usage minimal - only if absolutely necessary
+3. Include keywords naturally
+4. Give a clear overview of what readers will learn
+
+- !Important: If you're running out of space, make sure to end at the previous sentence. Do NOT leave the content hanging or mid-thought. NO INCOMPLETE SENTENCES AT THE END OF THE SECTION.
 
 Format your response:
 [Your introduction here]`;
 
     const introResponse = await client.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 400,
+      max_tokens: 500,
       temperature: 0.7,
       messages: [{ role: "user", content: introPrompt }],
     });
 
     let fullContent = "";
+
+    let introContent = introResponse.content[0].text;
+    introContent = trimToCompleteSentence(introContent);
+    fullContent += introContent + "\n\n";
 
     // Add affiliate links section right after intro if available
     if (affiliateLinksMarkdown) {
@@ -380,7 +434,7 @@ Instructions:
 5. Keep emoji usage minimal.
 6. Do NOT summarize what’s already been covered
 
-- Important: If you're running out of space, make sure to end at the previous paragraph. Do NOT leave the content hanging or mid-thought.
+- !Important: If you're running out of space, make sure to end at the previous sentence. Do NOT leave the content hanging or mid-thought. NO INCOMPLETE SENTENCES AT THE END OF THE SECTION.
 
 ${affiliateInstructions}
 
@@ -410,13 +464,10 @@ ${post.internalLinks
     : ""
 }
 
-Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
-Focus on providing valuable information and real experiences, using keywords only where they naturally fit into the narrative. Prioritize reader engagement over keyword placement.
-
 Also create content for these subheadings:
 ${section.subheadings.map((subheading) => `- ## ${subheading}`).join("\n")}
 
-Each subheading section should be 100-150 words with specific, useful information related to the subheading topic.
+Each subheading section should be 100-200 words with specific, useful information related to the subheading topic.
 
 Format with proper markdown:
 
@@ -428,12 +479,14 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
 
       const sectionResponse = await client.messages.create({
         model: "claude-3-7-sonnet-20250219",
-        max_tokens: 500,
+        max_tokens: 700,
         temperature: 0.7,
         messages: [{ role: "user", content: sectionPrompt }],
       });
 
-      const sectionContent = sectionResponse.content[0].text;
+      let sectionContent = sectionResponse.content[0].text;
+      sectionContent = trimToCompleteSentence(sectionContent);
+      fullContent += sectionContent + "\n\n";
 
       // Track usage by product code for this section
       Object.entries(urlToProductCode).forEach(([url, code]) => {
@@ -479,19 +532,16 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
     1. Use grade 5-6 level Canadian English.
     2. Keep the tone consistent with the rest of the article.
     3. Summarize key points without repeating entire sections.
-    4. End with a warm reflection and a call to action or question for the reader.
-    5. Only include factual information. Do not make up any details.
-    6. Do NOT include any affiliate links in the conclusion.
+    4. Only include factual information. Do not make up any details.
+    5. Do NOT include any affiliate links in the conclusion.
 
-    Important:
-    - Important: If you're running out of space, make sure to end at the previous paragraph. Do NOT leave the content hanging or mid-thought.
+- !Important: If you're running out of space, make sure to end at the previous sentence. Do NOT leave the content hanging or mid-thought. NO INCOMPLETE SENTENCES AT THE END OF THE SECTION.
 
-    Now, write a conclusion (150–200 words) for the blog post about ${keywords.join(", ")}.
+    Now, write a conclusion  for the blog post about ${keywords.join(", ")}.
 
     Include:
     - A quick recap of what was covered
-    - A personal reflection or takeaway
-    - A call to action or question for the reader
+    - A personal reflection or takeaway only if it makes sense naturally—don't force it.
 
     Use proper markdown:
 
@@ -501,12 +551,16 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
 
     const conclusionResponse = await client.messages.create({
       model: "claude-3-7-sonnet-20250219",
-      max_tokens: 400,
+      max_tokens: 500,
       temperature: 0.7,
       messages: [{ role: "user", content: conclusionPrompt }],
     });
 
     fullContent += conclusionResponse.content[0].text;
+
+    let conclusionContent = conclusionResponse.content[0].text;
+    conclusionContent = trimToCompleteSentence(conclusionContent);
+    fullContent += conclusionContent;
 
     // Images will be handled by the MarkdownRenderer component based on affiliate link placement
 
@@ -605,6 +659,16 @@ export async function checkScheduledPosts() {
               ? `${apiUrl}/wp/v2/posts`
               : `${apiUrl}/wp/v2/posts`;
 
+            let featuredImageId = null;
+            if (updatedPost.affiliateImages && updatedPost.affiliateImages.length > 0) {
+              try {
+                featuredImageId = await uploadImageToWordPress(updatedPost.affiliateImages[0].url);
+                console.log("✅ Uploaded featured image. Media ID:", featuredImageId);
+              } catch (error) {
+                console.warn("⚠️ Failed to upload featured image:", error);
+              }
+            }
+
             // Use the updatedPost data for WordPress
             const postData = {
               title: { raw: updatedPost.title },
@@ -620,6 +684,7 @@ export async function checkScheduledPosts() {
                 _yoast_wpseo_metadesc: updatedPost.seoDescription || "",
                 _yoast_wpseo_title: updatedPost.seoTitle || "",
               },
+              ...(featuredImageId ? { featured_media: featuredImageId } : {}),
             };
 
             console.log(`Publishing to WordPress endpoint: ${endpoint}`);
