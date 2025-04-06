@@ -13,7 +13,7 @@ export function convertMarkdownToHTML(
     }
   });
 
-  // Build content line by line, inserting images where needed
+  // Build content line by line, inserting images after 2nd mention
   const lines = markdown.split("\n");
   const resultLines: string[] = [];
 
@@ -54,20 +54,26 @@ export function convertMarkdownToHTML(
     }
   }
 
-  // Now continue with the usual markdown-to-HTML stuff
+  // Convert markdown to HTML
   let html = resultLines
     .join("\n")
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-    .replace(/^### (.*$)/gm, "<h3>$1</h3>")
-    .replace(/^## (.*$)/gm, "<h2>$1</h2>")
-    .replace(/^# (.*$)/gm, "<h1>$1</h1>")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>') // links
+    .replace(/^### (.*)$/gm, "<h3>$1</h3>")
+    .replace(/^## (.*)$/gm, "<h2>$1</h2>")
+    .replace(/^# (.*)$/gm, "<h1>$1</h1>")
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.*?)\*/g, "<em>$1</em>")
     .replace(/^\s*[-+*]\s+(.*)/gm, "<li>$1</li>")
     .replace(/(<li>.*<\/li>\n?)+/g, "<ul>$&</ul>")
     .replace(/^\d+\.\s+(.*)/gm, "<li>$1</li>")
     .replace(/(<li>.*<\/li>\n?)+/g, "<ol>$&</ol>")
-    .replace(/^(?!<[uo]l|<li|<h[1-6])(.*$)/gm, "<p>$1</p>");
+    .replace(/^(?!<h[1-6]|<ul|<ol|<li|<figure|<blockquote|<p|<img)(.+)$/gm, "<p>$1</p>");
 
-  return html;
+  // Remove accidental <p> wrapping around figure or headings
+  html = html.replace(/<p>\s*(<(figure|h[1-6])[\s\S]*?<\/\2>)\s*<\/p>/g, "$1");
+
+  // Optional: remove multiple blank lines
+  html = html.replace(/\n{3,}/g, "\n\n");
+
+  return html.trim();
 }

@@ -276,7 +276,7 @@ Format your response:
 
     const introResponse = await client.messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 300,
+      max_tokens: 400,
       temperature: 0.7,
       messages: [{ role: "user", content: introPrompt }],
     });
@@ -370,12 +370,17 @@ ${availableLinks.join("\n")}
       }
 
       // Minimal change: Replace the original greeting with a "continue" instruction.
-      const sectionPrompt = `Continue the blog post for the section titled "${section.heading}" as part of the article "${outlineResult.title}".
+      const sectionPrompt = `You're continuing a blog post titled "${outlineResult.title}". Write the next section titled "${section.heading}".
 Instructions:
 1. Use grade 5-6 level Canadian English.
-2. Write naturally and conversationally.
-3. Focus on providing valuable information.
-4. Keep emoji usage minimal.
+2. Keep the tone consistent with the rest of the article
+3. Write as if you're continuing the same blog—not starting a new one
+4. Focus on providing valuable information.
+5. Keep emoji usage minimal.
+6. Do NOT summarize what’s already been covered
+
+- Important: If you're running out of space, make sure to end at the previous paragraph. Do NOT leave the content hanging or mid-thought.
+
 ${affiliateInstructions}
 
 ${
@@ -421,8 +426,8 @@ Format with proper markdown:
 ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for this subheading]`).join("\n\n")}`;
 
       const sectionResponse = await client.messages.create({
-        model: "claude-3-opus-20240229",
-        max_tokens: 400,
+        model: "claude-3-7-sonnet-20250219",
+        max_tokens: 500,
         temperature: 0.7,
         messages: [{ role: "user", content: sectionPrompt }],
       });
@@ -467,352 +472,35 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
     }
 
     console.log("Step 4: Generating conclusion...");
-    const conclusionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. 
-- Use grade 5-6 level Canadian English. 
-- Use a casual, friendly tone like you're talking to a friend.
-- Only include factual information. Do not make up any details.
+    const conclusionPrompt = `You're wrapping up the blog post titled "${outlineResult.title}".
 
-Write a conclusion (150-200 words) for a blog post titled "${outlineResult.title}" about ${keywords.join(", ")}.
-Include:
-- Summary of key points
-- Include a personal reflection or takeaway
-- End with a call to action or question for the reader
+    Instructions:
+    1. Use grade 5-6 level Canadian English.
+    2. Keep the tone consistent with the rest of the article.
+    3. Summarize key points without repeating entire sections.
+    4. End with a warm reflection and a call to action or question for the reader.
+    5. Only include factual information. Do not make up any details.
+    6. Do NOT include any affiliate links in the conclusion.
 
-Use proper markdown:
+    Important:
+    - Important: If you're running out of space, make sure to end at the previous paragraph. Do NOT leave the content hanging or mid-thought.
 
-## Wrapping Up
+    Now, write a conclusion (150–200 words) for the blog post about ${keywords.join(", ")}.
 
-[Your conclusion here]`;
+    Include:
+    - A quick recap of what was covered
+    - A personal reflection or takeaway
+    - A call to action or question for the reader
 
-    const conclusionResponse = await client.messages.create({
-      model: "claude-3-opus-20240229",
-      max_tokens: 300,
-      temperature: 0.7,
-      messages: [{ role: "user", content: conclusionPrompt }],
-    });
-
-    fullContent += conclusionResponse.content[0].text;
-
-    // Images will be handled by the MarkdownRenderer component based on affiliate link placement
-
-    // Calculate word count
-    const wordCount = fullContent.split(/\s+/).length;
-    console.log(`Generated content with ${wordCount} words`);
-
-    // Extract description if not provided
-    let finalDescription = description;
-    if (!finalDescription) {
-      finalDescription =
-        fullContent.split("\n").slice(2, 4).join(" ").slice(0, 155) + "...";
-    }
-
-    return {
-      content: fullContent,
-      title: outlineResult.title,
-      description: finalDescription,
-      images: affiliateImages, // Return images with product codes
-    };
-  } catch (error) {
-    console.error("Error generating content:", error);
-    throw error;
-  }
-}
-
-async function generateContentOriginal(
-  keywords: string[],
-  description: string = "",
-  post: any = {},
-): Promise<{
-  content: string;
-  title: string;
-  description: string;
-}> {
-  try {
-    console.log("Step 1: Generating title and outline...");
-    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. You need to write a blog post about: ${keywords.join(", ")}.
-- Use grade 5-6 level Canadian English for all content. 
-- Only include factual information. Do not make up any details.
-
-Instructions:
-1. Create an engaging but SEO-friendly title for the blog post (60-70 characters)
-2. Create an outline with 4-6 main sections. For each section, provide:
-   - A clear heading that's topically relevant
-   - Under each section heading, create 2-3 level-2 sub headings
-
-Format your response as JSON with this structure:
-{
-  "title": "Your Blog Post Title",
-  "outline": [
-    { "heading": "First Main Section Heading", "subheadings": ["Subheading 1", "Subheading 2"] },
-    { "heading": "Second Main Section Heading", "subheadings": ["Subheading 1", "Subheading 2"] }
-  ]
-}
-Ensure JSON is properly formatted with no trailing commas.`;
-
-    const outlineResponse = await client.messages.create({
-      model: "claude-3-opus-20240229",
-      max_tokens: 1000,
-      temperature: 0.7,
-      messages: [
-        {
-          role: "user",
-          content: outlinePrompt,
-        },
-      ],
-    });
-
-    // Parse the outline result from the JSON response
-    const outlineText = outlineResponse.content[0].text;
-    const outlineJson =
-      outlineText.match(/```json\s*([\s\S]*?)\s*```/) ||
-      outlineText.match(/{[\s\S]*}/);
-    let outlineResult;
-
-    if (outlineJson) {
-      try {
-        outlineResult = JSON.parse(
-          outlineJson[0].replace(/```json|```/g, "").trim(),
-        );
-      } catch (e) {
-        console.error("Failed to parse outline JSON:", e);
-        outlineResult = {
-          title: "Blog Post About " + keywords.join(", "),
-          outline: [],
-        };
-      }
-    } else {
-      console.error("Could not extract JSON from outline response");
-      outlineResult = {
-        title: "Blog Post About " + keywords.join(", "),
-        outline: [],
-      };
-    }
-
-    // Prepare affiliate links section
-    let affiliateLinksMarkdown = "";
-    if (Array.isArray(post.affiliateLinks) && post.affiliateLinks.length > 0) {
-      const validAffiliateLinks = post.affiliateLinks.filter(
-        (link) => link.name && link.url,
-      );
-      if (validAffiliateLinks.length > 0) {
-        affiliateLinksMarkdown = "\n\n## Recommended Resources\n\n";
-        validAffiliateLinks.forEach((link) => {
-          affiliateLinksMarkdown += `* [${link.name}](${link.url})\n`;
-        });
-        affiliateLinksMarkdown += "\n";
-      }
-    }
-
-    console.log("Step 2: Generating introduction...");
-    const introPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write about: ${keywords.join(", ")}.
-- Use grade 5-6 level Canadian English. 
-- Use a casual, friendly tone like you're talking to a friend.
-- Only include factual information. Do not make up any details.
-
-Write an engaging introduction (150-200 words) for a blog post titled "${outlineResult.title}".
-Include:
-- A hook that grabs attention
-- Include the keywords naturally
-- Give an overview of what the article will cover
-- End with a transition to the first section: "${outlineResult.outline[0]?.heading || "First Section"}"
-
-Format your response as markdown, starting directly with the content:
-[Your introduction here]`;
-
-    const introResponse = await client.messages.create({
-      model: "claude-3-opus-20240229",
-      max_tokens: 300,
-      temperature: 0.7,
-      messages: [
-        {
-          role: "user",
-          content: introPrompt,
-        },
-      ],
-    });
-
-    const introResult = {
-      introduction: introResponse.content[0].text,
-    };
-
-    // Insert the affiliate links right after the title
-    let fullContent = introResult.introduction;
-    if (affiliateLinksMarkdown) {
-      // Find the position after the title
-      const titleEndIndex = fullContent.indexOf("\n\n");
-      if (titleEndIndex !== -1) {
-        fullContent =
-          fullContent.substring(0, titleEndIndex + 2) +
-          affiliateLinksMarkdown +
-          fullContent.substring(titleEndIndex + 2);
-      } else {
-        fullContent += affiliateLinksMarkdown;
-      }
-    }
-
-    fullContent += "\n\n";
-
-    // Track the number of times each affiliate link has been used - we'll still reference them in the content
-    const affiliateLinkUsage = {};
-
-    for (const section of outlineResult.outline.slice(
-      0,
-      Math.min(outlineResult.outline.length, 10),
-    )) {
-      console.log("Generating content for section:", section.heading);
-
-      // Prepare affiliate links instruction
-      let affiliateLinksInstruction = "";
-      if (
-        Array.isArray(post.affiliateLinks) &&
-        post.affiliateLinks.length > 0
-      ) {
-        // Filter out empty links
-        const validAffiliateLinks = post.affiliateLinks.filter(
-          (link) => link.name && link.url,
-        );
-
-        if (validAffiliateLinks.length > 0) {
-          affiliateLinksInstruction = `
-- Important: Mention these products/resources naturally in your content where relevant:
-${validAffiliateLinks
-  .map((link) => {
-    // Initialize usage counter if not exists
-    if (!affiliateLinkUsage[link.url]) {
-      affiliateLinkUsage[link.url] = 0;
-    }
-
-    // Only include mentions of links that haven't been referenced twice yet
-    if (affiliateLinkUsage[link.url] < 2) {
-      affiliateLinkUsage[link.url]++;
-      return `  - ${link.name}`;
-    }
-    return null;
-  })
-  .filter(Boolean)
-  .join("\n")}
-- Note: Do NOT include the links in your response. Only mention the names naturally within the content.
-- The links are already listed at the beginning of the post.`;
-        }
-      }
-
-      const sectionPrompt = `Continue the blog post for the section titled "${section.heading}" as part of the article "${outlineResult.title}".
-Instructions:
-1. Use grade 5-6 level Canadian English.
-2. Write naturally and conversationally.
-3. Focus on providing valuable information.
-4. Keep emoji usage minimal.
-${affiliateLinksInstruction}
-
-${
-  post.description
-    ? `
-Important: Review this context from the user and naturally incorporate any URLs or specific instructions:
-${post.description}`
-    : ""
-}
-
-${
-  Array.isArray(post.internalLinks) && post.internalLinks.length > 0
-    ? `
-Important: Consider including these relevant internal links where appropriate:
-${post.internalLinks
-  .filter((link) => !internalLinksUsage[link.url])
-  .map(
-    (link) =>
-      `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ""}`,
-  )
-  .join("\n")}
-
-- Each internal link should only be used once.
-- Place them naturally where they add value to the content.
-- Present them as "related reading" or "learn more" references.`
-    : ""
-}
-
-Write a detailed section (200-300 words) for "${section.heading}" that's part of "${outlineResult.title}".
-Focus on providing valuable information and real experiences, using keywords only where they naturally fit into the narrative. Prioritize reader engagement over keyword placement.
-
-Also create content for these subheadings:
-${section.subheadings.map((subheading) => `- ## ${subheading}`).join("\n")}
-
-Each subheading section should be 100-150 words with specific, useful information related to the subheading topic.
-
-Format with proper markdown:
-
-## ${section.heading}
-
-[Content for main section]
-
-${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for this subheading]`).join("\n\n")}`;
-
-      const sectionResponse = await client.messages.create({
-        model: "claude-3-opus-20240229",
-        max_tokens: 400,
-        temperature: 0.7,
-        messages: [{ role: "user", content: sectionPrompt }],
-      });
-
-      const sectionContent = sectionResponse.content[0].text;
-
-      // Track usage by product code for this section
-      Object.entries(urlToProductCode).forEach(([url, code]) => {
-        const matches = sectionContent.match(
-          new RegExp(
-            `\\[.*?\\]\\(${url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\)`,
-            "g",
-          ),
-        );
-        productCodeUsage[code] = (matches || []).length;
-      });
-
-      fullContent += sectionContent + "\n\n";
-
-      // Count affiliate link usage in this section
-      Object.keys(affiliateLinksMap).forEach((name) => {
-        const regex = new RegExp(
-          `\\[${name}\\]\\(${affiliateLinksMap[name]}\\)`,
-          "g",
-        );
-        const matches = sectionContent.match(regex);
-        if (matches) {
-          affiliateLinkUsage[name] =
-            (affiliateLinkUsage[name] || 0) + matches.length;
-        }
-      });
-
-      // Track internal link usage similar to affiliate links
-      Object.keys(internalLinksUsage).forEach((url) => {
-        const regex = new RegExp(`\\[.*?\\]\\(${url}\\)`, "g");
-        const matches = sectionContent.match(regex);
-        if (matches) {
-          internalLinksUsage[url] =
-            (internalLinksUsage[url] || 0) + matches.length;
-        }
-      });
-    }
-
-    console.log("Step 4: Generating conclusion...");
-    const conclusionPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. 
-- Use grade 5-6 level Canadian English. 
-- Use a casual, friendly tone like you're talking to a friend.
-- Only include factual information. Do not make up any details.
-
-Write a conclusion (150-200 words) for a blog post titled "${outlineResult.title}" about ${keywords.join(", ")}.
-Include:
-- Summary of key points
-- Include a personal reflection or takeaway
-- End with a call to action or question for the reader
-
-Use proper markdown:
+    Use proper markdown:
 
 ## Wrapping Up
 
 [Your conclusion here]`;
 
     const conclusionResponse = await client.messages.create({
-      model: "claude-3-opus-20240229",
-      max_tokens: 300,
+      model: "claude-3-7-sonnet-20250219",
+      max_tokens: 400,
       temperature: 0.7,
       messages: [{ role: "user", content: conclusionPrompt }],
     });
@@ -920,7 +608,10 @@ export async function checkScheduledPosts() {
             const postData = {
               title: { raw: updatedPost.title },
               content: {
-                raw: convertMarkdownToHTML(updatedPost.content, updatedPost.affiliateImages || []),
+                raw: convertMarkdownToHTML(
+                  updatedPost.content,
+                  updatedPost.affiliateImages || [],
+                ),
               },
               status: "publish",
               excerpt: { raw: updatedPost.description || "" },
