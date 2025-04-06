@@ -334,16 +334,15 @@ Format your response:
 
     let fullContent = "";
 
-    let introContent = introResponse.content[0].text;
-    introContent = trimToCompleteSentence(introContent);
-    fullContent += introContent + "\n\n";
-
     // Add affiliate links section right after intro if available
     if (affiliateLinksMarkdown) {
       fullContent += affiliateLinksMarkdown;
     }
 
-    fullContent += introResponse.content[0].text + "\n\n";
+    // Then add the introduction
+    let introContent = introResponse.content[0].text;
+    introContent = trimToCompleteSentence(introContent);
+    fullContent += introContent + "\n\n";
 
     // Create a map of affiliate links for easier reference
     const affiliateLinksMap = Array.isArray(post.affiliateLinks)
@@ -498,8 +497,6 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
         );
         productCodeUsage[code] = (matches || []).length;
       });
-
-      fullContent += sectionContent + "\n\n";
 
       // Count affiliate link usage in this section
       Object.keys(affiliateLinksMap).forEach((name) => {
