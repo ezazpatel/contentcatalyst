@@ -6,6 +6,7 @@ import {
   searchViatorProducts,
   getViatorAffiliateUrl,
 } from "./services/viator-search";
+import { convertMarkdownToHTML } from "./src/utils/convertMarkdownToHTML";
 
 // Create an Anthropic client
 const client = new Anthropic({
@@ -14,41 +15,6 @@ const client = new Anthropic({
 
 // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const ANTHROPIC_MODEL = "claude-3-7-sonnet-20250219";
-
-// Add a function to convert markdown to HTML
-function convertMarkdownToHTML(content: string): string {
-  // Convert headings, but skip h1 as it's reserved for the title
-  content = content.replace(/^## (.+)$/gm, "<h2>$1</h2>");
-  content = content.replace(/^### (.+)$/gm, "<h3>$1</h3>");
-
-  // Convert images
-  content = content.replace(
-    /!\[([^\]]*)\]\(([^)]+)\)/g,
-    '<img src="$2" alt="$1">',
-  );
-
-  // Convert links - matches [text](url) pattern
-  content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-
-  // Convert paragraphs - add proper spacing
-  content = content
-    .split("\n\n")
-    .map((para) => {
-      if (!para.trim()) return "";
-      if (
-        para.startsWith("<h") ||
-        para.startsWith("<img") ||
-        para.startsWith("<ul") ||
-        para.startsWith("<ol")
-      ) {
-        return para;
-      }
-      return `<p>${para}</p>`;
-    })
-    .join("\n\n");
-
-  return content;
-}
 
 async function findRelevantPosts(
   keyword: string,
@@ -353,12 +319,15 @@ Format your response:
       console.log("Generating content for section:", section.heading);
 
       // Create URL to product code mapping
-      const urlToProductCode = affiliateLinks.reduce((acc, link) => {
-        if (link.url && link.productCode) {
-          acc[link.url] = link.productCode;
-        }
-        return acc;
-      }, {} as Record<string, string>);
+      const urlToProductCode = affiliateLinks.reduce(
+        (acc, link) => {
+          if (link.url && link.productCode) {
+            acc[link.url] = link.productCode;
+          }
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
 
       // Track usage by product code
       const productCodeUsage: Record<string, number> = {};
@@ -383,8 +352,10 @@ Do NOT mention this product more than ${remainingMentions} more times in this se
 Mention specific features or benefits naturally within the content.`;
       } else if (Object.keys(urlToProductCode).length > 0) {
         const availableLinks = affiliateLinks
-          .filter(link => link.url && (productCodeUsage[link.productCode] || 0) < 2)
-          .map(link => `- [${link.name}](${link.url})`);
+          .filter(
+            (link) => link.url && (productCodeUsage[link.productCode] || 0) < 2,
+          )
+          .map((link) => `- [${link.name}](${link.url})`);
 
         if (availableLinks.length > 0) {
           affiliateInstructions = `
@@ -523,13 +494,6 @@ Use proper markdown:
     fullContent += conclusionResponse.content[0].text;
 
     // Images will be handled by the MarkdownRenderer component based on affiliate link placement
-
-    if (affiliateImages.length > 0) {
-      const imagesMarkdown = affiliateImages
-        .map(img => `![${img.alt}](${img.url})`)
-        .join("\n\n");
-      fullContent += "\n\n" + imagesMarkdown;
-    }
 
     // Calculate word count
     const wordCount = fullContent.split(/\s+/).length;
@@ -956,7 +920,7 @@ export async function checkScheduledPosts() {
             const postData = {
               title: { raw: updatedPost.title },
               content: {
-                raw: convertMarkdownToHTML(updatedPost.content),
+                raw: convertMarkdownToHTML(updatedPost.content, updatedPost.affiliateImages || []),
               },
               status: "publish",
               excerpt: { raw: updatedPost.description || "" },

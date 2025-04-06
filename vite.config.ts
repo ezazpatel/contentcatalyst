@@ -12,6 +12,13 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@jridgewell/trace-mapping']
   },
+  build: {
+    rollupOptions: {
+      external: ['react-remove-scroll-bar/constants']
+    },
+    outDir: path.resolve(__dirname, "dist/public"),
+    emptyOutDir: true,
+  },
   plugins: [
     react(),
     runtimeErrorOverlay(),

@@ -4,40 +4,7 @@ import { storage } from "./storage";
 import { insertBlogPostSchema } from "@shared/schema";
 import { checkScheduledPosts } from "./scheduler";
 import { runMigrations } from "./migrations";
-
-function convertMarkdownToHTML(markdown: string, affiliateImages?: any[]): string {
-  let imageIndex = 0;
-  // Convert standard markdown images to WordPress format using affiliate images
-  markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt) => {
-    const image = affiliateImages?.[imageIndex++];
-    if (!image) return '';
-    
-    return `
-<!-- wp:image {"sizeSlug":"large"} -->
-<figure class="wp-block-image size-large">
-  <img src="${image.url}" alt="${image.alt || alt}"/>
-  <figcaption class="wp-element-caption">${image.alt || alt}</figcaption>
-</figure>
-<!-- /wp:image -->`;
-  });
-
-  // Convert markdown to HTML
-  let html = markdown
-    .replace(/^### (.*$)/gm, "<h3>$1</h3>")
-    .replace(/^## (.*$)/gm, "<h2>$1</h2>")
-    .replace(/^# (.*$)/gm, "<h1>$1</h1>")
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.*?)\*/g, "<em>$1</em>")
-    .replace(/^\s*[-+*]\s+(.*)/gm, "<li>$1</li>")
-    .replace(/(<li>.*<\/li>\n?)+/g, "<ul>$&</ul>")
-    .replace(/^\d+\.\s+(.*)/gm, "<li>$1</li>")
-    .replace(/(<li>.*<\/li>\n?)+/g, "<ol>$&</ol>")
-    .replace(/^(?!<[uo]l|<li|<h[1-6])(.*$)/gm, "<p>$1</p>");
-
-  // Restore gallery blocks
-  html = html.replace(/{{GALLERY_PLACEHOLDER_(\d+)}}/g, (_, index) => galleries[parseInt(index)]);
-  return html;
-}
+import { convertMarkdownToHTML } from "./src/utils/convertMarkdownToHTML";
 
 export async function registerRoutes(app: Express) {
   await runMigrations();
@@ -55,26 +22,28 @@ export async function registerRoutes(app: Express) {
       res.status(404).json({ message: "Post not found" });
       return;
     }
-    
+
     if (post.affiliateImages) {
-      post.affiliateImages = post.affiliateImages.map(img => {
+      post.affiliateImages = post.affiliateImages.map((img) => {
         const bestVariant = img.variants?.reduce((best, current) => {
           const currentRes = (current.width || 0) * (current.height || 0);
           const bestRes = (best?.width || 0) * (best?.height || 0);
           return currentRes > bestRes ? current : best;
         }, null);
 
-        const imageUrl = bestVariant?.url || 
-                        img.variants?.[0]?.url || 
-                        img.url?.replace('-50x50', '') || 
-                        img.url || '';
+        const imageUrl =
+          bestVariant?.url ||
+          img.variants?.[0]?.url ||
+          img.url?.replace("-50x50", "") ||
+          img.url ||
+          "";
 
         return {
           url: imageUrl,
-          alt: img.caption || '',
-          affiliateUrl: img.affiliateUrl || '',
-          heading: img.heading || '',
-          productCode: img.productCode || '',
+          alt: img.caption || "",
+          affiliateUrl: img.affiliateUrl || "",
+          heading: img.heading || "",
+          productCode: img.productCode || "",
         };
       });
     }
@@ -265,14 +234,15 @@ export async function registerRoutes(app: Express) {
         ? `${apiUrl}/wp/v2/posts`
         : `${apiUrl}/wp/v2/posts`;
 
-      const htmlContent = convertMarkdownToHTML(req.body.content, req.body.affiliateImages);
+      const htmlContent = convertMarkdownToHTML(updatedPost.content, updatedPost.affiliateImages);
+
 
       // Find highest resolution image overall for featured image
       const allImages = req.body.affiliateImages || [];
       let featuredImage = null;
       let maxResolution = 0;
 
-      allImages.forEach(img => {
+      allImages.forEach((img) => {
         if (img.width && img.height) {
           const resolution = img.width * img.height;
           if (resolution > maxResolution) {
@@ -282,12 +252,10 @@ export async function registerRoutes(app: Express) {
         }
       });
 
-      console.log('[Publish Debug] Content being published:', {
+      console.log("[Publish Debug] Content being published:", {
         title: req.body.title,
-        content: req.body.content.slice(0, 500) + '...' // Log first 500 chars to avoid console flood
+        content: req.body.content.slice(0, 500) + "...", // Log first 500 chars to avoid console flood
       });
-
-      console.log('[WORDPRESS FINAL CONTENT]', convertMarkdownToHTML(req.body.content).slice(0, 500));
 
       const response = await fetch(endpoint, {
         method: "POST",
