@@ -514,13 +514,20 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
         }
       });
 
-      // Track internal link usage similar to affiliate links
+      // Track and filter internal links
       Object.keys(internalLinksUsage).forEach((url) => {
         const regex = new RegExp(`\\[.*?\\]\\(${url}\\)`, "g");
         const matches = sectionContent.match(regex);
         if (matches) {
-          internalLinksUsage[url] =
-            (internalLinksUsage[url] || 0) + matches.length;
+          internalLinksUsage[url] = (internalLinksUsage[url] || 0) + matches.length;
+          // If link is used more than once, remove subsequent occurrences
+          if (internalLinksUsage[url] > 1) {
+            const allMatches = [...sectionContent.matchAll(regex)];
+            // Keep first occurrence, remove others
+            for (let i = 1; i < allMatches.length; i++) {
+              sectionContent = sectionContent.replace(allMatches[i][0], '');
+            }
+          }
         }
       });
     }
