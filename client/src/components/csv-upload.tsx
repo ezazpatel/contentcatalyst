@@ -12,23 +12,42 @@ interface CSVUploadProps {
 
 function generateProperTitle(keywords: string): string {
   // Remove special characters and extra spaces
-  const cleanKeywords = keywords.replace(/[|]/g, ' and ').trim();
+  const cleanKeywords = keywords.replace(/[|]/g, " and ").trim();
 
   // Split into words and capitalize first letter of each significant word
-  const words = cleanKeywords.split(' ');
-  const properTitle = words.map((word, index) => {
-    // Don't capitalize articles, conjunctions, and prepositions unless they're the first word
-    const lowercaseWords = ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'of', 'in'];
-    if (index === 0 || !lowercaseWords.includes(word.toLowerCase())) {
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    }
-    return word.toLowerCase();
-  }).join(' ');
+  const words = cleanKeywords.split(" ");
+  const properTitle = words
+    .map((word, index) => {
+      // Don't capitalize articles, conjunctions, and prepositions unless they're the first word
+      const lowercaseWords = [
+        "a",
+        "an",
+        "the",
+        "and",
+        "but",
+        "or",
+        "for",
+        "nor",
+        "on",
+        "at",
+        "to",
+        "of",
+        "in",
+      ];
+      if (index === 0 || !lowercaseWords.includes(word.toLowerCase())) {
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }
+      return word.toLowerCase();
+    })
+    .join(" ");
 
   // Add a meaningful prefix based on content type
-  if (keywords.toLowerCase().includes('things to see') || keywords.toLowerCase().includes('things to do')) {
+  if (
+    keywords.toLowerCase().includes("things to see") ||
+    keywords.toLowerCase().includes("things to do")
+  ) {
     return `Complete Guide to ${properTitle}`;
-  } else if (keywords.toLowerCase().includes('itinerary')) {
+  } else if (keywords.toLowerCase().includes("itinerary")) {
     return `${properTitle}: Your Perfect Travel Guide`;
   } else {
     return `Ultimate Guide to ${properTitle}`;
@@ -56,8 +75,8 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
       complete: (results) => {
         try {
           // Filter out rows where all fields are empty
-          const nonEmptyRows = results.data.filter((row: any) => 
-            Object.values(row).some(value => value && String(value).trim())
+          const nonEmptyRows = results.data.filter((row: any) =>
+            Object.values(row).some((value) => value && String(value).trim()),
           );
 
           const processedData = nonEmptyRows.map((row: any, index: number) => {
@@ -72,16 +91,24 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
               }
 
               // Process affiliate links
-              const affiliateNames = row["Affiliate Product Names"] ? 
-                row["Affiliate Product Names"].split('|').map((name: string) => name.trim()) : [];
-              const affiliateUrls = row["Affiliate Product URLs"] ? 
-                row["Affiliate Product URLs"].split('|').map((url: string) => url.trim()) : [];
+              const affiliateNames = row["Affiliate Product Names"]
+                ? row["Affiliate Product Names"]
+                    .split("|")
+                    .map((name: string) => name.trim())
+                : [];
+              const affiliateUrls = row["Affiliate Product URLs"]
+                ? row["Affiliate Product URLs"]
+                    .split("|")
+                    .map((url: string) => url.trim())
+                : [];
 
               // Match affiliate names with URLs
-              const affiliateLinks = affiliateNames.map((name: string, i: number) => ({
-                name,
-                url: affiliateUrls[i] || ''
-              })).filter(link => link.name && link.url);
+              const affiliateLinks = affiliateNames
+                .map((name: string, i: number) => ({
+                  name,
+                  url: affiliateUrls[i] || "",
+                }))
+                .filter((link) => link.name && link.url);
 
               // Combine date and time
               const date = row["Scheduled Date"].trim();
@@ -89,7 +116,9 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
               const scheduledDateTime = new Date(`${date} ${time}`);
 
               if (isNaN(scheduledDateTime.getTime())) {
-                throw new Error("Invalid date/time format. Use YYYY-MM-DD for date and HH:MM for time");
+                throw new Error(
+                  "Invalid date/time format. Use YYYY-MM-DD for date and HH:MM for time",
+                );
               }
 
               // Validate future date
@@ -98,27 +127,25 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
               }
 
               // Generate a proper title if none provided
-              const title = row.Title?.trim() || generateProperTitle(row.Keywords);
+              const title =
+                row.Title?.trim() || generateProperTitle(row.Keywords);
 
               // Transform to InsertBlogPost format
               return {
                 title,
-                keywords: row.Keywords.split(',').map((k: string) => k.trim()),
+                keywords: row.Keywords.split(",").map((k: string) => k.trim()),
                 content: "", // Will be generated by AI
-                status: 'scheduled',
-                description: row["Content Instructions"]?.trim() || '',
-                seoTitle: row["SEO Title"]?.trim() || '',
-                seoDescription: row["SEO Description"]?.trim() || '',
+                status: "scheduled",
+                description: row["Content Instructions"]?.trim() || "",
+                seoTitle: row["SEO Title"]?.trim() || "",
+                seoDescription: row["SEO Description"]?.trim() || "",
                 scheduledDate: scheduledDateTime,
                 affiliateLinks,
-                internalLinks: row["Internal Link Title"] ? [{
-                  title: row["Internal Link Title"].trim(),
-                  url: row["Internal Link URL"]?.trim() || '',
-                  description: row["Internal Link Description"]?.trim() || ''
-                }] : []
               } as InsertBlogPost;
             } catch (error) {
-              throw new Error(`Row ${index + 2}: ${error instanceof Error ? error.message : 'Invalid data'}`);
+              throw new Error(
+                `Row ${index + 2}: ${error instanceof Error ? error.message : "Invalid data"}`,
+              );
             }
           });
 
@@ -130,13 +157,16 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
 
           // Clear the input
           if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+            fileInputRef.current.value = "";
           }
         } catch (error) {
           console.error("CSV Processing Error:", error);
           toast({
             title: "Error Processing CSV",
-            description: error instanceof Error ? error.message : "Please check if your CSV matches the template format",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Please check if your CSV matches the template format",
             variant: "destructive",
           });
         } finally {
@@ -146,16 +176,18 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
       error: (error) => {
         toast({
           title: "Error",
-          description: "Could not read the CSV file. Please make sure it's properly formatted.",
+          description:
+            "Could not read the CSV file. Please make sure it's properly formatted.",
           variant: "destructive",
         });
         setIsProcessing(false);
-      }
+      },
     });
   };
 
   const downloadTemplate = () => {
-    const template = "Keywords,Title,Scheduled Date,Scheduled Time,Affiliate Product Names,Affiliate Product URLs,Content Instructions,SEO Title,SEO Description,Internal Link Title,Internal Link URL,Internal Link Description\n" +
+    const template =
+      "Keywords,Title,Scheduled Date,Scheduled Time,Affiliate Product Names,Affiliate Product URLs,Content Instructions,SEO Title,SEO Description\n" +
       "vancouver trip itinerary,,2025-03-22,18:30,Vancouver: Flyover Experience|Vancouver: Seaplane Tour,https://example.com/flyover|https://example.com/seaplane,Write about top tourist destinations,,,,,,";
 
     const blob = new Blob([template], { type: "text/csv" });
@@ -177,9 +209,9 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
           onChange={handleFileUpload}
           className="hidden"
         />
-        <Button 
-          variant="secondary" 
-          className="bg-black text-white hover:bg-gray-900" 
+        <Button
+          variant="secondary"
+          className="bg-black text-white hover:bg-gray-900"
           onClick={() => fileInputRef.current?.click()}
           disabled={isProcessing}
         >
