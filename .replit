@@ -67,3 +67,12 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "tsx server/scripts/analyze-products.ts"
+
+[[workflows.workflow]]
+name = "List WordPress URLs"
+author = 13297522
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "tsx server/scripts/list-wordpress-urls.ts"
