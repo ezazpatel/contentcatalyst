@@ -71,6 +71,19 @@ export function BlogForm({
               >
                 <Trash className="h-4 w-4" />
               </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              const keywords = form.getValues("keywords");
+              form.setValue("keywords", [...keywords, ""]);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" /> Add Primary Keyword Phrase
+          </Button>
+        </div>
 
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Secondary Keywords (for blog content)</h3>
@@ -105,10 +118,6 @@ export function BlogForm({
             <Plus className="h-4 w-4 mr-2" /> Add Secondary Keyword Phrase
           </Button>
         </div>
-
-            </div>
-          ))}
-          <Button
             type="button"
             variant="outline"
             onClick={() => {
