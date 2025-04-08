@@ -273,9 +273,9 @@ Format your response as JSON:
       throw new Error("Failed to generate outline: Invalid API response format");
     }
 
-    const outlineText = outlineResponse.content;
+    const outlineText = outlineResponse.content.value;
     console.log("Outline response text:", outlineText);
-    
+
     const outlineJson =
       outlineText.match(/```json\s*([\s\S]*?)\s*```/) ||
       outlineText.match(/{[\s\S]*}/);
