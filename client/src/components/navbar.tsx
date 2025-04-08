@@ -31,7 +31,7 @@ export function Navbar() {
       queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
       toast({
         title: "Test Mode Updated",
-        description: `Test mode has been ${settings?.test_mode ? 'enabled' : 'disabled'}.`,
+        description: `Test mode has been ${!settings?.test_mode ? 'enabled' : 'disabled'}.`,
       });
     },
     onError: (error) => {
