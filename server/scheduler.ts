@@ -449,29 +449,6 @@ Format your response:
     for (const section of outlineResult.outline || []) {
       console.log("Generating content for section:", section.heading);
 
-      // Generate section content
-      const sectionPrompt = `Continue the blog post titled "${outlineResult.title}" by writing the section "${section.heading}".
-
-Write detailed, engaging content for this section and its subheadings:
-${section.subheadings.map(subheading => `- ${subheading}`).join('\n')}
-
-Use these guidelines:
-1. Write naturally and conversationally
-2. Include specific details and examples
-3. Keep each subheading section around 150-200 words
-4. Maintain the blog's helpful, friendly tone`;
-
-      const sectionResponse = await client.messages.create({
-        model: ANTHROPIC_MODEL,
-        max_tokens: 1000,
-        temperature: 0.7,
-        messages: [{ role: "user", content: sectionPrompt }]
-      });
-
-      let sectionContent = extractTextFromResponse(sectionResponse);
-      sectionContent = trimToCompleteSentence(sectionContent);
-      fullContent += `\n\n## ${section.heading}\n\n${sectionContent}\n`;
-
       // Create URL to product code mapping
       const urlToProductCode = affiliateLinks.reduce(
         (acc, link) => {
