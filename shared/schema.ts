@@ -43,6 +43,7 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts)
   .omit({ id: true })
   .extend({
     keywords: z.array(z.string().min(1, "Keyword cannot be empty")),
+    secondaryKeywords: z.array(z.string()).optional().default([]),
     affiliateLinks: z.array(z.object({
       name: z.string(),
       url: z.string().url("Invalid URL").or(z.string().length(0))

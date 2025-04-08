@@ -134,6 +134,7 @@ async function generateContent(
   keywords: string[],
   description: string = "",
   post: any = {},
+  secondaryKeywords: string[] = [],
 ): Promise<{
   content: string;
   title: string;
@@ -245,7 +246,10 @@ Affiliate URL: ${url || "Not generated"}\n`);
 
   try {
     console.log("Step 1: Generating title and outline...");
-    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a blog post about: ${keywords.join(", ")}.
+    const mainKeywords = secondaryKeywords.length > 0 ? secondaryKeywords : keywords;
+    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a blog post about: ${mainKeywords.join(", ")}.
+
+Please naturally incorporate these product-related keywords as well: ${keywords.join(", ")}.
 
 ${
   post.description
@@ -681,6 +685,7 @@ export async function checkScheduledPosts() {
           post.keywords,
           post.description || "",
           post,
+          post.secondaryKeywords || [],
         );
 
         // Update the post with generated content and images
