@@ -268,12 +268,12 @@ Format your response as JSON:
       messages: [{ role: "user", content: outlinePrompt }],
     });
 
-    if (!outlineResponse.content || !Array.isArray(outlineResponse.content) || outlineResponse.content.length === 0) {
+    if (!outlineResponse.content) {
       console.error("Invalid outline response format:", outlineResponse);
       throw new Error("Failed to generate outline: Invalid API response format");
     }
 
-    const outlineText = outlineResponse.content[0].text;
+    const outlineText = outlineResponse.content;
     console.log("Outline response text:", outlineText);
     
     const outlineJson =
