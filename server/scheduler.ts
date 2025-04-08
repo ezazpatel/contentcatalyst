@@ -293,7 +293,7 @@ Affiliate URL: ${url || "Not generated"}\n`);
   }`;
 
     const outlineResponse = await client.messages.create({
-      model: "ANTHROPIC_MODEL",
+      model: ANTHROPIC_MODEL,
       max_tokens: 1000,
       temperature: 0.7,
       messages: [{ role: "user", content: outlinePrompt }],
@@ -315,10 +315,12 @@ Affiliate URL: ${url || "Not generated"}\n`);
     let outlineResult;
     try {
       let jsonStr = Array.isArray(outlineJson) ? outlineJson[1] || outlineJson[0] : outlineJson;
-      
-      // Remove code block markers if present
+
       jsonStr = jsonStr.replace(/```json|```/g, "").trim();
-      
+
+      // 🛠️ Clean invalid control characters
+      jsonStr = jsonStr.replace(/[\u0000-\u001F\u007F]/g, "");
+
       outlineResult = JSON.parse(jsonStr);
       
       // Handle different response formats
@@ -551,7 +553,7 @@ Format with proper markdown:
 ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for this subheading]`).join("\n\n")}`;
 
       const sectionResponse = await client.messages.create({
-        model: "ANTHROPIC_MODEL",
+        model: ANTHROPIC_MODEL,
         max_tokens: 700,
         temperature: 0.7,
         messages: [{ role: "user", content: sectionPrompt }],
@@ -629,7 +631,7 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
 [Your conclusion here]`;
 
     const conclusionResponse = await client.messages.create({
-      model: "ANTHROPIC_MODEL",
+      model: ANTHROPIC_MODEL,
       max_tokens: 500,
       temperature: 0.7,
       messages: [{ role: "user", content: conclusionPrompt }],
