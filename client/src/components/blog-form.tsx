@@ -36,6 +36,7 @@ export function BlogForm({
     resolver: zodResolver(insertBlogPostSchema),
     defaultValues: {
       keywords: [""],
+      secondaryKeywords: [""],
       affiliateLinks: [],
       internalLinks: [],
       scheduledDate: new Date(),
@@ -51,7 +52,7 @@ export function BlogForm({
         className="space-y-6 max-w-2xl mx-auto"
       >
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Keyword Phrase</h3>
+          <h3 className="text-lg font-medium">Primary Keywords (for Viator search)</h3>
           {form.watch("keywords").map((_, index) => (
             <div key={index} className="flex gap-2">
               <Input
@@ -70,6 +71,41 @@ export function BlogForm({
               >
                 <Trash className="h-4 w-4" />
               </Button>
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Secondary Keywords (for blog content)</h3>
+          {form.watch("secondaryKeywords").map((_, index) => (
+            <div key={index} className="flex gap-2">
+              <Input
+                {...form.register(`secondaryKeywords.${index}`)}
+                placeholder="Enter secondary keyword phrase"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  const keywords = form.getValues("secondaryKeywords");
+                  keywords.splice(index, 1);
+                  form.setValue("secondaryKeywords", keywords);
+                }}
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              const keywords = form.getValues("secondaryKeywords");
+              form.setValue("secondaryKeywords", [...keywords, ""]);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" /> Add Secondary Keyword Phrase
+          </Button>
+        </div>
+
             </div>
           ))}
           <Button
