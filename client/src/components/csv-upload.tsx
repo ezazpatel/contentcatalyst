@@ -130,14 +130,6 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
               const title =
                 row.Title?.trim() || generateProperTitle(row.Keywords);
 
-              const date = row["Scheduled Date"]?.trim() || "";
-              const time = row["Scheduled Time"]?.trim() || "";
-              const scheduledDateTime = new Date(`${date} ${time}`);
-
-              if (isNaN(scheduledDateTime.getTime())) {
-                throw new Error("Invalid date/time format");
-              }
-
               return {
                 title: "",
                 keywords: [row["Primary Keyword"]].filter(k => k?.trim()),
