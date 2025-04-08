@@ -10,15 +10,15 @@ import { convertMarkdownToHTML } from "./src/utils/convertMarkdownToHTML";
 
 function trimToCompleteSentence(text) {
   // If the text already ends with a sentence-ending punctuation, return as is
-  if (text.endsWith('.') || text.endsWith('!') || text.endsWith('?')) {
+  if (text.endsWith(".") || text.endsWith("!") || text.endsWith("?")) {
     return text;
   }
 
   // Find the last occurrence of sentence-ending punctuation
   const lastSentenceEnd = Math.max(
-    text.lastIndexOf('. '), // Note the space after period to avoid cutting at abbreviations
-    text.lastIndexOf('! '),
-    text.lastIndexOf('? ')
+    text.lastIndexOf(". "), // Note the space after period to avoid cutting at abbreviations
+    text.lastIndexOf("! "),
+    text.lastIndexOf("? "),
   );
 
   // If we found a valid endpoint, trim to that point plus the punctuation mark
@@ -28,9 +28,9 @@ function trimToCompleteSentence(text) {
 
   // Fallback: if no sentence endings were found with spaces after, try without spaces
   const absoluteLastEnd = Math.max(
-    text.lastIndexOf('.'),
-    text.lastIndexOf('!'),
-    text.lastIndexOf('?')
+    text.lastIndexOf("."),
+    text.lastIndexOf("!"),
+    text.lastIndexOf("?"),
   );
 
   if (absoluteLastEnd > 0) {
@@ -46,8 +46,7 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
-const ANTHROPIC_MODEL = "claude-3-7-sonnet-20250219";
+const ANTHROPIC_MODEL = "claude-3-5-haiku-20241022";
 
 async function findRelevantPosts(
   keyword: string,
@@ -82,18 +81,21 @@ async function uploadImageToWordPress(imageUrl: string): Promise<number> {
   const imageResponse = await fetch(imageUrl);
   const imageBuffer = await imageResponse.arrayBuffer();
   const authToken = Buffer.from(
-    `${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`
+    `${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_AUTH_TOKEN}`,
   ).toString("base64");
 
-  const uploadResponse = await fetch(`${process.env.WORDPRESS_API_URL}/wp/v2/media`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${authToken}`,
-      "Content-Disposition": `attachment; filename="featured.jpg"`,
-      "Content-Type": "image/jpeg", // you can make this dynamic based on the file type if needed
+  const uploadResponse = await fetch(
+    `${process.env.WORDPRESS_API_URL}/wp/v2/media`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${authToken}`,
+        "Content-Disposition": `attachment; filename="featured.jpg"`,
+        "Content-Type": "image/jpeg", // you can make this dynamic based on the file type if needed
+      },
+      body: Buffer.from(imageBuffer),
     },
-    body: Buffer.from(imageBuffer),
-  });
+  );
 
   if (!uploadResponse.ok) {
     const errorText = await uploadResponse.text();
@@ -292,6 +294,16 @@ Format your response as JSON:
       };
     }
 
+    // Generate a new excerpt from Claude
+    const excerptPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a catchy, 1-2 sentence excerpt for a blog post titled "${outlineResult.title}" that entices readers to continue reading.`;
+    const excerptResponse = await client.messages.create({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 150,
+      temperature: 0.7,
+      messages: [{ role: "user", content: excerptPrompt }],
+    });
+    const postExcerpt = trimToCompleteSentence(excerptResponse.content[0].text);
+
     // Prepare affiliate links section if available
     let affiliateLinksMarkdown = "";
     if (Array.isArray(post.affiliateLinks) && post.affiliateLinks.length > 0) {
@@ -334,7 +346,13 @@ Format your response:
 
     let fullContent = "";
 
-    // Add affiliate links section right after intro if available
+    // Add title
+    fullContent += `# ${outlineResult.title}\n\n`;
+
+    // Add the excerpt
+    fullContent += `${postExcerpt}\n\n`;
+
+    // Add affiliate links section right after the excerpt
     if (affiliateLinksMarkdown) {
       fullContent += affiliateLinksMarkdown;
     }
@@ -397,7 +415,7 @@ Format your response:
       if (link && urlToProductCode[link.url]) {
         const url = link.url;
         const productCode = urlToProductCode[url];
-        const remainingMentions = 2 - (productCodeUsage[productCode] || 0);
+        const remainingMentions = 1 - (productCodeUsage[productCode] || 0);
 
         affiliateInstructions = `
 This section MUST clearly and naturally feature [${link.name}](${url}) as an H2 or H3 heading.
@@ -477,7 +495,7 @@ Format with proper markdown:
 ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for this subheading]`).join("\n\n")}`;
 
       const sectionResponse = await client.messages.create({
-        model: "claude-3-7-sonnet-20250219",
+        model: "claude-3-5-haiku-20241022",
         max_tokens: 700,
         temperature: 0.7,
         messages: [{ role: "user", content: sectionPrompt }],
@@ -516,13 +534,14 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
         const regex = new RegExp(`\\[.*?\\]\\(${url}\\)`, "g");
         const matches = sectionContent.match(regex);
         if (matches) {
-          internalLinksUsage[url] = (internalLinksUsage[url] || 0) + matches.length;
+          internalLinksUsage[url] =
+            (internalLinksUsage[url] || 0) + matches.length;
           // If link is used more than once, remove subsequent occurrences
           if (internalLinksUsage[url] > 1) {
             const allMatches = [...sectionContent.matchAll(regex)];
             // Keep first occurrence, remove others
             for (let i = 1; i < allMatches.length; i++) {
-              sectionContent = sectionContent.replace(allMatches[i][0], '');
+              sectionContent = sectionContent.replace(allMatches[i][0], "");
             }
           }
         }
@@ -554,13 +573,11 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
 [Your conclusion here]`;
 
     const conclusionResponse = await client.messages.create({
-      model: "claude-3-7-sonnet-20250219",
+      model: "claude-3-5-haiku-20241022",
       max_tokens: 500,
       temperature: 0.7,
       messages: [{ role: "user", content: conclusionPrompt }],
     });
-
-    fullContent += conclusionResponse.content[0].text;
 
     let conclusionContent = conclusionResponse.content[0].text;
     conclusionContent = trimToCompleteSentence(conclusionContent);
@@ -664,10 +681,18 @@ export async function checkScheduledPosts() {
               : `${apiUrl}/wp/v2/posts`;
 
             let featuredImageId = null;
-            if (updatedPost.affiliateImages && updatedPost.affiliateImages.length > 0) {
+            if (
+              updatedPost.affiliateImages &&
+              updatedPost.affiliateImages.length > 0
+            ) {
               try {
-                featuredImageId = await uploadImageToWordPress(updatedPost.affiliateImages[0].url);
-                console.log("✅ Uploaded featured image. Media ID:", featuredImageId);
+                featuredImageId = await uploadImageToWordPress(
+                  updatedPost.affiliateImages[0].url,
+                );
+                console.log(
+                  "✅ Uploaded featured image. Media ID:",
+                  featuredImageId,
+                );
               } catch (error) {
                 console.warn("⚠️ Failed to upload featured image:", error);
               }
