@@ -296,39 +296,47 @@ Format your response as JSON:
       messages: [{ role: "user", content: outlinePrompt }],
     });
 
-    if (!outlineResponse.content || !Array.isArray(outlineResponse.content) || outlineResponse.content.length === 0) {
-      console.error("Invalid outline response format:", outlineResponse);
-      throw new Error("Failed to generate outline: Invalid API response format");
-    }
-
     const outlineText = extractTextFromResponse(outlineResponse);
     console.log("Outline response text:", outlineText);
     
+    // Extract JSON from the response text
     const outlineJson =
       outlineText.match(/```json\s*([\s\S]*?)\s*```/) ||
       outlineText.match(/{[\s\S]*}/);
+    
+    if (!outlineJson) {
+      console.error("No JSON found in outline response");
+      throw new Error("Failed to extract JSON from outline response");
+    }
+
     let outlineResult;
+    try {
+      let jsonStr = Array.isArray(outlineJson) ? outlineJson[1] || outlineJson[0] : outlineJson;
+      
+      // Remove code block markers if present
+      jsonStr = jsonStr.replace(/```json|```/g, "").trim();
+      
+      outlineResult = JSON.parse(jsonStr);
+      
+      // Handle different response formats
+      if (outlineResult.blogPost) {
+        // If outline is nested under blogPost
+        outlineResult = {
+          title: outlineResult.title || outlineResult.blogPost.title,
+          outline: outlineResult.blogPost.outline || []
+        };
+      } else if (!outlineResult.outline) {
+        // Ensure we have a valid outline array
+        outlineResult = {
+          title: outlineResult.title || "Blog Post",
+          outline: []
+        };
+      }
 
-    if (outlineJson) {
-      try {
-        let jsonStr = typeof outlineJson === 'string' ? outlineJson : 
-                      (Array.isArray(outlineJson) ? outlineJson[0] : JSON.stringify(outlineJson));
-
-        // Remove code block markers if present
-        jsonStr = jsonStr.replace(/```json|```/g, "").trim();
-
-        outlineResult = JSON.parse(jsonStr);
-
-        // Ensure we have a proper outline format
-        if (!outlineResult.title || !outlineResult.outline) {
-          // Handle case where response might be nested
-          if (outlineResult.content && outlineResult.content.outline) {
-            outlineResult = {
-              title: outlineResult.title || outlineResult.content.title,
-              outline: outlineResult.content.outline
-            };
-          }
-        }
+      // Validate the outline structure
+      if (!Array.isArray(outlineResult.outline)) {
+        outlineResult.outline = [];
+      }
       } catch (e) {
         console.error("Failed to parse outline JSON:", e, outlineJson);
         outlineResult = {
