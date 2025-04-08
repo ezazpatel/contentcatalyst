@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
@@ -118,16 +119,6 @@ export function BlogForm({
             <Plus className="h-4 w-4 mr-2" /> Add Secondary Keyword Phrase
           </Button>
         </div>
-            type="button"
-            variant="outline"
-            onClick={() => {
-              const keywords = form.getValues("keywords");
-              form.setValue("keywords", [...keywords, ""]);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" /> Add Keyword Phrase
-          </Button>
-        </div>
 
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Affiliate Links (Optional)</h3>
@@ -232,7 +223,6 @@ export function BlogForm({
                     date.setHours(parseInt(hours), parseInt(minutes));
                     form.setValue("scheduledDate", date);
                   } else {
-                    // If current date is invalid, create a new valid date
                     const newDate = new Date();
                     newDate.setHours(parseInt(hours), parseInt(minutes));
                     form.setValue("scheduledDate", newDate);
