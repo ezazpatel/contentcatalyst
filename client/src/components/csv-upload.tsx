@@ -127,8 +127,9 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
               }
 
               // Generate a proper title if none provided
-              const title =
-              row.Title?.trim() || generateProperTitle(row["Primary Keyword"]);
+              const mainKeyword = row["Secondary Keyword"]?.trim() || row["Primary Keyword"];
+              const title = row.Title?.trim() || generateProperTitle(mainKeyword);
+
 
               return {
                 title,
@@ -138,6 +139,7 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
                 status: "scheduled",
                 scheduledDate: scheduledDateTime,
                 affiliateLinks: [],
+                affiliateImages: [], // ✅ <-- this line fixes the type error
               } as InsertBlogPost;
             } catch (error) {
               throw new Error(
