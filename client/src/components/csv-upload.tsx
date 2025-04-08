@@ -82,8 +82,8 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
           const processedData = nonEmptyRows.map((row: any, index: number) => {
             try {
               // Validate required fields
-              if (!row.Keywords?.trim()) {
-                throw new Error("Keywords are required");
+              if (!row["Primary Keyword"]?.trim()) {
+                throw new Error("Primary Keyword is required");
               }
 
               if (!row["Scheduled Date"]?.trim()) {
