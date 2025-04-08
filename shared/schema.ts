@@ -21,6 +21,7 @@ export const blogPosts = pgTable("blog_posts", {
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
   keywords: text("keywords").array().default([]).notNull(),
+  secondaryKeywords: text("secondary_keywords").array().default([]),
   description: text("description"), // This field stores content instructions
   scheduledDate: timestamp("scheduled_date"),
   publishedDate: timestamp("published_at"),

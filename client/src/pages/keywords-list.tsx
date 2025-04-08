@@ -182,8 +182,9 @@ export default function KeywordsList() {
               Date <ArrowUpDown className="inline h-4 w-4" />
             </TableHead>
             <TableHead onClick={() => toggleSort("keyword")} className="cursor-pointer">
-              Keyword <ArrowUpDown className="inline h-4 w-4" />
+              Primary Keyword <ArrowUpDown className="inline h-4 w-4" />
             </TableHead>
+            <TableHead>Secondary Keywords</TableHead>
             <TableHead onClick={() => toggleSort("status")} className="cursor-pointer">
               Status <ArrowUpDown className="inline h-4 w-4" />
             </TableHead>
@@ -203,6 +204,7 @@ export default function KeywordsList() {
                   {entry.publishDate ? format(entry.publishDate, "PPP 'at' p") : "Not set"}
                 </TableCell>
                 <TableCell>{entry.keyword}</TableCell>
+                <TableCell>{posts?.find(p => p.keywords.includes(entry.keyword))?.secondaryKeywords?.join(", ") || "-"}</TableCell>
                 <TableCell>
                   <span
                     className={`px-2 py-1 rounded-full text-xs ${

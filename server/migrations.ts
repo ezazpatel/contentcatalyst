@@ -71,7 +71,23 @@ export async function runMigrations() {
           ADD COLUMN affiliate_links JSONB DEFAULT '{}';
         `);
         console.log('Column added successfully');
-      } else {
+      }
+
+      // Check if secondary_keywords column exists, and add it if it doesn't
+      const secondaryKeywordsExists = await db.execute(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_name = 'blog_posts' AND column_name = 'secondary_keywords'
+        );
+      `);
+
+      if (!secondaryKeywordsExists.rows[0].exists) {
+        console.log('Adding secondary_keywords column to blog_posts table...');
+        await db.execute(`
+          ALTER TABLE blog_posts 
+          ADD COLUMN secondary_keywords TEXT[] DEFAULT '{}';
+        `);
+        console.log('Column added successfully');
       }
     }
 

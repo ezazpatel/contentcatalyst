@@ -71,7 +71,10 @@ export default function BlogsList() {
           <Card key={post.id} className="cursor-pointer hover:bg-accent h-full">
             <CardHeader>
               <div className="text-sm text-muted-foreground mb-2">
-                Keywords: {post.keywords.join(", ")}
+                <div>Primary Keywords: {post.keywords.join(", ")}</div>
+                {post.secondaryKeywords?.length > 0 && (
+                  <div className="mt-1">Secondary Keywords: {post.secondaryKeywords.join(", ")}</div>
+                )}
               </div>
               <CardTitle className="line-clamp-2">
                 {post.title || "Untitled Post"}
