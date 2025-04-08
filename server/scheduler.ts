@@ -8,6 +8,30 @@ import {
 } from "./services/viator-search";
 import { convertMarkdownToHTML } from "./src/utils/convertMarkdownToHTML";
 
+/**
+ * Extracts text content from an Anthropic API response, handling different response formats
+ * @param response The response from Anthropic API
+ * @returns The extracted text content
+ */
+function extractTextFromResponse(response) {
+  if (!response || !response.content) return '';
+
+  if (Array.isArray(response.content)) {
+    // For Claude 3.7 format
+    if (response.content[0] && response.content[0].text) {
+      return response.content[0].text;
+    } else if (typeof response.content[0] === 'string') {
+      return response.content[0];
+    }
+  } else if (typeof response.content === 'string') {
+    // For older API format
+    return response.content;
+  }
+
+  // If all else fails
+  return JSON.stringify(response.content);
+}
+
 function trimToCompleteSentence(text) {
   // If the text already ends with a sentence-ending punctuation, return as is
   if (text.endsWith(".") || text.endsWith("!") || text.endsWith("?")) {
@@ -46,7 +70,7 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const ANTHROPIC_MODEL = "claude-3-5-haiku-20241022";
+const ANTHROPIC_MODEL = "claude-3-5-haiku-latest";
 
 async function findRelevantPosts(
   keyword: string,
@@ -273,7 +297,7 @@ Format your response as JSON:
       throw new Error("Failed to generate outline: Invalid API response format");
     }
 
-    const outlineText = outlineResponse.content[0].text;
+    const outlineText = extractTextFromResponse(outlineResponse);
     console.log("Outline response text:", outlineText);
     
     const outlineJson =
@@ -283,22 +307,31 @@ Format your response as JSON:
 
     if (outlineJson) {
       try {
-        outlineResult = JSON.parse(
-          outlineJson[0].replace(/```json|```/g, "").trim(),
-        );
+        let jsonStr = typeof outlineJson === 'string' ? outlineJson : 
+                      (Array.isArray(outlineJson) ? outlineJson[0] : JSON.stringify(outlineJson));
+
+        // Remove code block markers if present
+        jsonStr = jsonStr.replace(/```json|```/g, "").trim();
+
+        outlineResult = JSON.parse(jsonStr);
+
+        // Ensure we have a proper outline format
+        if (!outlineResult.title || !outlineResult.outline) {
+          // Handle case where response might be nested
+          if (outlineResult.content && outlineResult.content.outline) {
+            outlineResult = {
+              title: outlineResult.title || outlineResult.content.title,
+              outline: outlineResult.content.outline
+            };
+          }
+        }
       } catch (e) {
-        console.error("Failed to parse outline JSON:", e);
+        console.error("Failed to parse outline JSON:", e, outlineJson);
         outlineResult = {
           title: "Blog Post About " + keywords.join(", "),
           outline: [],
         };
       }
-    } else {
-      console.error("Could not extract JSON from outline response");
-      outlineResult = {
-        title: "Blog Post About " + keywords.join(", "),
-        outline: [],
-      };
     }
 
     // Generate a new excerpt from Claude
@@ -309,8 +342,8 @@ Format your response as JSON:
       temperature: 0.7,
       messages: [{ role: "user", content: excerptPrompt }],
     });
-    const postExcerpt = trimToCompleteSentence(excerptResponse.content[0].text);
-
+    const postExcerpt = trimToCompleteSentence(extractTextFromResponse(excerptResponse));
+    
     // Prepare affiliate links section if available
     let affiliateLinksMarkdown = "";
     if (Array.isArray(post.affiliateLinks) && post.affiliateLinks.length > 0) {
@@ -365,7 +398,7 @@ Format your response:
     }
 
     // Then add the introduction
-    let introContent = introResponse.content[0].text;
+    let introContent = extractTextFromResponse(introResponse);
     introContent = trimToCompleteSentence(introContent);
     fullContent += introContent + "\n\n";
 
@@ -502,13 +535,13 @@ Format with proper markdown:
 ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for this subheading]`).join("\n\n")}`;
 
       const sectionResponse = await client.messages.create({
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-3-5-haiku-latest",
         max_tokens: 700,
         temperature: 0.7,
         messages: [{ role: "user", content: sectionPrompt }],
       });
 
-      let sectionContent = sectionResponse.content[0].text;
+      let sectionContent = extractTextFromResponse(sectionResponse);
       sectionContent = trimToCompleteSentence(sectionContent);
       fullContent += sectionContent + "\n\n";
 
@@ -580,13 +613,13 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
 [Your conclusion here]`;
 
     const conclusionResponse = await client.messages.create({
-      model: "claude-3-5-haiku-20241022",
+      model: "claude-3-5-haiku-latest",
       max_tokens: 500,
       temperature: 0.7,
       messages: [{ role: "user", content: conclusionPrompt }],
     });
 
-    let conclusionContent = conclusionResponse.content[0].text;
+    let conclusionContent = extractTextFromResponse(conclusionResponse);
     conclusionContent = trimToCompleteSentence(conclusionContent);
     fullContent += conclusionContent;
 
