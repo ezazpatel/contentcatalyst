@@ -340,13 +340,12 @@ Affiliate URL: ${url || "Not generated"}\n`);
       if (!Array.isArray(outlineResult.outline)) {
         outlineResult.outline = [];
       }
-      } catch (e) {
-        console.error("Failed to parse outline JSON:", e, outlineJson);
-        outlineResult = {
-          title: "Blog Post About " + keywords.join(", "),
-          outline: [],
-        };
-      }
+    } catch (e) {
+      console.error("Failed to parse outline JSON:", e, outlineJson);
+      outlineResult = {
+        title: "Blog Post About " + keywords.join(", "),
+        outline: [],
+      };
     }
 
     // Generate a new excerpt from Claude
