@@ -64,7 +64,8 @@ export type BlogPost = typeof blogPosts.$inferSelect;
 export type AffiliateImage = z.infer<typeof affiliateImageSchema>;
 
 export const csvUploadSchema = z.object({
-  Keywords: z.string().min(1, "Please enter at least one keyword"),
+  "Primary Keyword": z.string().min(1, "Primary keyword is required"),
+  "Secondary Keyword": z.string().optional(),
   "Scheduled Date": z.string().min(1, "Scheduled date is required"),
   "Scheduled Time": z.string().min(1, "Scheduled time is required"),
 }).refine((data) => {
