@@ -188,8 +188,8 @@ export function CSVUpload({ onUpload }: CSVUploadProps) {
 
   const downloadTemplate = () => {
     const template =
-      "Primary Keywords,Secondary Keywords,Title,Scheduled Date,Scheduled Time,Affiliate Product Names,Affiliate Product URLs,Content Instructions,SEO Title,SEO Description\n" +
-      "vancouver attractions,vancouver trip itinerary,2025-03-22,18:30,Vancouver: Flyover Experience|Vancouver: Seaplane Tour,https://example.com/flyover|https://example.com/seaplane,Write about top tourist destinations,,,,,,";
+      "Primary Keyword,Secondary Keyword,Scheduled Date,Scheduled Time\n" +
+      "vancouver attractions,vancouver hidden gems,2025-03-22,18:30";
 
     const blob = new Blob([template], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
