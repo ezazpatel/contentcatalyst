@@ -247,50 +247,53 @@ Affiliate URL: ${url || "Not generated"}\n`);
   try {
     console.log("Step 1: Generating title and outline...");
     const mainKeywords = secondaryKeywords.length > 0 ? secondaryKeywords : keywords;
-    const outlinePrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a blog post about: ${mainKeywords.join(", ")}.
+    const outlinePrompt = `Write a helpful and engaging blog post about: ${mainKeywords.join(", ")}.
 
-Please naturally incorporate these product-related keywords as well: ${keywords.join(", ")}.
+  Please naturally incorporate these product-related keywords as well: ${keywords.join(", ")}.
 
-${
-  post.description
-    ? `
-Additional Context from User:
-${post.description}`
-    : ""
-}
+  ${
+    post.description
+      ? `
+  Additional Context from User:
+  ${post.description}`
+      : ""
+  }
 
-${
-  Array.isArray(post.internalLinks) && post.internalLinks.length > 0
-    ? `
-Important: This article should reference these related articles from our blog:
-${post.internalLinks.map((link) => `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ""}`).join("\n")}`
-    : ""
-}
+  ${
+    Array.isArray(post.internalLinks) && post.internalLinks.length > 0
+      ? `
+  Important: This article should reference these related articles from our blog:
+  ${post.internalLinks.map((link) => `- [${link.title}](${link.url})${link.description ? ` - ${link.description}` : ""}`).join("\n")}`
+      : ""
+  }
 
-Instructions:
-1. Write in grade 5-6 level Canadian English
-2. Create an engaging and SEO-friendly title (60-70 characters)
-3. Create a detailed outline with 2-3 main sections
-4. For each section, include:
-   - A clear H2 heading that's topically relevant
-   - 1-2 H3 subheadings under each main section
-   - If any of these affiliate products/resources fit naturally as section topics, use them:
-     ${Array.isArray(post.affiliateLinks) ? post.affiliateLinks.map((link) => `- ${link.name}`).join("\n     ") : ""}
+  Instructions:
+  1. Use grade 5-6 level Canadian English
+  2. Keep a warm, friendly tone like you're helping a fellow traveler
+  3. Do NOT mention yourself or the writing process
+  4. Do NOT say “this article” or “this blog”
+  5. Create an SEO-friendly title (60–70 characters)
+  6. Create a clear outline with 2–3 main sections
+  7. Each section should include:
+     - One H2 heading that’s relevant
+     - 1–2 H3 subheadings underneath
+     - If any of these affiliate products fit, feature them naturally:
+       ${Array.isArray(post.affiliateLinks) ? post.affiliateLinks.map((link) => `- ${link.name}`).join("\n     ") : ""}
 
-Format your response as JSON:
-{
-  "title": "Your Blog Post Title",
-  "outline": [
-    { 
-      "heading": "First Main Section",
-      "subheadings": ["Subheading 1", "Subheading 2"],
-      "affiliate_connection": "Product name if section should feature it, or null"
-    }
-  ]
-}`;
+  Format your response as JSON:
+  {
+    "title": "Your Blog Post Title",
+    "outline": [
+      { 
+        "heading": "First Main Section",
+        "subheadings": ["Subheading 1", "Subheading 2"],
+        "affiliate_connection": "Product name if section should feature it, or null"
+      }
+    ]
+  }`;
 
     const outlineResponse = await client.messages.create({
-      model: ANTHROPIC_MODEL,
+      model: "ANTHROPIC_MODEL",
       max_tokens: 1000,
       temperature: 0.7,
       messages: [{ role: "user", content: outlinePrompt }],
@@ -347,7 +350,7 @@ Format your response as JSON:
     }
 
     // Generate a new excerpt from Claude
-    const excerptPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write a catchy, 1-2 sentence excerpt for a blog post titled "${outlineResult.title}" that entices readers to continue reading.`;
+    const excerptPrompt = `In a happy, cheerful, and conversational tone write a catchy, 1-2 sentence excerpt for a blog post titled "${outlineResult.title}" that entices readers to continue reading.`;
     const excerptResponse = await client.messages.create({
       model: ANTHROPIC_MODEL,
       max_tokens: 150,
@@ -373,16 +376,18 @@ Format your response as JSON:
     }
 
     console.log("Step 2: Generating introduction...");
-    const introPrompt = `You are a happy and cheerful woman who lives in Canada and works as an SEO content writer. Write an engaging introduction for "${outlineResult.title}".
+    const introPrompt = `Write an engaging introduction for "${outlineResult.title}".
 Include:
 - A hook that grabs attention
 - Brief mention of key benefits readers will get
 - Natural transition to the first section: "${outlineResult.outline[0]?.heading || "First Section"}"
 Instructions:
 1. Use grade 5-6 level Canadian English
-2. Keep emoji usage minimal - only if absolutely necessary
-3. Include keywords naturally
-4. Give a clear overview of what readers will learn
+2. Keep a cheerful, friendly tone — like you're chatting with a fellow traveler
+3. - Make it helpful, warm, and down-to-earth
+4. Keep emoji usage minimal - only if absolutely necessary
+5. Include keywords naturally.
+6. Give a clear overview of what readers will learn
 
 - !Important: If you're running out of space, make sure to end at the previous sentence. Do NOT leave the content hanging or mid-thought. NO INCOMPLETE SENTENCES AT THE END OF THE SECTION.
 
@@ -497,7 +502,7 @@ ${availableLinks.join("\n")}
       const sectionPrompt = `You're continuing a blog post titled "${outlineResult.title}". Write the next section titled "${section.heading}".
 Instructions:
 1. Use grade 5-6 level Canadian English.
-2. Keep the tone consistent with the rest of the article
+2. Keep the tone consistent as the introdut
 3. Write as if you're continuing the same blog—not starting a new one
 4. Focus on providing valuable information.
 5. Keep emoji usage minimal.
@@ -547,7 +552,7 @@ Format with proper markdown:
 ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for this subheading]`).join("\n\n")}`;
 
       const sectionResponse = await client.messages.create({
-        model: "claude-3-5-haiku-latest",
+        model: "ANTHROPIC_MODEL",
         max_tokens: 700,
         temperature: 0.7,
         messages: [{ role: "user", content: sectionPrompt }],
@@ -625,7 +630,7 @@ ${section.subheadings.map((subheading) => `### ${subheading}\n\n[Content for thi
 [Your conclusion here]`;
 
     const conclusionResponse = await client.messages.create({
-      model: "claude-3-5-haiku-latest",
+      model: "ANTHROPIC_MODEL",
       max_tokens: 500,
       temperature: 0.7,
       messages: [{ role: "user", content: conclusionPrompt }],
