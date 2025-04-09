@@ -322,19 +322,16 @@ Affiliate URL: ${url || "Not generated"}\n`);
       jsonStr = jsonStr.replace(/[\u0000-\u001F\u007F]/g, "");
 
       outlineResult = JSON.parse(jsonStr);
-      
-      // Handle different response formats
-      if (outlineResult.blogPost) {
-        // If outline is nested under blogPost
+
+      if (outlineResult.content?.outline) {
         outlineResult = {
-          title: outlineResult.title || outlineResult.blogPost.title,
-          outline: outlineResult.blogPost.outline || []
+          title: outlineResult.title,
+          outline: outlineResult.content.outline,
         };
       } else if (!outlineResult.outline) {
-        // Ensure we have a valid outline array
         outlineResult = {
           title: outlineResult.title || "Blog Post",
-          outline: []
+          outline: [],
         };
       }
 
